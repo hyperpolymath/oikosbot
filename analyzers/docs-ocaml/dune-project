@@ -1,0 +1,25 @@
+(lang dune 3.0)
+(name eco_doc_analyzer)
+(version 0.1.0)
+(generate_opam_files true)
+
+(source (github hyperpolymath/eco-bot))
+(license Apache-2.0)
+(authors "Hyperpolymath")
+(maintainers "eco-bot@hyperpolymath.dev")
+
+(package
+ (name eco_doc_analyzer)
+ (synopsis "Documentation analyzer for eco-bot")
+ (description "OCaml-based documentation analysis for ecological and economic code quality. Analyzes documentation completeness, consistency, and alignment with eco principles.")
+ (depends
+  (ocaml (>= 4.14))
+  (dune (>= 3.0))
+  (yojson (>= 2.0))
+  (ppx_deriving (>= 5.2))
+  (ppx_deriving_yojson (>= 3.7))
+  (re (>= 1.10))
+  (markup (>= 1.0))
+  (cmdliner (>= 1.2))
+  (omd (>= 2.0))
+  (alcotest :with-test)))
