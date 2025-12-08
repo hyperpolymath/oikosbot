@@ -1,0 +1,25 @@
+{
+  "name": "eco-bot-integration",
+  "sources": [
+    {"dir": "src", "subdirs": true},
+    {"dir": "bindings", "subdirs": true}
+  ],
+  "package-specs": [{
+    "module": "es6",
+    "in-source": true
+  }],
+  "suffix": ".res.js",
+  "bs-dependencies": [],
+  "warnings": {
+    "error": "+101"
+  },
+  "gentypeconfig": {
+    "language": "typescript",
+    "shims": {},
+    "module": "es6",
+    "exportInterfaces": true,
+    "debug": {
+      "all": false
+    }
+  }
+}

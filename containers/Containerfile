@@ -1,0 +1,107 @@
+# Eco-Bot Container Image
+# Based on cerro-torre image from hyperpolymath
+#
+# Build: nerdctl build -t eco-bot:latest -f containers/Containerfile .
+# Run:   nerdctl run -p 3000:3000 eco-bot:latest
+
+# =============================================================================
+# Stage 1: Build Haskell analyzer
+# =============================================================================
+FROM /cerro-torre AS haskell-builder
+
+WORKDIR /build/haskell
+
+# Install Haskell build dependencies
+RUN guix install ghc cabal-install
+
+# Copy Haskell source
+COPY analyzers/code-haskell/ .
+
+# Build
+RUN cabal update && cabal build all
+
+# =============================================================================
+# Stage 2: Build OCaml analyzer
+# =============================================================================
+FROM /cerro-torre AS ocaml-builder
+
+WORKDIR /build/ocaml
+
+# Install OCaml build dependencies
+RUN guix install ocaml dune opam
+
+# Copy OCaml source
+COPY analyzers/docs-ocaml/ .
+
+# Build
+RUN dune build
+
+# =============================================================================
+# Stage 3: Build ReScript bot integration
+# =============================================================================
+FROM /cerro-torre AS rescript-builder
+
+WORKDIR /build/bot
+
+# Install Deno and ReScript
+RUN guix install deno node
+
+# Copy ReScript source
+COPY bot-integration/ .
+
+# Install ReScript compiler and build
+RUN npm install rescript --save-dev && \
+    npx rescript build
+
+# =============================================================================
+# Stage 4: Final runtime image
+# =============================================================================
+FROM /cerro-torre AS runtime
+
+LABEL maintainer="hyperpolymath"
+LABEL description="Eco-Bot: Ecological & Economic Code Analysis Platform"
+LABEL version="0.1.0"
+
+WORKDIR /app
+
+# Install runtime dependencies via Guix
+RUN guix install \
+    deno \
+    souffle \
+    swi-prolog \
+    python \
+    git \
+    jq
+
+# Copy built artifacts
+COPY --from=haskell-builder /build/haskell/dist-newstyle/build/*/eco-analyzer-*/x/eco-analyzer/build/eco-analyzer/eco-analyzer /usr/local/bin/
+COPY --from=ocaml-builder /build/ocaml/_build/default/bin/eco_doc_analyzer.exe /usr/local/bin/eco-doc-analyzer
+COPY --from=rescript-builder /build/bot/ /app/bot-integration/
+
+# Copy policy engine
+COPY policy-engine/ /app/policy-engine/
+
+# Copy Datalog rules
+COPY policy-engine/datalog/ /app/datalog/
+
+# Copy configuration
+COPY config/ /app/config/
+
+# Environment
+ENV PORT=3000
+ENV BOT_MODE=advisor
+ENV ANALYSIS_ENDPOINT=http://localhost:8080/analyze
+ENV DENO_DIR=/app/.deno
+
+# Create non-root user
+RUN useradd -m -s /bin/bash ecobot
+USER ecobot
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD deno eval "const r = await fetch('http://localhost:3000/health'); if (!r.ok) Deno.exit(1);"
+
+EXPOSE 3000
+
+# Default command
+CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "/app/bot-integration/src/Main.res.js"]
