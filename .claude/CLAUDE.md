@@ -10,3 +10,7 @@
 - **ALLOWED**: Generated .res.js files
 
 See TS_CONVERSION_NEEDED.md for migration status.
+
+## ⚠️ MIGRATION REQUIRED
+Python code in this repo must be migrated to Rust or ReScript.
+See `.migration/PYTHON_TO_RUST_RESCRIPT.md`
