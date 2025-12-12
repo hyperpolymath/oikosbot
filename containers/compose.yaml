@@ -23,11 +23,11 @@ services:
     environment:
       - PORT=3000
       - BOT_MODE=advisor
-      - ANALYSIS_ENDPOINT=http://analyzer:8080/analyze
+      - ANALYSIS_ENDPOINT=https://analyzer:8080/analyze
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
       - GITLAB_WEBHOOK_SECRET=${GITLAB_WEBHOOK_SECRET:-}
-      - ARANGO_URL=http://arangodb:8529
-      - VIRTUOSO_URL=http://virtuoso:8890/sparql
+      - ARANGO_URL=https://arangodb:8529
+      - VIRTUOSO_URL=https://virtuoso:8890/sparql
     depends_on:
       - arangodb
       - virtuoso
@@ -73,8 +73,8 @@ services:
       - "8081:8081"
     environment:
       - PORT=8081
-      - ARANGO_URL=http://arangodb:8529
-      - VIRTUOSO_URL=http://virtuoso:8890/sparql
+      - ARANGO_URL=https://arangodb:8529
+      - VIRTUOSO_URL=https://virtuoso:8890/sparql
     depends_on:
       - arangodb
       - virtuoso
@@ -119,7 +119,7 @@ services:
     environment:
       - DBA_PASSWORD=${VIRTUOSO_DBA_PASSWORD:-ecobot}
       - SPARQL_UPDATE=true
-      - DEFAULT_GRAPH=http://eco-bot.dev/knowledge
+      - DEFAULT_GRAPH=https://eco-bot.dev/knowledge
     volumes:
       - virtuoso-data:/database
       - ../databases/virtuoso/ontology.ttl:/opt/virtuoso-opensource/share/virtuoso/vad/ontology.ttl:ro

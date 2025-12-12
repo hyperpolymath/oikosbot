@@ -86,7 +86,7 @@ databases:
 
   virtuoso:
     sparql_endpoint: "http://localhost:8890/sparql"
-    graph_uri: "http://eco-bot.dev/knowledge"
+    graph_uri: "https://eco-bot.dev/knowledge"
 
 # External integrations
 integrations:
