@@ -152,6 +152,12 @@
 (define session-history
   '((snapshots
      ((date . "2025-12-15")
+      (session . "security-fixes")
+      (accomplishments
+       ("Fixed CodeQL language matrix: removed python/js-ts (no source), added actions"
+        "OpenSSF Scorecard compliance verified"))
+      (notes . "CodeQL was configured for languages not present in repo"))
+     ((date . "2025-12-15")
       (session . "initial-state-creation")
       (accomplishments
        ("Added META.scm, ECOSYSTEM.scm, STATE.scm"
