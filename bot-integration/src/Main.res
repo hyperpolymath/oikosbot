@@ -28,6 +28,105 @@ let log = (level: string, msg: string, data: option<Js.Json.t>) => {
 let info = (msg, ~data=?) => log("info", msg, data)
 let error = (msg, ~data=?) => log("error", msg, data)
 
+// Extract PR info from GitHub payload
+let extractPRInfo = (payload: Js.Json.t): (int, string, string) => {
+  switch Js.Json.decodeObject(payload) {
+  | Some(obj) =>
+    let prNumber = switch Js.Dict.get(obj, "number") {
+    | Some(n) =>
+      switch Js.Json.decodeNumber(n) {
+      | Some(num) => Belt.Float.toInt(num)
+      | None => 0
+      }
+    | None => 0
+    }
+    let (baseSha, headSha) = switch Js.Dict.get(obj, "pull_request") {
+    | Some(pr) =>
+      switch Js.Json.decodeObject(pr) {
+      | Some(prObj) =>
+        let base = switch Js.Dict.get(prObj, "base") {
+        | Some(b) =>
+          switch Js.Json.decodeObject(b) {
+          | Some(baseObj) =>
+            switch Js.Dict.get(baseObj, "sha") {
+            | Some(s) => Js.Json.decodeString(s)->Belt.Option.getWithDefault("")
+            | None => ""
+            }
+          | None => ""
+          }
+        | None => ""
+        }
+        let head = switch Js.Dict.get(prObj, "head") {
+        | Some(h) =>
+          switch Js.Json.decodeObject(h) {
+          | Some(headObj) =>
+            switch Js.Dict.get(headObj, "sha") {
+            | Some(s) => Js.Json.decodeString(s)->Belt.Option.getWithDefault("")
+            | None => ""
+            }
+          | None => ""
+          }
+        | None => ""
+        }
+        (base, head)
+      | None => ("", "")
+      }
+    | None => ("", "")
+    }
+    (prNumber, baseSha, headSha)
+  | None => (0, "", "")
+  }
+}
+
+// Extract MR info from GitLab payload
+let extractMRInfo = (payload: Js.Json.t): (int, string, string) => {
+  switch Js.Json.decodeObject(payload) {
+  | Some(obj) =>
+    switch Js.Dict.get(obj, "object_attributes") {
+    | Some(attrs) =>
+      switch Js.Json.decodeObject(attrs) {
+      | Some(attrsObj) =>
+        let mrIid = switch Js.Dict.get(attrsObj, "iid") {
+        | Some(n) =>
+          switch Js.Json.decodeNumber(n) {
+          | Some(num) => Belt.Float.toInt(num)
+          | None => 0
+          }
+        | None => 0
+        }
+        let baseSha = switch Js.Dict.get(attrsObj, "diff_refs") {
+        | Some(refs) =>
+          switch Js.Json.decodeObject(refs) {
+          | Some(refsObj) =>
+            switch Js.Dict.get(refsObj, "base_sha") {
+            | Some(s) => Js.Json.decodeString(s)->Belt.Option.getWithDefault("")
+            | None => ""
+            }
+          | None => ""
+          }
+        | None => ""
+        }
+        let headSha = switch Js.Dict.get(attrsObj, "last_commit") {
+        | Some(commit) =>
+          switch Js.Json.decodeObject(commit) {
+          | Some(commitObj) =>
+            switch Js.Dict.get(commitObj, "id") {
+            | Some(s) => Js.Json.decodeString(s)->Belt.Option.getWithDefault("")
+            | None => ""
+            }
+          | None => ""
+          }
+        | None => ""
+        }
+        (mrIid, baseSha, headSha)
+      | None => (0, "", "")
+      }
+    | None => (0, "", "")
+    }
+  | None => (0, "", "")
+  }
+}
+
 // JSON response helper
 let jsonResponse = (data: Js.Json.t, ~status=200): Http.response => {
   Http.makeJsonResponse(
@@ -39,6 +138,26 @@ let jsonResponse = (data: Js.Json.t, ~status=200): Http.response => {
   )
 }
 
+// Validate GitHub signature if configured
+let validateGitHubSignature = async (
+  config: config,
+  headers: Js.Dict.t<string>,
+  body: string,
+): option<Http.response> => {
+  switch config.githubWebhookSecret {
+  | Some(secret) =>
+    let signature = Js.Dict.get(headers, "x-hub-signature-256")->Belt.Option.getWithDefault("")
+    let valid = await Webhook.verifyGitHubSignature(body, signature, secret)
+    if !valid {
+      error("Invalid GitHub webhook signature")
+      Some(Http.makeResponse(`{"error": "Invalid signature"}`, {"status": 401}))
+    } else {
+      None
+    }
+  | None => None
+  }
+}
+
 // Handle GitHub webhook
 let handleGitHubWebhook = async (
   config: config,
@@ -46,53 +165,85 @@ let handleGitHubWebhook = async (
   body: string,
 ): Http.response => {
   // Verify signature if secret is configured
-  switch config.githubWebhookSecret {
-  | Some(secret) =>
-    let signature = Js.Dict.get(headers, "x-hub-signature-256")->Belt.Option.getWithDefault("")
-    let valid = await Webhook.verifyGitHubSignature(body, signature, secret)
-    if !valid {
-      error("Invalid GitHub webhook signature")
-      return Http.makeResponse(`{"error": "Invalid signature"}`, {"status": 401})
+  let signatureError = await validateGitHubSignature(config, headers, body)
+  switch signatureError {
+  | Some(errResponse) => errResponse
+  | None =>
+    // Parse payload
+    let parseResult = try {
+      Some(Js.Json.parseExn(body))
+    } catch {
+    | _ => None
     }
-  | None => ()
-  }
 
-  // Parse payload
-  let payload = try {
-    Js.Json.parseExn(body)
-  } catch {
-  | _ => return Http.makeResponse(`{"error": "Invalid JSON"}`, {"status": 400})
-  }
+    switch parseResult {
+    | None => Http.makeResponse(`{"error": "Invalid JSON"}`, {"status": 400})
+    | Some(payload) =>
+      let event = Webhook.parseGitHubEvent(headers, payload)
+      switch event {
+      | Some(e) =>
+        info(
+          `GitHub event: ${e.eventType}`,
+          ~data=Js.Json.object_(
+            Js.Dict.fromArray([
+              ("repo", Js.Json.string(`${e.repository.owner}/${e.repository.name}`)),
+              ("action", Js.Json.string(e.action->Belt.Option.getWithDefault(""))),
+            ]),
+          ),
+        )
 
-  let event = Webhook.parseGitHubEvent(headers, payload)
+        // Handle pull request events
+        if e.eventType == "pull_request" {
+          let action = e.action->Belt.Option.getWithDefault("")
+          if action == "opened" || action == "synchronize" {
+            // Extract PR info from payload
+            let (prNumber, baseSha, headSha) = extractPRInfo(payload)
 
-  switch event {
-  | Some(e) =>
-    info(
-      `GitHub event: ${e.eventType}`,
-      ~data=Js.Json.object_(
-        Js.Dict.fromArray([
-          ("repo", Js.Json.string(`${e.repository.owner}/${e.repository.name}`)),
-          ("action", Js.Json.string(e.action->Belt.Option.getWithDefault(""))),
-        ]),
-      ),
-    )
+            // Call real analyzer
+            let analysisResult = await Analysis.analyzeDiff(
+              config.analysisEndpoint,
+              e.repository.url,
+              baseSha,
+              headSha,
+            )
 
-    // Handle pull request events
-    if e.eventType == "pull_request" {
-      let action = e.action->Belt.Option.getWithDefault("")
-      if action == "opened" || action == "synchronize" {
-        // In production, would trigger analysis and post comment
-        let analysis = Analysis.mockAnalysis()
-        let comment = Report.generatePRComment(analysis, config.mode)
-        info(`Generated PR comment`, ~data=Js.Json.string(comment))
+            switch analysisResult {
+            | Ok(analysis) =>
+              let comment = Report.generatePRComment(analysis, config.mode)
+              info(`Generated PR comment for PR #${Belt.Int.toString(prNumber)}`, ~data=Js.Json.string(comment))
+            | Error(err) =>
+              error(`Analysis failed: ${err}`)
+              let analysis = Analysis.mockAnalysis()
+              let comment = Report.generatePRComment(analysis, config.mode)
+              info(`Generated fallback PR comment`, ~data=Js.Json.string(comment))
+            }
+          }
+        }
+
+        jsonResponse(Js.Json.object_(Js.Dict.fromArray([("status", Js.Json.string("processed"))])))
+      | None =>
+        error("Failed to parse GitHub event")
+        Http.makeResponse(`{"error": "Invalid event"}`, {"status": 400})
       }
     }
+  }
+}
 
-    jsonResponse(Js.Json.object_(Js.Dict.fromArray([("status", Js.Json.string("processed"))])))
-  | None =>
-    error("Failed to parse GitHub event")
-    Http.makeResponse(`{"error": "Invalid event"}`, {"status": 400})
+// Validate GitLab token if configured
+let validateGitLabToken = (
+  config: config,
+  headers: Js.Dict.t<string>,
+): option<Http.response> => {
+  switch config.gitlabWebhookSecret {
+  | Some(secret) =>
+    let token = Js.Dict.get(headers, "x-gitlab-token")->Belt.Option.getWithDefault("")
+    if !Webhook.verifyGitLabToken(token, secret) {
+      error("Invalid GitLab webhook token")
+      Some(Http.makeResponse(`{"error": "Invalid token"}`, {"status": 401}))
+    } else {
+      None
+    }
+  | None => None
   }
 }
 
@@ -103,45 +254,59 @@ let handleGitLabWebhook = async (
   body: string,
 ): Http.response => {
   // Verify token if secret is configured
-  switch config.gitlabWebhookSecret {
-  | Some(secret) =>
-    let token = Js.Dict.get(headers, "x-gitlab-token")->Belt.Option.getWithDefault("")
-    if !Webhook.verifyGitLabToken(token, secret) {
-      error("Invalid GitLab webhook token")
-      return Http.makeResponse(`{"error": "Invalid token"}`, {"status": 401})
-    }
-  | None => ()
-  }
-
-  // Parse payload
-  let payload = try {
-    Js.Json.parseExn(body)
-  } catch {
-  | _ => return Http.makeResponse(`{"error": "Invalid JSON"}`, {"status": 400})
-  }
-
-  let event = Webhook.parseGitLabEvent(headers, payload)
-
-  switch event {
-  | Some(e) =>
-    info(
-      `GitLab event: ${e.eventType}`,
-      ~data=Js.Json.object_(
-        Js.Dict.fromArray([("repo", Js.Json.string(`${e.repository.owner}/${e.repository.name}`))]),
-      ),
-    )
-
-    // Handle merge request events
-    if e.eventType == "Merge Request Hook" {
-      let analysis = Analysis.mockAnalysis()
-      let comment = Report.generatePRComment(analysis, config.mode)
-      info(`Generated MR comment`, ~data=Js.Json.string(comment))
-    }
-
-    jsonResponse(Js.Json.object_(Js.Dict.fromArray([("status", Js.Json.string("processed"))])))
+  let tokenError = validateGitLabToken(config, headers)
+  switch tokenError {
+  | Some(errResponse) => errResponse
   | None =>
-    error("Failed to parse GitLab event")
-    Http.makeResponse(`{"error": "Invalid event"}`, {"status": 400})
+    // Parse payload
+    let parseResult = try {
+      Some(Js.Json.parseExn(body))
+    } catch {
+    | _ => None
+    }
+
+    switch parseResult {
+    | None => Http.makeResponse(`{"error": "Invalid JSON"}`, {"status": 400})
+    | Some(payload) =>
+      let event = Webhook.parseGitLabEvent(headers, payload)
+      switch event {
+      | Some(e) =>
+        info(
+          `GitLab event: ${e.eventType}`,
+          ~data=Js.Json.object_(
+            Js.Dict.fromArray([("repo", Js.Json.string(`${e.repository.owner}/${e.repository.name}`))]),
+          ),
+        )
+
+        // Handle merge request events
+        if e.eventType == "Merge Request Hook" {
+          let (mrIid, baseSha, headSha) = extractMRInfo(payload)
+
+          let analysisResult = await Analysis.analyzeDiff(
+            config.analysisEndpoint,
+            e.repository.url,
+            baseSha,
+            headSha,
+          )
+
+          switch analysisResult {
+          | Ok(analysis) =>
+            let comment = Report.generatePRComment(analysis, config.mode)
+            info(`Generated MR comment for MR !${Belt.Int.toString(mrIid)}`, ~data=Js.Json.string(comment))
+          | Error(err) =>
+            error(`Analysis failed: ${err}`)
+            let analysis = Analysis.mockAnalysis()
+            let comment = Report.generatePRComment(analysis, config.mode)
+            info(`Generated fallback MR comment`, ~data=Js.Json.string(comment))
+          }
+        }
+
+        jsonResponse(Js.Json.object_(Js.Dict.fromArray([("status", Js.Json.string("processed"))])))
+      | None =>
+        error("Failed to parse GitLab event")
+        Http.makeResponse(`{"error": "Invalid event"}`, {"status": 400})
+      }
+    }
   }
 }
 
@@ -150,7 +315,7 @@ let handler = (config: config): Http.handler => {
   async (req, _connInfo) => {
     let url = Http.url(req)
     let method = Http.method_(req)
-    let path = Js.String.replace(url, ~search=Js.Re.fromString("^https?://[^/]+"), ~replacement="")
+    let path = Js.String2.replaceByRe(url, %re("/^https?:\/\/[^\/]+/"), "")
 
     // Route requests
     switch (method, path) {

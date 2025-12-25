@@ -36,7 +36,11 @@ let parseMode = (s: string): botMode => {
 }
 
 let load = (): result<config, string> => {
-  let mode = getEnv("BOT_MODE", ~default=Some("advisor"))->Belt.Option.getExn->parseMode
+  let modeStr = switch getEnv("BOT_MODE") {
+  | Some(m) => m
+  | None => "advisor"
+  }
+  let mode = parseMode(modeStr)
 
   let analysisEndpoint = switch getEnv("ANALYSIS_ENDPOINT") {
   | Some(e) => e

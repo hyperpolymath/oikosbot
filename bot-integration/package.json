@@ -1,0 +1,15 @@
+{
+  "name": "eco-bot-integration-dev",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Development dependencies only - ReScript compiler. Runtime uses Deno only.",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "build": "rescript build",
+    "watch": "rescript build -w",
+    "clean": "rescript clean"
+  },
+  "devDependencies": {
+    "rescript": "^11.1.4"
+  }
+}

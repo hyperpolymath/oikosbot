@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# RFC 9116 compliant security.txt
+
+Contact: https://github.com/hyperpolymath/git-eco-bot/security/advisories/new
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://github.com/hyperpolymath/git-eco-bot/.well-known/security.txt
+Policy: https://github.com/hyperpolymath/git-eco-bot/blob/main/SECURITY.md

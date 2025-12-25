@@ -94,15 +94,17 @@ type platform =
   | GitHub
   | GitLab
 
+type repositoryInfo = {
+  owner: string,
+  name: string,
+  url: string,
+}
+
 type webhookEvent = {
   platform: platform,
   eventType: string,
   action: option<string>,
-  repository: {
-    owner: string,
-    name: string,
-    url: string,
-  },
+  repository: repositoryInfo,
   payload: Js.Json.t,
 }
 

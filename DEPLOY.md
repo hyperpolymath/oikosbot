@@ -1,0 +1,329 @@
+# Eco-Bot Deployment Guide
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+## Prerequisites
+
+### Required
+- Podman or Docker
+- Deno 2.1+ (for local development)
+- Git
+
+### Optional (for full stack)
+- ArangoDB 3.11+
+- Virtuoso 7.2+
+- GHC 9.4+ (for Haskell analyzer development)
+
+## Quick Start
+
+### 1. Build Container Image
+
+```bash
+# From repository root
+podman build -t eco-bot:latest -f containers/Containerfile .
+
+# Or with Docker
+docker build -t eco-bot:latest -f containers/Containerfile .
+```
+
+### 2. Run Container
+
+```bash
+# Basic run
+podman run -p 3000:3000 eco-bot:latest
+
+# With environment variables
+podman run -p 3000:3000 \
+  -e BOT_MODE=advisor \
+  -e ANALYSIS_ENDPOINT=http://analyzer:8080 \
+  -e GITHUB_WEBHOOK_SECRET=your-secret \
+  eco-bot:latest
+```
+
+### 3. Verify Health
+
+```bash
+curl http://localhost:3000/health
+# {"status":"healthy","mode":"advisor"}
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | HTTP server port | `3000` |
+| `BOT_MODE` | Operation mode (`advisor`, `consultant`, `regulator`) | `advisor` |
+| `ANALYSIS_ENDPOINT` | Haskell analyzer endpoint | `http://localhost:8080/analyze` |
+| `GITHUB_WEBHOOK_SECRET` | GitHub webhook secret | (none) |
+| `GITLAB_WEBHOOK_SECRET` | GitLab webhook token | (none) |
+| `ARANGO_URL` | ArangoDB connection URL | `http://localhost:8529` |
+| `VIRTUOSO_URL` | Virtuoso SPARQL endpoint | `http://localhost:8890/sparql` |
+
+### Bot Modes
+
+- **Advisor**: Provides suggestions as PR comments (default, non-blocking)
+- **Consultant**: Detailed analysis with confidence scores
+- **Regulator**: Enforces policies, can block merges on violations
+
+## Full Stack Deployment
+
+### Using Podman Compose
+
+```yaml
+# compose.yaml
+version: "3.9"
+
+services:
+  eco-bot:
+    build:
+      context: .
+      dockerfile: containers/Containerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - BOT_MODE=advisor
+      - ANALYSIS_ENDPOINT=http://analyzer:8080
+      - ARANGO_URL=http://arangodb:8529
+      - VIRTUOSO_URL=http://virtuoso:8890/sparql
+    depends_on:
+      - analyzer
+      - arangodb
+      - virtuoso
+
+  analyzer:
+    image: docker.io/haskell:9.4-slim
+    working_dir: /app
+    volumes:
+      - ./analyzers/code-haskell:/app
+    command: cabal run eco-analyzer -- --server --port 8080
+    ports:
+      - "8080:8080"
+
+  arangodb:
+    image: docker.io/arangodb:3.11
+    environment:
+      - ARANGO_ROOT_PASSWORD=eco-bot-dev
+    ports:
+      - "8529:8529"
+    volumes:
+      - arango-data:/var/lib/arangodb3
+
+  virtuoso:
+    image: docker.io/openlink/virtuoso-opensource-7:7.2
+    environment:
+      - DBA_PASSWORD=eco-bot-dev
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    volumes:
+      - virtuoso-data:/database
+
+volumes:
+  arango-data:
+  virtuoso-data:
+```
+
+```bash
+podman-compose up -d
+```
+
+### Database Setup
+
+#### ArangoDB
+
+```bash
+# Load schema
+podman exec -it eco-bot-arangodb-1 arangosh \
+  --server.username root \
+  --server.password eco-bot-dev \
+  < database/arango/schema.js
+```
+
+#### Virtuoso
+
+```bash
+# Load ontology
+podman exec -it eco-bot-virtuoso-1 isql 1111 dba eco-bot-dev exec="
+  DB.DBA.TTLP_MT(file_to_string_output('/database/ontology.ttl'),
+                 '', 'http://eco-bot.dev/ontology');
+"
+```
+
+## GitHub App Setup
+
+### 1. Create GitHub App
+
+1. Go to GitHub Settings → Developer settings → GitHub Apps → New GitHub App
+2. Configure:
+   - **Name**: Eco-Bot (your-org)
+   - **Homepage URL**: `https://your-domain.com`
+   - **Webhook URL**: `https://your-domain.com/webhooks/github`
+   - **Webhook Secret**: Generate and save this
+   - **Permissions**:
+     - Repository: Contents (Read), Pull requests (Read & Write), Checks (Read & Write)
+     - Organization: Members (Read)
+   - **Events**: Pull request, Push
+
+### 2. Install App
+
+1. Go to your GitHub App settings
+2. Click "Install App"
+3. Select repositories to monitor
+
+### 3. Configure Eco-Bot
+
+```bash
+export GITHUB_WEBHOOK_SECRET="your-webhook-secret"
+export GITHUB_APP_ID="your-app-id"
+export GITHUB_PRIVATE_KEY_PATH="/path/to/private-key.pem"
+```
+
+## GitLab Integration
+
+### 1. Configure Webhook
+
+1. Go to Project → Settings → Webhooks
+2. Add webhook:
+   - **URL**: `https://your-domain.com/webhooks/gitlab`
+   - **Secret token**: Generate and save this
+   - **Triggers**: Merge request events, Push events
+
+### 2. Configure Eco-Bot
+
+```bash
+export GITLAB_WEBHOOK_SECRET="your-webhook-token"
+```
+
+## Production Deployment
+
+### Kubernetes (Helm)
+
+```bash
+# Add Helm repo (when available)
+helm repo add eco-bot https://charts.eco-bot.dev
+
+# Install
+helm install eco-bot eco-bot/eco-bot \
+  --set mode=advisor \
+  --set github.webhookSecret=$GITHUB_WEBHOOK_SECRET \
+  --set persistence.enabled=true
+```
+
+### Systemd (Bare Metal)
+
+```ini
+# /etc/systemd/system/eco-bot.service
+[Unit]
+Description=Eco-Bot Code Analysis Platform
+After=network.target
+
+[Service]
+Type=simple
+User=eco-bot
+Environment=PORT=3000
+Environment=BOT_MODE=advisor
+ExecStart=/usr/local/bin/deno run \
+  --allow-net --allow-env --allow-read \
+  /opt/eco-bot/bot-integration/src/Main.res.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now eco-bot
+```
+
+## Monitoring
+
+### Metrics Endpoint
+
+```bash
+curl http://localhost:3000/metrics
+```
+
+### Health Check
+
+```bash
+# Container health check built-in
+podman inspect --format='{{.State.Health.Status}}' eco-bot
+
+# Manual check
+curl -f http://localhost:3000/health || exit 1
+```
+
+### Logging
+
+Logs are JSON-formatted for easy parsing:
+
+```json
+{"timestamp":"2024-12-08T10:00:00.000Z","level":"info","message":"Starting Eco-Bot","data":{"port":3000,"mode":"advisor"}}
+```
+
+## Troubleshooting
+
+### Container won't start
+
+1. Check logs: `podman logs eco-bot`
+2. Verify Deno permissions: ensure `--allow-net`, `--allow-env`, `--allow-read`
+3. Check port availability: `ss -tlnp | grep 3000`
+
+### Webhook not receiving events
+
+1. Verify webhook URL is publicly accessible
+2. Check webhook secret matches
+3. Review GitHub/GitLab webhook delivery logs
+
+### Analysis failing
+
+1. Ensure Haskell analyzer is running: `curl http://localhost:8080/health`
+2. Check ANALYSIS_ENDPOINT environment variable
+3. Review analyzer logs
+
+### Database connection issues
+
+1. Verify database is running: `podman ps`
+2. Check connection URLs in environment
+3. Ensure database credentials are correct
+
+## Development
+
+### Local Development
+
+```bash
+# Bot integration (ReScript/Deno)
+cd bot-integration
+deno task dev
+
+# Haskell analyzer
+cd analyzers/code-haskell
+cabal run eco-analyzer -- --path /path/to/analyze
+
+# Build ReScript
+npm install  # Only for ReScript compiler
+npm run build:rescript
+```
+
+### Running Tests
+
+```bash
+# Bot integration tests
+cd bot-integration
+deno task test
+
+# Haskell tests
+cd analyzers/code-haskell
+cabal test
+
+# Policy engine tests
+cd policy-engine
+python -m pytest
+```
+
+## License
+
+AGPL-3.0-or-later - See LICENSE file for details.

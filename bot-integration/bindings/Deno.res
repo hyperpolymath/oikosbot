@@ -9,19 +9,21 @@ module Http = {
   type request
   type response
 
-  type connInfo = {remoteAddr: {hostname: string, port: int}}
+  type remoteAddr = {hostname: string, port: int}
+  type connInfo = {remoteAddr: remoteAddr}
 
   type handler = (request, connInfo) => promise<response>
 
+  type listenInfo = {hostname: string, port: int}
   type serveOptions = {
     port?: int,
     hostname?: string,
-    onListen?: {hostname: string, port: int} => unit,
+    onListen?: listenInfo => unit,
   }
 
-  @send external url: request => string = "url"
-  @send external method_: request => string = "method"
-  @send external headers: request => Js.Dict.t<string> = "headers"
+  @get external url: request => string = "url"
+  @get external method_: request => string = "method"
+  @get external headers: request => Js.Dict.t<string> = "headers"
   @send external json: request => promise<Js.Json.t> = "json"
   @send external text: request => promise<string> = "text"
 
