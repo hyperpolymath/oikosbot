@@ -15,7 +15,7 @@
   '((version . "0.1.0")
     (schema-version . "1.0")
     (created . "2025-12-15")
-    (updated . "2025-12-17")
+    (updated . "2025-12-25")
     (project . "git-eco-bot")
     (repo . "github.com/hyperpolymath/git-eco-bot")))
 
@@ -151,6 +151,14 @@
 
 (define session-history
   '((snapshots
+     ((date . "2025-12-25")
+      (session . "github-app-manifest")
+      (accomplishments
+       ("Created .github/app.yml - GitHub App manifest for developer programme"
+        "Added manifest flow documentation to DEPLOY.md (Option A)"
+        "Configured permissions: contents:read, pull_requests:write, checks:write"
+        "Configured webhook events: pull_request, push, check_suite, installation"))
+      (notes . "GitHub App can now be registered via manifest flow for faster setup"))
      ((date . "2025-12-17")
       (session . "scm-security-review")
       (accomplishments
@@ -200,10 +208,10 @@
 (define state-summary
   '((project . "git-eco-bot")
     (version . "0.1.0")
-    (overall-completion . 28)
+    (overall-completion . 30)
     (next-milestone . "v0.2 - Core Functionality")
     (critical-blockers . 0)
     (high-priority-issues . 0)
-    (updated . "2025-12-17")))
+    (updated . "2025-12-25")))
 
 ;;; End of STATE.scm
