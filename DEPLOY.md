@@ -153,7 +153,42 @@ podman exec -it eco-bot-virtuoso-1 isql 1111 dba eco-bot-dev exec="
 
 ## GitHub App Setup
 
-### 1. Create GitHub App
+### Option A: Manifest Flow (Recommended)
+
+The fastest way to register the GitHub App using the manifest file:
+
+1. **Start the manifest flow server** (one-time setup):
+
+   ```bash
+   cd bot-integration
+   deno run --allow-net --allow-env src/manifest-flow.res.js
+   ```
+
+2. **Or register manually via GitHub**:
+
+   Visit: `https://github.com/settings/apps/new`
+
+   Copy the contents of [`.github/app.yml`](.github/app.yml) and paste into the
+   manifest field, or use this direct link (after deploying):
+
+   ```
+   https://your-domain.com/github/manifest-flow
+   ```
+
+3. **Save the credentials** returned by GitHub:
+   - `APP_ID` - Your app's numeric ID
+   - `WEBHOOK_SECRET` - Auto-generated webhook secret
+   - `PRIVATE_KEY` - PEM file for signing JWTs
+
+   ```bash
+   export GITHUB_APP_ID="123456"
+   export GITHUB_WEBHOOK_SECRET="generated-secret"
+   export GITHUB_PRIVATE_KEY_PATH="/path/to/eco-bot.pem"
+   ```
+
+### Option B: Manual Registration
+
+If you prefer manual setup:
 
 1. Go to GitHub Settings → Developer settings → GitHub Apps → New GitHub App
 2. Configure:
@@ -166,13 +201,15 @@ podman exec -it eco-bot-virtuoso-1 isql 1111 dba eco-bot-dev exec="
      - Organization: Members (Read)
    - **Events**: Pull request, Push
 
-### 2. Install App
+### Install the App
+
+After registration (either option):
 
 1. Go to your GitHub App settings
 2. Click "Install App"
 3. Select repositories to monitor
 
-### 3. Configure Eco-Bot
+### Configure Eco-Bot
 
 ```bash
 export GITHUB_WEBHOOK_SECRET="your-webhook-secret"
