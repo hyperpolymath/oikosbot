@@ -1,7 +1,14 @@
 {
-  "name": "@eco-bot/integration",
+  "name": "@oikos/bot",
   "version": "0.1.0-beta",
-  "exports": "./src/Main.res.js",
+  "exports": {
+    ".": "./src/Oikos.res.js",
+    "./router": "./src/Router.res.js",
+    "./tea": "./src/tea/ServerTea.res.js"
+  },
+  "publish": {
+    "include": ["src/**/*.js", "src/**/*.res", "bindings/**/*.js", "bindings/**/*.res", "README.md", "LICENSE"]
+  },
   "tasks": {
     "build:rescript": "rescript build",
     "watch:rescript": "rescript build -w",
