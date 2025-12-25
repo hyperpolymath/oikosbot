@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+#
+# GitHub App Manifest for Eco-Bot
+# https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/creating-a-github-app-from-a-manifest
+#
+# Register at: https://github.com/settings/apps/new?manifest_code=...
+# Or use the manifest flow endpoint
+
+name: Eco-Bot
+description: |
+  Ecological & Economic Code Analysis Platform.
+  Provides carbon intensity analysis, Pareto optimization insights,
+  and sustainability scoring for your codebase.
+
+# Public page URL
+url: https://github.com/hyperpolymath/git-eco-bot
+
+# Setup/callback URLs (update with your deployment domain)
+hook_attributes:
+  url: https://eco-bot.example.com/webhooks/github
+  active: true
+
+setup_url: https://eco-bot.example.com/setup
+redirect_url: https://eco-bot.example.com/callback
+
+# Can be installed on user accounts and organizations
+public: true
+
+# ============================================================================
+# PERMISSIONS
+# ============================================================================
+# Following principle of least privilege
+
+default_permissions:
+  # Repository permissions
+  contents: read          # Read repository contents for analysis
+  pull_requests: write    # Comment on PRs with analysis results
+  checks: write           # Create check runs for CI integration
+  issues: write           # Create/update issues for tracking
+  metadata: read          # Basic repo metadata (implicit)
+  statuses: write         # Set commit statuses
+
+  # Organization permissions (optional)
+  members: read           # Read org member info for policy rules
+
+# ============================================================================
+# WEBHOOK EVENTS
+# ============================================================================
+# Events that trigger the bot
+
+default_events:
+  - pull_request          # PR opened, closed, synchronized
+  - pull_request_review   # Reviews submitted
+  - push                  # Commits pushed (for main branch analysis)
+  - check_suite           # Check suite requested
+  - check_run             # Check run rerequested
+  - installation          # App installed/uninstalled
+  - issues                # Issue events for tracking
+
+# ============================================================================
+# ADDITIONAL SETTINGS
+# ============================================================================
+
+# Request user authorization (OAuth) during installation
+request_oauth_on_install: false
+
+# Callback URL for OAuth (if enabled)
+# callback_url: https://eco-bot.example.com/oauth/callback
+
+# Single file the app needs (optional)
+# single_file_name: .eco-bot.yml
