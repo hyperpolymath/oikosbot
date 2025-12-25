@@ -51,6 +51,11 @@ function parseMode(s) {
   }
 }
 
+function loadPrivateKey() {
+  Deno.env.get("GITHUB_PRIVATE_KEY_FILE");
+  return getEnv("GITHUB_PRIVATE_KEY", undefined);
+}
+
 function load() {
   var m = getEnv("BOT_MODE", undefined);
   var modeStr = m !== undefined ? m : "advisor";
@@ -64,7 +69,9 @@ function load() {
             mode: mode,
             analysisEndpoint: analysisEndpoint,
             githubWebhookSecret: getEnv("GITHUB_WEBHOOK_SECRET", undefined),
-            gitlabWebhookSecret: getEnv("GITLAB_WEBHOOK_SECRET", undefined)
+            gitlabWebhookSecret: getEnv("GITLAB_WEBHOOK_SECRET", undefined),
+            githubAppId: getEnv("GITHUB_APP_ID", undefined),
+            githubPrivateKey: loadPrivateKey()
           }
         };
 }
@@ -86,6 +93,7 @@ export {
   getEnvRequired ,
   getEnvInt ,
   parseMode ,
+  loadPrivateKey ,
   load ,
   modeToString ,
 }

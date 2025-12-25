@@ -6,6 +6,8 @@ import * as Js_dict from "rescript/lib/es6/js_dict.js";
 import * as Js_json from "rescript/lib/es6/js_json.js";
 import * as Webhook from "./Webhook.res.js";
 import * as Analysis from "./Analysis.res.js";
+import * as GitHubAPI from "./GitHubAPI.res.js";
+import * as GitHubApp from "./GitHubApp.res.js";
 import * as Belt_Option from "rescript/lib/es6/belt_Option.js";
 import * as Caml_option from "rescript/lib/es6/caml_option.js";
 
@@ -249,15 +251,35 @@ async function handleGitHubWebhook(config, headers, body) {
       var action = Belt_Option.getWithDefault($$event.action, "");
       if (action === "opened" || action === "synchronize") {
         var match = extractPRInfo(parseResult);
+        var prNumber = match[0];
         var analysisResult = await Analysis.analyzeDiff(config.analysisEndpoint, $$event.repository.url, match[1], match[2]);
+        var comment;
         if (analysisResult.TAG === "Ok") {
-          var comment = Report.generatePRComment(analysisResult._0, config.mode);
-          info("Generated PR comment for PR #" + String(match[0]), comment);
+          comment = Report.generatePRComment(analysisResult._0, config.mode);
         } else {
           error("Analysis failed: " + analysisResult._0, undefined);
           var analysis = Analysis.mockAnalysis();
-          var comment$1 = Report.generatePRComment(analysis, config.mode);
-          info("Generated fallback PR comment", comment$1);
+          comment = Report.generatePRComment(analysis, config.mode);
+        }
+        var authResult = await GitHubApp.getAuthToken(config, parseResult);
+        if (authResult.TAG === "Ok") {
+          var postResult = await GitHubAPI.postPRComment(authResult._0, $$event.repository.owner, $$event.repository.name, prNumber, comment);
+          if (postResult.TAG === "Ok") {
+            info("Posted PR comment", Js_dict.fromArray([
+                      [
+                        "pr",
+                        prNumber
+                      ],
+                      [
+                        "commentId",
+                        postResult._0
+                      ]
+                    ]));
+          } else {
+            error("Failed to post PR comment: " + postResult._0, undefined);
+          }
+        } else {
+          info("GitHub App not configured, comment not posted: " + authResult._0, comment);
         }
       }
       

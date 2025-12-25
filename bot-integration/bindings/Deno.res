@@ -39,10 +39,12 @@ module Http = {
 
 module Crypto = {
   type subtleCrypto
+  type cryptoKey
 
   @val @scope(("globalThis", "crypto"))
   external subtle: subtleCrypto = "subtle"
 
+  // Import key with Uint8Array (for HMAC)
   @send
   external importKey: (
     subtleCrypto,
@@ -51,20 +53,56 @@ module Crypto = {
     {..},
     bool,
     array<string>,
-  ) => promise<'key> = "importKey"
+  ) => promise<cryptoKey> = "importKey"
+
+  // Import key with JsonWebKey (for RSA)
+  @send
+  external importKeyJwk: (
+    subtleCrypto,
+    @as("jwk") _,
+    {..},
+    {..},
+    bool,
+    array<string>,
+  ) => promise<cryptoKey> = "importKey"
+
+  // Import key with PKCS8 format (for RSA private keys)
+  @send
+  external importKeyPkcs8: (
+    subtleCrypto,
+    @as("pkcs8") _,
+    Js.TypedArray2.ArrayBuffer.t,
+    {..},
+    bool,
+    array<string>,
+  ) => promise<cryptoKey> = "importKey"
 
   @send
-  external sign: (subtleCrypto, string, 'key, Js.TypedArray2.Uint8Array.t) => promise<'signature> =
+  external sign: (subtleCrypto, string, cryptoKey, Js.TypedArray2.Uint8Array.t) => promise<Js.TypedArray2.ArrayBuffer.t> =
+    "sign"
+
+  @send
+  external signWithAlgorithm: (subtleCrypto, {..}, cryptoKey, Js.TypedArray2.Uint8Array.t) => promise<Js.TypedArray2.ArrayBuffer.t> =
     "sign"
 
   @send
   external verify: (
     subtleCrypto,
     string,
-    'key,
+    cryptoKey,
     Js.TypedArray2.Uint8Array.t,
     Js.TypedArray2.Uint8Array.t,
   ) => promise<bool> = "verify"
+}
+
+module ArrayBuffer = {
+  @new @scope("globalThis")
+  external makeUint8Array: Js.TypedArray2.ArrayBuffer.t => Js.TypedArray2.Uint8Array.t = "Uint8Array"
+}
+
+module Base64 = {
+  @val @scope("globalThis") external btoa: string => string = "btoa"
+  @val @scope("globalThis") external atob: string => string = "atob"
 }
 
 module TextEncoder = {
@@ -79,4 +117,17 @@ module TextDecoder = {
 
   @new @scope("globalThis") external make: unit => t = "TextDecoder"
   @send external decode: (t, Js.TypedArray2.Uint8Array.t) => string = "decode"
+}
+
+module Fetch = {
+  type response
+
+  @val @scope("globalThis")
+  external fetch: (string, {..}) => promise<response> = "fetch"
+
+  @get external ok: response => bool = "ok"
+  @get external status: response => int = "status"
+  @get external statusText: response => string = "statusText"
+  @send external json: response => promise<Js.Json.t> = "json"
+  @send external text: response => promise<string> = "text"
 }

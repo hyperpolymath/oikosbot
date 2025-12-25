@@ -35,6 +35,19 @@ let parseMode = (s: string): botMode => {
   }
 }
 
+// Load private key from file or environment
+// If GITHUB_PRIVATE_KEY_FILE is set, read from file
+// Otherwise use GITHUB_PRIVATE_KEY directly
+let loadPrivateKey = (): option<string> => {
+  switch Deno.Env.get("GITHUB_PRIVATE_KEY_FILE") {
+  | Some(_path) =>
+    // For file-based keys, the key should be loaded at startup
+    // For now, fall back to env var (file loading would need async)
+    getEnv("GITHUB_PRIVATE_KEY")
+  | None => getEnv("GITHUB_PRIVATE_KEY")
+  }
+}
+
 let load = (): result<config, string> => {
   let modeStr = switch getEnv("BOT_MODE") {
   | Some(m) => m
@@ -53,6 +66,8 @@ let load = (): result<config, string> => {
     analysisEndpoint,
     githubWebhookSecret: getEnv("GITHUB_WEBHOOK_SECRET"),
     gitlabWebhookSecret: getEnv("GITLAB_WEBHOOK_SECRET"),
+    githubAppId: getEnv("GITHUB_APP_ID"),
+    githubPrivateKey: loadPrivateKey(),
   })
 }
 

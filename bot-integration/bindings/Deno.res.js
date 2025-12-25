@@ -7,15 +7,24 @@ var Http = {};
 
 var $$Crypto = {};
 
+var $$ArrayBuffer = {};
+
+var Base64 = {};
+
 var $$TextEncoder = {};
 
 var $$TextDecoder = {};
+
+var Fetch = {};
 
 export {
   Env ,
   Http ,
   $$Crypto ,
+  $$ArrayBuffer ,
+  Base64 ,
   $$TextEncoder ,
   $$TextDecoder ,
+  Fetch ,
 }
 /* No side effect */

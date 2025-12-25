@@ -108,6 +108,18 @@ type webhookEvent = {
   payload: Js.Json.t,
 }
 
+// GitHub App Authentication
+type installationToken = {
+  token: string,
+  expiresAt: float, // Unix timestamp in milliseconds
+}
+
+type jwtClaims = {
+  iss: string, // App ID
+  iat: float, // Issued at (Unix seconds)
+  exp: float, // Expires at (Unix seconds)
+}
+
 // Configuration
 type config = {
   port: int,
@@ -115,4 +127,6 @@ type config = {
   analysisEndpoint: string,
   githubWebhookSecret: option<string>,
   gitlabWebhookSecret: option<string>,
+  githubAppId: option<string>,
+  githubPrivateKey: option<string>,
 }

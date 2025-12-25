@@ -207,15 +207,46 @@ let handleGitHubWebhook = async (
               headSha,
             )
 
-            switch analysisResult {
+            let comment = switch analysisResult {
             | Ok(analysis) =>
-              let comment = Report.generatePRComment(analysis, config.mode)
-              info(`Generated PR comment for PR #${Belt.Int.toString(prNumber)}`, ~data=Js.Json.string(comment))
+              Report.generatePRComment(analysis, config.mode)
             | Error(err) =>
               error(`Analysis failed: ${err}`)
               let analysis = Analysis.mockAnalysis()
-              let comment = Report.generatePRComment(analysis, config.mode)
-              info(`Generated fallback PR comment`, ~data=Js.Json.string(comment))
+              Report.generatePRComment(analysis, config.mode)
+            }
+
+            // Post comment to GitHub if authenticated
+            let authResult = await GitHubApp.getAuthToken(config, payload)
+            switch authResult {
+            | Ok(token) =>
+              let postResult = await GitHubAPI.postPRComment(
+                token,
+                e.repository.owner,
+                e.repository.name,
+                prNumber,
+                comment,
+              )
+              switch postResult {
+              | Ok(commentId) =>
+                info(
+                  `Posted PR comment`,
+                  ~data=Js.Json.object_(
+                    Js.Dict.fromArray([
+                      ("pr", Js.Json.number(Belt.Int.toFloat(prNumber))),
+                      ("commentId", Js.Json.number(Belt.Int.toFloat(commentId))),
+                    ]),
+                  ),
+                )
+              | Error(err) =>
+                error(`Failed to post PR comment: ${err}`)
+              }
+            | Error(err) =>
+              // Not configured for GitHub App - log comment instead
+              info(
+                `GitHub App not configured, comment not posted: ${err}`,
+                ~data=Js.Json.string(comment),
+              )
             }
           }
         }
