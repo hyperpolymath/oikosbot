@@ -5,9 +5,36 @@ module Env = {
   @val @scope(("Deno", "env")) external set: (string, string) => unit = "set"
 }
 
+module Request = {
+  type t
+  @get external url: t => string = "url"
+  @get external method_: t => string = "method"
+  @send external headers: t => Js.Dict.t<string> = "headers"
+  @send external json: t => promise<Js.Json.t> = "json"
+  @send external text: t => promise<string> = "text"
+}
+
+module Response = {
+  type t
+  @new @scope("globalThis")
+  external make: (string, {..}) => t = "Response"
+  @new @scope("globalThis")
+  external makeJson: (string, {..}) => t = "Response"
+}
+
+module HttpServer = {
+  type t
+  @send external shutdown: t => promise<unit> = "shutdown"
+  @send external finished: t => promise<unit> = "finished"
+}
+
+@val @scope("Deno")
+external serve: ({..}, Request.t => promise<Response.t>) => HttpServer.t = "serve"
+
+// Legacy module for backwards compatibility
 module Http = {
-  type request
-  type response
+  type request = Request.t
+  type response = Response.t
 
   type remoteAddr = {hostname: string, port: int}
   type connInfo = {remoteAddr: remoteAddr}

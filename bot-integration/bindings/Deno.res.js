@@ -3,6 +3,12 @@
 
 var Env = {};
 
+var $$Request = {};
+
+var $$Response = {};
+
+var HttpServer = {};
+
 var Http = {};
 
 var $$Crypto = {};
@@ -19,6 +25,9 @@ var Fetch = {};
 
 export {
   Env ,
+  $$Request ,
+  $$Response ,
+  HttpServer ,
   Http ,
   $$Crypto ,
   $$ArrayBuffer ,
