@@ -1,10 +1,7 @@
-# Oikos - Coding Bot for Economic and Ecological Computing
+# Oikos - The Ecological & Economic Code Analysis Platform for Git
 
-**Ecological & Economic Code Analysis Platform**
-
-Eco-Bot is an intelligent code analysis platform that acts as a **consultant, advisor, regulator, and policy developer** for software repositories. It complements existing tools like Dependabot, CodeQL, and Copilot by adding a dedicated **ecological and economic lens** to code analysis.
-
-"The Greek word oikos is the root of both ecology AND economy - because sustainable code is profitable code."
+Oikos is an Eco- and Econ- Bot - an intelligent code analysis platform that acts as a **consultant, advisor, regulator, and policy developer** for software repositories. 
+It complements existing tools like Dependabot, CodeQL, and Copilot by adding a dedicated **ecological and economic lens** to code analysis.
 
 ## Vision
 
@@ -295,7 +292,7 @@ eco-bot/
 
 ## License
 
-Apache 2.0 - See [LICENSE](./LICENSE)
+Either MIT or AGPL 3.0+ (user choice) for legal licence, with dual Palimpsest Licence adoption strongly encouraged - See [LICENSE](./LICENSE)
 
 ---
 
