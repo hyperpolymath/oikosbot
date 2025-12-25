@@ -1,5 +1,5 @@
 ;;; STATE.scm - Project Checkpoint
-;;; git-eco-bot
+;;; oikos-bot (formerly git-eco-bot)
 ;;; Format: Guile Scheme S-expressions
 ;;; Purpose: Preserve AI conversation context across sessions
 ;;; Reference: https://github.com/hyperpolymath/state.scm
@@ -12,21 +12,21 @@
 ;;;============================================================================
 
 (define metadata
-  '((version . "0.1.0")
+  '((version . "0.1.0-beta")
     (schema-version . "1.0")
     (created . "2025-12-15")
     (updated . "2025-12-25")
-    (project . "git-eco-bot")
-    (repo . "github.com/hyperpolymath/git-eco-bot")))
+    (project . "oikos-bot")
+    (repo . "github.com/hyperpolymath/oikos-bot")))
 
 ;;;============================================================================
 ;;; PROJECT CONTEXT
 ;;;============================================================================
 
 (define project-context
-  '((name . "git-eco-bot")
-    (tagline . "**Ecological & Economic Code Analysis Platform**")
-    (version . "0.1.0")
+  '((name . "oikos-bot")
+    (tagline . "**Oikos - Ecological & Economic Code Analysis (οἶκος)**")
+    (version . "0.1.0-beta")
     (license . "AGPL-3.0-or-later")
     (rsr-compliance . "gold-target")
 

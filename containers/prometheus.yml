@@ -1,4 +1,5 @@
-# Prometheus configuration for Eco-Bot metrics
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Prometheus configuration for Oikos Bot metrics
 
 global:
   scrape_interval: 15s
@@ -17,20 +18,20 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # Eco-Bot main service
-  - job_name: 'eco-bot'
+  # Oikos main service
+  - job_name: 'oikos'
     static_configs:
-      - targets: ['eco-bot:3000']
+      - targets: ['oikos:3000']
     metrics_path: '/metrics'
 
   # Analysis service
-  - job_name: 'eco-bot-analyzer'
+  - job_name: 'oikos-analyzer'
     static_configs:
       - targets: ['analyzer:8080']
     metrics_path: '/metrics'
 
   # Policy engine
-  - job_name: 'eco-bot-policy'
+  - job_name: 'oikos-policy'
     static_configs:
       - targets: ['policy-engine:8081']
     metrics_path: '/metrics'

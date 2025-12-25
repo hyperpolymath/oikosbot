@@ -134,7 +134,7 @@ let getInstallationToken = async (jwt: string, installationId: int): result<Type
             "Authorization": `Bearer ${jwt}`,
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "git-eco-bot",
+            "User-Agent": "oikos-bot",
           },
         },
       )

@@ -1,0 +1,116 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+#
+# Oikos Bot - Ecological & Economic Code Analysis
+# This workflow runs Oikos Bot on this repository
+
+name: Oikos Analysis
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analyze:
+    name: Run Oikos Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@5e01c016a857a4dbb5afe9d0f9733cd472cba985 # v1.1.4
+        with:
+          deno-version: v1.x
+
+      - name: Build ReScript
+        working-directory: bot-integration
+        run: |
+          # ReScript must be pre-compiled (npm is only for build tooling)
+          npm ci
+          deno task build:rescript
+
+      - name: Run Oikos Bot (Self-Analysis)
+        working-directory: bot-integration
+        env:
+          BOT_MODE: advisor
+          OIKOS_SELF_ANALYSIS: "true"
+        run: |
+          # Run in analysis mode (non-webhook)
+          deno run --allow-read --allow-env src/Oikos.res.js --analyze ..
+
+      - name: Upload SARIF results
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        uses: github/codeql-action/upload-sarif@662472033e021d55d94146f66f6058822b0b39fd # v3.28.1
+        with:
+          sarif_file: bot-integration/oikos-results.sarif
+        continue-on-error: true
+
+  build:
+    name: Build Container Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@5e01c016a857a4dbb5afe9d0f9733cd472cba985 # v1.1.4
+        with:
+          deno-version: v1.x
+
+      - name: Build ReScript (pre-compile for container)
+        working-directory: bot-integration
+        run: |
+          npm ci
+          deno task build:rescript
+
+      - name: Build container image
+        run: |
+          podman build -t oikos:${{ github.sha }} -f containers/Containerfile .
+
+      - name: Test container
+        run: |
+          podman run --rm --entrypoint="" oikos:${{ github.sha }} deno --version
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@5e01c016a857a4dbb5afe9d0f9733cd472cba985 # v1.1.4
+        with:
+          deno-version: v1.x
+
+      - name: Check formatting
+        working-directory: bot-integration
+        run: deno fmt --check
+
+      - name: Run linter
+        working-directory: bot-integration
+        run: deno lint
+
+      - name: Type check
+        working-directory: bot-integration
+        run: deno check src/**/*.ts || true

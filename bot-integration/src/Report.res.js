@@ -112,8 +112,8 @@ function generatePRComment(analysis, mode) {
   } else {
     paretoSection = "";
   }
-  var footer = "---\n*Analyzed by [Eco-Bot](https://github.com/hyperpolymath/eco-bot) | " + ("Mode: " + Config.modeToString(mode) + " | ") + "[Learn more about eco-friendly coding](https://greensoftware.foundation/)*\n";
-  return "## 🌱 Eco-Bot Analysis\n\n" + healthLine + scoreTable + violationsSection + recommendationsSection + paretoSection + footer;
+  var footer = "---\n*Analyzed by [Oikos Bot](https://github.com/hyperpolymath/oikos-bot) | " + ("Mode: " + Config.modeToString(mode) + " | ") + "[Learn more about eco-friendly coding](https://greensoftware.foundation/)*\n";
+  return "## 🏛️ Oikos Analysis\n\n" + healthLine + scoreTable + violationsSection + recommendationsSection + paretoSection + footer;
 }
 
 function generateSARIF(analysis) {
@@ -191,15 +191,15 @@ function generateSARIF(analysis) {
                                   Js_dict.fromArray([
                                         [
                                           "name",
-                                          "eco-bot"
+                                          "oikos-bot"
                                         ],
                                         [
                                           "version",
-                                          "0.1.0"
+                                          "0.1.0-beta"
                                         ],
                                         [
                                           "informationUri",
-                                          "https://github.com/hyperpolymath/eco-bot"
+                                          "https://github.com/hyperpolymath/oikos-bot"
                                         ],
                                         [
                                           "rules",

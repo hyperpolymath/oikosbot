@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# Eco-Bot Container Image
+# Oikos Bot Container Image
 #
-# Build: podman build -t eco-bot:latest -f containers/Containerfile .
-# Run:   podman run -p 3000:3000 eco-bot:latest
+# Build: vordr build -t oikos:latest -f containers/Containerfile .
+# Run:   vordr run -p 3000:3000 oikos:latest
 
 # =============================================================================
 # Stage 1: Placeholder for Haskell analyzer (skipped for MVP)
@@ -36,7 +36,7 @@ COPY bot-integration/bindings/ ./bindings/
 COPY bot-integration/rescript-runtime/ ./rescript-runtime/
 
 # Cache Deno dependencies
-RUN deno cache src/Main.res.js || true
+RUN deno cache src/Oikos.res.js || true
 
 # =============================================================================
 # Stage 4: Final runtime image
@@ -44,10 +44,10 @@ RUN deno cache src/Main.res.js || true
 FROM docker.io/denoland/deno:2.1.4 AS runtime
 
 LABEL maintainer="hyperpolymath"
-LABEL org.opencontainers.image.title="Eco-Bot"
+LABEL org.opencontainers.image.title="Oikos Bot"
 LABEL org.opencontainers.image.description="Ecological & Economic Code Analysis Platform"
-LABEL org.opencontainers.image.version="0.1.0"
-LABEL org.opencontainers.image.source="https://github.com/hyperpolymath/git-eco-bot"
+LABEL org.opencontainers.image.version="0.1.0-beta"
+LABEL org.opencontainers.image.source="https://github.com/hyperpolymath/oikos-bot"
 LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later"
 
 WORKDIR /app
@@ -96,4 +96,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 3000
 
 # Default command
-CMD ["run", "--allow-net", "--allow-env", "--allow-read", "/app/bot-integration/src/Main.res.js"]
+CMD ["run", "--allow-net", "--allow-env", "--allow-read", "/app/bot-integration/src/Oikos.res.js"]

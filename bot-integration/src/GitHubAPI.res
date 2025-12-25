@@ -3,7 +3,7 @@
 
 open Deno
 
-let userAgent = "git-eco-bot/0.1.0-beta"
+let userAgent = "oikos-bot/0.1.0-beta"
 let apiVersion = "2022-11-28"
 
 // Make an authenticated request to GitHub API

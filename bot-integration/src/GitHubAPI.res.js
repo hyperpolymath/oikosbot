@@ -6,7 +6,7 @@ import * as Belt_Option from "rescript/lib/es6/belt_Option.js";
 import * as Caml_option from "rescript/lib/es6/caml_option.js";
 import * as Caml_js_exceptions from "rescript/lib/es6/caml_js_exceptions.js";
 
-var userAgent = "git-eco-bot/0.1.0-beta";
+var userAgent = "oikos-bot/0.1.0-beta";
 
 var apiVersion = "2022-11-28";
 

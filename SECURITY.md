@@ -6,7 +6,7 @@
 | ------- | ------------------ |
 | 0.x.x   | :white_check_mark: |
 
-As git-eco-bot is in early development, only the latest version receives security updates.
+As Oikos Bot is in early development, only the latest version receives security updates.
 
 ## Reporting a Vulnerability
 
@@ -14,7 +14,7 @@ As git-eco-bot is in early development, only the latest version receives securit
 
 Instead, please report vulnerabilities via one of:
 
-1. **GitHub Security Advisories**: [Report a vulnerability](https://github.com/hyperpolymath/git-eco-bot/security/advisories/new)
+1. **GitHub Security Advisories**: [Report a vulnerability](https://github.com/hyperpolymath/oikos-bot/security/advisories/new)
 2. **Email**: security@hyperpolymath.com (if available)
 
 ### What to include
@@ -36,7 +36,7 @@ Instead, please report vulnerabilities via one of:
 
 ### Data Handling
 
-git-eco-bot analyzes code repositories and may process:
+Oikos Bot analyzes code repositories and may process:
 - Source code content
 - Dependency information
 - Build configurations
@@ -44,7 +44,7 @@ git-eco-bot analyzes code repositories and may process:
 
 ### Integration Security
 
-When integrating git-eco-bot:
+When integrating Oikos Bot:
 - Use environment variables for sensitive configuration
 - Never commit API keys or tokens
 - Use GitHub's encrypted secrets for CI/CD
@@ -59,4 +59,4 @@ This project uses:
 
 ## Acknowledgments
 
-We appreciate security researchers who help keep git-eco-bot secure. Contributors will be acknowledged (with permission) in release notes.
+We appreciate security researchers who help keep Oikos Bot secure. Contributors will be acknowledged (with permission) in release notes.

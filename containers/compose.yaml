@@ -1,22 +1,23 @@
-# Eco-Bot Docker Compose / nerdctl compose configuration
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Oikos Bot Compose Configuration
 #
-# Usage:
-#   nerdctl compose up -d
-#   nerdctl compose logs -f eco-bot
-#   nerdctl compose down
+# Usage with Vörðr/Podman:
+#   podman-compose up -d
+#   podman-compose logs -f oikos
+#   podman-compose down
 
-name: eco-bot
+name: oikos
 
 services:
   # ==========================================================================
-  # Main Eco-Bot Service
+  # Main Oikos Bot Service
   # ==========================================================================
-  eco-bot:
+  oikos:
     build:
       context: ..
       dockerfile: containers/Containerfile
-    image: eco-bot:latest
-    container_name: eco-bot
+    image: oikos:latest
+    container_name: oikos
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -33,7 +34,7 @@ services:
       - virtuoso
       - analyzer
     networks:
-      - eco-bot-network
+      - oikos-network
     healthcheck:
       test: ["CMD", "deno", "eval", "const r = await fetch('http://localhost:3000/health'); if (!r.ok) Deno.exit(1);"]
       interval: 30s
@@ -48,16 +49,16 @@ services:
       context: ..
       dockerfile: containers/Containerfile
       target: runtime
-    image: eco-bot-analyzer:latest
-    container_name: eco-bot-analyzer
+    image: oikos-analyzer:latest
+    container_name: oikos-analyzer
     restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
       - PORT=8080
     networks:
-      - eco-bot-network
-    command: ["eco-analyzer", "serve", "--port", "8080"]
+      - oikos-network
+    command: ["oikos-analyzer", "serve", "--port", "8080"]
 
   # ==========================================================================
   # Policy Engine (Datalog + DeepProbLog)
@@ -66,8 +67,8 @@ services:
     build:
       context: ..
       dockerfile: containers/Containerfile.policy
-    image: eco-bot-policy:latest
-    container_name: eco-bot-policy
+    image: oikos-policy:latest
+    container_name: oikos-policy
     restart: unless-stopped
     ports:
       - "8081:8081"
@@ -79,7 +80,7 @@ services:
       - arangodb
       - virtuoso
     networks:
-      - eco-bot-network
+      - oikos-network
     volumes:
       - policy-data:/app/data
 
@@ -88,18 +89,18 @@ services:
   # ==========================================================================
   arangodb:
     image: arangodb:3.11
-    container_name: eco-bot-arangodb
+    container_name: oikos-arangodb
     restart: unless-stopped
     ports:
       - "8529:8529"
     environment:
-      - ARANGO_ROOT_PASSWORD=${ARANGO_ROOT_PASSWORD:-ecobot}
+      - ARANGO_ROOT_PASSWORD=${ARANGO_ROOT_PASSWORD:-oikos}
       - ARANGO_NO_AUTH=${ARANGO_NO_AUTH:-0}
     volumes:
       - arangodb-data:/var/lib/arangodb3
       - ../databases/arangodb/schema.js:/docker-entrypoint-initdb.d/schema.js:ro
     networks:
-      - eco-bot-network
+      - oikos-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8529/_api/version"]
       interval: 30s
@@ -111,20 +112,20 @@ services:
   # ==========================================================================
   virtuoso:
     image: openlink/virtuoso-opensource-7:latest
-    container_name: eco-bot-virtuoso
+    container_name: oikos-virtuoso
     restart: unless-stopped
     ports:
       - "8890:8890"
       - "1111:1111"
     environment:
-      - DBA_PASSWORD=${VIRTUOSO_DBA_PASSWORD:-ecobot}
+      - DBA_PASSWORD=${VIRTUOSO_DBA_PASSWORD:-oikos}
       - SPARQL_UPDATE=true
-      - DEFAULT_GRAPH=https://eco-bot.dev/knowledge
+      - DEFAULT_GRAPH=https://oikos.dev/knowledge
     volumes:
       - virtuoso-data:/database
       - ../databases/virtuoso/ontology.ttl:/opt/virtuoso-opensource/share/virtuoso/vad/ontology.ttl:ro
     networks:
-      - eco-bot-network
+      - oikos-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8890/sparql?query=ASK%20%7B%7D"]
       interval: 30s
@@ -136,7 +137,7 @@ services:
   # ==========================================================================
   prometheus:
     image: prom/prometheus:latest
-    container_name: eco-bot-prometheus
+    container_name: oikos-prometheus
     restart: unless-stopped
     ports:
       - "9090:9090"
@@ -144,7 +145,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     networks:
-      - eco-bot-network
+      - oikos-network
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -154,12 +155,12 @@ services:
   # ==========================================================================
   grafana:
     image: grafana/grafana:latest
-    container_name: eco-bot-grafana
+    container_name: oikos-grafana
     restart: unless-stopped
     ports:
       - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-ecobot}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-oikos}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana-data:/var/lib/grafana
@@ -167,13 +168,13 @@ services:
     depends_on:
       - prometheus
     networks:
-      - eco-bot-network
+      - oikos-network
 
 # =============================================================================
 # Networks
 # =============================================================================
 networks:
-  eco-bot-network:
+  oikos-network:
     driver: bridge
 
 # =============================================================================

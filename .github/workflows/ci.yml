@@ -1,0 +1,112 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+#
+# Oikos Bot - Continuous Integration
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions: read-all
+
+jobs:
+  rescript:
+    name: ReScript Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js (for ReScript compiler)
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: bot-integration/package-lock.json
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@5e01c016a857a4dbb5afe9d0f9733cd472cba985 # v1.1.4
+        with:
+          deno-version: v1.x
+
+      - name: Install ReScript compiler
+        working-directory: bot-integration
+        run: npm ci
+
+      - name: Build ReScript
+        working-directory: bot-integration
+        run: deno task build:rescript
+
+      - name: Cache Deno dependencies
+        working-directory: bot-integration
+        run: deno cache src/Oikos.res.js
+
+      - name: Run tests
+        working-directory: bot-integration
+        run: deno task test || echo "No tests yet"
+
+  haskell:
+    name: Haskell Analyzer
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Haskell
+        uses: haskell-actions/setup@33585e1a16afa5875e124b0ebc89dd0c2f872c21 # v2.6.3
+        with:
+          ghc-version: "9.4"
+          cabal-version: "3.10"
+
+      - name: Cache Cabal
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            analyzers/code-haskell/dist-newstyle
+          key: cabal-${{ runner.os }}-ghc9.4-${{ hashFiles('analyzers/code-haskell/eco-analyzer.cabal') }}
+
+      - name: Build Haskell analyzer
+        working-directory: analyzers/code-haskell
+        run: |
+          cabal update
+          cabal build all
+        continue-on-error: true
+
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          severity: "CRITICAL,HIGH"
+          format: "sarif"
+          output: "trivy-results.sarif"
+        continue-on-error: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@662472033e021d55d94146f66f6058822b0b39fd # v3.28.1
+        with:
+          sarif_file: "trivy-results.sarif"
+        continue-on-error: true

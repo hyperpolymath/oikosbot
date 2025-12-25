@@ -50,7 +50,7 @@ let generatePRComment = (analysis: analysisResult, mode: botMode): string => {
   let grade = getGrade(analysis.health.total)
   let gradeEmoji = getGradeEmoji(grade)
 
-  let header = `## 🌱 Eco-Bot Analysis\n\n`
+  let header = `## 🏛️ Oikos Analysis\n\n`
 
   let healthLine = `### Overall Health: ${gradeEmoji} ${grade} (${Belt.Float.toString(
       analysis.health.total,
@@ -123,7 +123,7 @@ let generatePRComment = (analysis: analysisResult, mode: botMode): string => {
   // Footer
   let footer =
     `---\n` ++
-    `*Analyzed by [Eco-Bot](https://github.com/hyperpolymath/eco-bot) | ` ++
+    `*Analyzed by [Oikos Bot](https://github.com/hyperpolymath/oikos-bot) | ` ++
     `Mode: ${Config.modeToString(mode)} | ` ++
     `[Learn more about eco-friendly coding](https://greensoftware.foundation/)*\n`
 
@@ -189,11 +189,11 @@ let generateSARIF = (analysis: analysisResult): Js.Json.t => {
                       "driver",
                       Js.Json.object_(
                         Js.Dict.fromArray([
-                          ("name", Js.Json.string("eco-bot")),
-                          ("version", Js.Json.string("0.1.0")),
+                          ("name", Js.Json.string("oikos-bot")),
+                          ("version", Js.Json.string("0.1.0-beta")),
                           (
                             "informationUri",
-                            Js.Json.string("https://github.com/hyperpolymath/eco-bot"),
+                            Js.Json.string("https://github.com/hyperpolymath/oikos-bot"),
                           ),
                           ("rules", Js.Json.array(rules->Belt.Array.map(Js.Json.object_))),
                         ]),
