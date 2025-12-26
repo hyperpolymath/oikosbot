@@ -1,8 +1,11 @@
-;;; Eco-Bot Guix Package Definition
+;;; SPDX-License-Identifier: AGPL-3.0-or-later
+;;; SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 ;;;
-;;; This defines the eco-bot package for Guix.
+;;; Oikos Bot Guix Package Definition
+;;;
+;;; This defines the oikos-bot package for Guix.
 
-(define-module (eco-bot)
+(define-module (oikos)
   #:use-module (guix packages)
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
@@ -19,15 +22,15 @@
   #:use-module (gnu packages logic))
 
 ;; Haskell Code Analyzer
-(define-public eco-bot-analyzer-haskell
+(define-public oikos-analyzer-haskell
   (package
-    (name "eco-bot-analyzer-haskell")
+    (name "oikos-analyzer-haskell")
     (version "0.1.0")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://gitlab.com/hyperpolymath/eco-bot")
+             (url "https://github.com/hyperpolymath/oikos-bot")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -42,24 +45,24 @@
            ghc-optparse-applicative
            ghc-megaparsec))
     (arguments
-     '(#:cabal-file "analyzers/code-haskell/eco-analyzer.cabal"))
-    (synopsis "Haskell code analyzer for eco-bot")
+     '(#:cabal-file "analyzers/code-haskell/oikos-analyzer.cabal"))
+    (synopsis "Haskell code analyzer for Oikos Bot")
     (description
      "Analyzes code for carbon intensity, energy efficiency,
       Pareto optimality, and software quality metrics.")
-    (home-page "https://gitlab.com/hyperpolymath/eco-bot")
-    (license license:asl2.0)))
+    (home-page "https://github.com/hyperpolymath/oikos-bot")
+    (license license:agpl3+)))
 
 ;; OCaml Documentation Analyzer
-(define-public eco-bot-analyzer-ocaml
+(define-public oikos-analyzer-ocaml
   (package
-    (name "eco-bot-analyzer-ocaml")
+    (name "oikos-analyzer-ocaml")
     (version "0.1.0")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://gitlab.com/hyperpolymath/eco-bot")
+             (url "https://github.com/hyperpolymath/oikos-bot")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -73,23 +76,23 @@
            ocaml-cmdliner))
     (arguments
      '(#:source-subdir "analyzers/docs-ocaml"))
-    (synopsis "OCaml documentation analyzer for eco-bot")
+    (synopsis "OCaml documentation analyzer for Oikos Bot")
     (description
      "Analyzes documentation for completeness, consistency,
       and alignment with ecological/economic principles.")
-    (home-page "https://gitlab.com/hyperpolymath/eco-bot")
-    (license license:asl2.0)))
+    (home-page "https://github.com/hyperpolymath/oikos-bot")
+    (license license:agpl3+)))
 
 ;; Python Policy Engine
-(define-public eco-bot-policy-engine
+(define-public oikos-policy-engine
   (package
-    (name "eco-bot-policy-engine")
+    (name "oikos-policy-engine")
     (version "0.1.0")
     (source
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://gitlab.com/hyperpolymath/eco-bot")
+             (url "https://github.com/hyperpolymath/oikos-bot")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -105,24 +108,24 @@
        (modify-phases %standard-phases
          (add-after 'unpack 'chdir
            (lambda _ (chdir "policy-engine/python"))))))
-    (synopsis "Policy engine for eco-bot")
+    (synopsis "Policy engine for Oikos Bot")
     (description
      "Hybrid Datalog + DeepProbLog policy engine for
       deterministic and probabilistic reasoning.")
-    (home-page "https://gitlab.com/hyperpolymath/eco-bot")
-    (license license:asl2.0)))
+    (home-page "https://github.com/hyperpolymath/oikos-bot")
+    (license license:agpl3+)))
 
-;; Combined eco-bot package
-(define-public eco-bot
+;; Combined oikos-bot package
+(define-public oikos-bot
   (package
-    (name "eco-bot")
+    (name "oikos-bot")
     (version "0.1.0")
     (source #f)
     (build-system gnu-build-system)
     (inputs
-     (list eco-bot-analyzer-haskell
-           eco-bot-analyzer-ocaml
-           eco-bot-policy-engine
+     (list oikos-analyzer-haskell
+           oikos-analyzer-ocaml
+           oikos-policy-engine
            deno
            arangodb
            virtuoso-ose))
@@ -139,8 +142,8 @@
                #t))))))
     (synopsis "Ecological & Economic Code Analysis Platform")
     (description
-     "Eco-Bot analyzes code for ecological soundness and economic
+     "Oikos Bot analyzes code for ecological soundness and economic
       efficiency using Pareto optimality and allocative efficiency
       as normative criteria.")
-    (home-page "https://gitlab.com/hyperpolymath/eco-bot")
-    (license license:asl2.0)))
+    (home-page "https://github.com/hyperpolymath/oikos-bot")
+    (license license:agpl3+)))

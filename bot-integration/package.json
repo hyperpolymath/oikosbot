@@ -1,5 +1,5 @@
 {
-  "name": "eco-bot-integration-dev",
+  "name": "oikos-bot-integration-dev",
   "version": "0.1.0-beta",
   "private": true,
   "description": "Development dependencies only - ReScript compiler. Runtime uses Deno only.",

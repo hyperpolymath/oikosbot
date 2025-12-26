@@ -1,13 +1,26 @@
-# Oikos - The Ecological & Economic Code Analysis Platform for Git
+// SPDX-License-Identifier: MIT OR AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 
-Oikos is an Eco- and Econ- Bot - an intelligent code analysis platform that acts as a **consultant, advisor, regulator, and policy developer** for software repositories. 
-It complements existing tools like Dependabot, CodeQL, and Copilot by adding a dedicated **ecological and economic lens** to code analysis.
+= Oikos Bot
+:toc: auto
+:toclevels: 2
 
-## Vision
+image:https://img.shields.io/badge/RSR-Bronze-cd7f32[RSR Bronze,link=https://github.com/hyperpolymath/rhodium-standard-repositories]
+image:https://img.shields.io/badge/License-MIT%20OR%20AGPL--3.0--or--later-blue[License]
+image:https://img.shields.io/github/v/release/hyperpolymath/oikos-bot?include_prereleases[GitHub Release]
+image:https://github.com/hyperpolymath/oikos-bot/actions/workflows/ci.yml/badge.svg[CI,link=https://github.com/hyperpolymath/oikos-bot/actions/workflows/ci.yml]
+image:https://api.securityscorecards.dev/projects/github.com/hyperpolymath/oikos-bot/badge[OpenSSF Scorecard,link=https://securityscorecards.dev/viewer/?uri=github.com/hyperpolymath/oikos-bot]
+
+**Oikos Bot** — Ecological & Economic Code Analysis Platform
+
+_οἶκος (oikos)_: the shared Greek root of both "ecology" and "economy" — the study and management of the household, whether natural or financial.
+
+== Vision
 
 Make ecological and economic thinking **first-class** in software development, just like security and testing.
 
-```
+[source]
+----
                     EXISTING ECOSYSTEM
   Dependabot | CodeQL | Copilot | Renovate
        |         |        |          |
@@ -17,88 +30,74 @@ Make ecological and economic thinking **first-class** in software development, j
   +-------------------------------------------+
                       ^
   +-------------------------------------------+
-  |                ECO-BOT                    |
+  |              OIKOS BOT                    |
   |  Carbon Analysis | Pareto Optimization    |
   |  Policy Learning | Praxis Loop            |
   +-------------------------------------------+
-```
+----
 
-## Features
+== Features
 
-### Ecological Analysis
-- **Carbon Intensity** - Based on SCI specification (ISO/IEC 21031:2024)
-- **Energy Patterns** - Detect busy-waiting, inefficient I/O, resource waste
-- **Sustainability Score** - Normalized 0-100 eco-friendliness rating
+=== Ecological Analysis
+* **Carbon Intensity** — Based on SCI specification (ISO/IEC 21031:2024)
+* **Energy Patterns** — Detect busy-waiting, inefficient I/O, resource waste
+* **Sustainability Score** — Normalized 0-100 eco-friendliness rating
 
-### Economic Optimization
-- **Pareto Optimality** - Multi-objective optimization analysis
-- **Allocative Efficiency** - Resource utilization assessment
-- **Technical Debt** - Economic modeling of code quality
+=== Economic Optimization
+* **Pareto Optimality** — Multi-objective optimization analysis
+* **Allocative Efficiency** — Resource utilization assessment
+* **Technical Debt** — Economic modeling of code quality
 
-### Bot Modes
-- **Consultant** - Answers questions, explains trade-offs
-- **Advisor** - Proactive suggestions on PRs
-- **Regulator** - Enforces policy compliance
-- **Policy Developer** - Learns from practice, evolves rules
+=== Bot Modes
+* **Consultant** — Answers questions, explains trade-offs
+* **Advisor** — Proactive suggestions on PRs
+* **Regulator** — Enforces policy compliance
+* **Policy Developer** — Learns from practice, evolves rules
 
-### Integrations
-- GitHub Actions & Apps
-- GitLab CI/CD
-- Copilot/Claude Code prompts
-- SARIF output for code scanning
-- OpenTelemetry metrics
+=== Integrations
+* GitHub Actions & Apps
+* GitLab CI/CD
+* Copilot/Claude Code prompts
+* SARIF output for code scanning
+* OpenTelemetry metrics
 
-## Architecture
+== Architecture
 
-Eco-Bot is a polyglot system using the best language for each task:
+Oikos Bot is a polyglot system using the best language for each task:
 
-| Component | Language | Purpose |
-|-----------|----------|---------|
-| Code Analyzer | **Haskell** | AST analysis, carbon estimation |
-| Doc Analyzer | **OCaml** | NLP, semantic extraction |
-| Policy Engine | **Datalog + DeepProbLog** | Rule inference, ML |
-| Bot Integration | **ReScript + Deno** | GitHub/GitLab webhooks |
-| Orchestrator | **Rust** | High-performance coordination |
-| Databases | **ArangoDB + Virtuoso** | Graph + Semantic storage |
-| Math Proofs | **Echidna** | Formal verification |
+[cols="1,1,2"]
+|===
+|Component |Language |Purpose
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed design.
+|Code Analyzer |**Haskell** |AST analysis, carbon estimation
+|Doc Analyzer |**OCaml** |NLP, semantic extraction
+|Policy Engine |**Datalog + DeepProbLog** |Rule inference, ML
+|Bot Integration |**ReScript + Deno** |GitHub/GitLab webhooks
+|Orchestrator |**Rust** |High-performance coordination
+|Databases |**ArangoDB + Virtuoso** |Graph + Semantic storage
+|Math Proofs |**Echidna** |Formal verification
+|===
 
-## Technology Stack
+See link:ARCHITECTURE.md[ARCHITECTURE.md] for detailed design.
 
-### Package Management
-- **Guix** - Primary package manager and reproducible builds
-- **Nix** - Shared development environments via flakes
-- **No npm** - Zero JavaScript runtime dependencies
+== Quick Start
 
-### Containerization
-- **nerdctl** - containerd-native CLI (no Docker daemon)
-- **buildkit** - Efficient multi-stage builds
-- **/cerro-torre** - Base image from hyperpolymath
+=== Using Guix
 
-### Languages (No TypeScript/JavaScript at runtime)
-- **Haskell** - Pure functional code analysis
-- **OCaml** - Documentation processing
-- **ReScript** - Compiles to clean JS for Deno
-- **Python** - Policy engine and ML
-- **Rust** - Orchestration layer
-
-## Quick Start
-
-### Using Guix
-
-```bash
+[source,bash]
+----
 # Enter development environment
 guix shell -m guix/manifest.scm
 
 # Or use channels
 guix pull -C guix/channels.scm
-guix shell eco-bot
-```
+guix shell oikos
+----
 
-### Using Nix
+=== Using Nix
 
-```bash
+[source,bash]
+----
 # Enter development environment
 nix develop
 
@@ -106,47 +105,51 @@ nix develop
 nix develop .#haskell
 nix develop .#ocaml
 nix develop .#bot
-```
+----
 
-### Using Containers (nerdctl)
+=== Using Containers (Vörðr/Podman)
 
-```bash
-# Build images
-./containers/nerdctl-build.sh
+[source,bash]
+----
+# Build images (uses Vörðr if available, falls back to Podman)
+./containers/vordr-build.sh
 
 # Run the stack
-cd containers && nerdctl compose up -d
+cd containers && podman-compose up -d
 
 # View logs
-nerdctl compose logs -f eco-bot
-```
+podman-compose logs -f oikos
+----
 
-## Development
+== Development
 
-### Prerequisites
+=== Prerequisites
 
 Via Guix:
-```bash
+[source,bash]
+----
 guix shell -m guix/manifest.scm
-```
+----
 
 Via Nix:
-```bash
+[source,bash]
+----
 nix develop
-```
+----
 
 Or manually:
-- Haskell (GHC 9.4+)
-- OCaml (4.14+)
-- Deno (1.40+)
-- Python 3.11+
-- Rust (latest stable)
-- Souffle (Datalog)
-- SWI-Prolog
+* Haskell (GHC 9.4+)
+* OCaml (4.14+)
+* Deno (1.40+)
+* Python 3.11+
+* Rust (latest stable)
+* Souffle (Datalog)
+* SWI-Prolog
 
-### Build
+=== Build
 
-```bash
+[source,bash]
+----
 # Haskell analyzer
 cd analyzers/code-haskell && cabal build
 
@@ -159,27 +162,26 @@ npm install rescript --save-dev  # Only for compiler
 npx rescript build
 
 # Run with Deno (no npm runtime!)
-deno run --allow-net --allow-env --allow-read src/Main.res.js
-```
+deno run --allow-net --allow-env --allow-read src/Oikos.res.js
+----
 
-### Container Build
+=== Container Build
 
-```bash
-# Ensure /cerro-torre base image is available
-nerdctl pull /cerro-torre
-
+[source,bash]
+----
 # Build all images
-./containers/nerdctl-build.sh
+./containers/vordr-build.sh
 
 # Or individual images
-nerdctl build -t eco-bot:latest -f containers/Containerfile .
-nerdctl build -t eco-bot-policy:latest -f containers/Containerfile.policy .
-```
+podman build -t oikos:latest -f containers/Containerfile .
+podman build -t oikos-policy:latest -f containers/Containerfile.policy .
+----
 
-## Configuration
+== Configuration
 
-```yaml
-# config/eco-bot.yaml
+[source,yaml]
+----
+# config/oikos.yaml
 mode: advisor
 thresholds:
   eco_minimum: 50
@@ -196,63 +198,55 @@ integrations:
 databases:
   arangodb: "http://localhost:8529"
   virtuoso: "http://localhost:8890/sparql"
-```
+----
 
-## Metrics
+== Metrics
 
-### Health Index Formula
+=== Health Index Formula
 
-```
-HealthIndex = 0.4 x EcoScore + 0.3 x EconScore + 0.3 x QualityScore
-```
+----
+HealthIndex = 0.4 × EcoScore + 0.3 × EconScore + 0.3 × QualityScore
+----
 
-### Ecological Score (SCI-based)
+=== Ecological Score (SCI-based)
 
-Based on the [Software Carbon Intensity](https://sci.greensoftware.foundation/) specification (ISO/IEC 21031:2024).
+Based on the https://sci.greensoftware.foundation/[Software Carbon Intensity] specification (ISO/IEC 21031:2024).
 
-### Economic Score (Pareto-based)
+=== Economic Score (Pareto-based)
 
-```
-EconScore = w1 x ParetoDistance + w2 x AllocationEfficiency + w3 x (100-DebtRatio)
-```
+----
+EconScore = w₁ × ParetoDistance + w₂ × AllocationEfficiency + w₃ × (100 - DebtRatio)
+----
 
-## Policy Engine
+== Policy Engine
 
-Eco-Bot uses a hybrid reasoning system:
+Oikos Bot uses a hybrid reasoning system:
 
-**Datalog** - Deterministic rules:
-```prolog
+**Datalog** — Deterministic rules:
+[source,prolog]
+----
 needs_refactor(E, "eco_improvement", "high") :-
     eco_hotspot(E, _),
     dominated(E).
-```
+----
 
-**DeepProbLog** - Probabilistic inference with neural networks:
-```prolog
+**DeepProbLog** — Probabilistic inference with neural networks:
+[source,prolog]
+----
 nn(carbon_estimator, [CodeFeatures], P) ::
     high_carbon(Code) :- P > 0.7.
-```
+----
 
 The **Praxis Loop** continuously learns from outcomes:
-```
-Theory -> Practice -> Observation -> Theory Update
-```
+----
+Theory → Practice → Observation → Theory Update
+----
 
-## Database Architecture
+== Project Structure
 
-**Twin database design** for different query patterns:
-
-| Database | Type | Use Case |
-|----------|------|----------|
-| ArangoDB | Graph + Document | Dependencies, history, metrics |
-| Virtuoso | RDF Triple Store | Semantic knowledge, ontologies |
-
-Both sync bidirectionally and feed into [Echidna](https://gitlab.com/hyperpolymath/echidna) for formal verification.
-
-## Project Structure
-
-```
-eco-bot/
+[source]
+----
+oikos-bot/
 ├── analyzers/
 │   ├── code-haskell/       # Haskell code analyzer
 │   └── docs-ocaml/         # OCaml documentation analyzer
@@ -268,32 +262,36 @@ eco-bot/
 │   ├── arangodb/           # Graph DB schema
 │   └── virtuoso/           # RDF ontology
 ├── containers/
-│   ├── Containerfile       # Main container (cerro-torre based)
-│   ├── compose.yaml        # nerdctl compose
-│   └── nerdctl-build.sh    # Build script
+│   ├── Containerfile       # Main container
+│   ├── compose.yaml        # Podman compose
+│   └── vordr-build.sh      # Build script (Svalinn/Podman)
 ├── guix/
 │   ├── channels.scm        # Guix channels
 │   ├── manifest.scm        # Development manifest
-│   └── eco-bot.scm         # Package definition
+│   └── oikos.scm           # Package definition
 ├── nix/
 │   └── flake.nix           # Detailed Nix flake
 ├── flake.nix               # Root Nix flake
 ├── prompts/                # AI assistant prompts
 └── config/                 # Configuration files
-```
+----
 
-## References
+== References
 
-- [Green Software Foundation](https://greensoftware.foundation/)
-- [Software Carbon Intensity (SCI) Spec](https://sci.greensoftware.foundation/)
-- [DeepProbLog](https://github.com/ML-KULeuven/deepproblog)
-- [Pareto Efficiency in Software](https://patrickkarsh.medium.com/pareto-efficiency-a-guide-for-software-engineers-3de566e58b75)
-- [Awesome Green Software](https://github.com/Green-Software-Foundation/awesome-green-software)
+* https://greensoftware.foundation/[Green Software Foundation]
+* https://sci.greensoftware.foundation/[Software Carbon Intensity (SCI) Spec]
+* https://github.com/ML-KULeuven/deepproblog[DeepProbLog]
+* https://patrickkarsh.medium.com/pareto-efficiency-a-guide-for-software-engineers-3de566e58b75[Pareto Efficiency in Software]
+* https://github.com/Green-Software-Foundation/awesome-green-software[Awesome Green Software]
 
-## License
+== License
 
-Either MIT or AGPL 3.0+ (user choice) for legal licence, with dual Palimpsest Licence adoption strongly encouraged - See [LICENSE](./LICENSE)
+This project is dual-licensed under **MIT** or **AGPL-3.0-or-later** (your choice).
 
----
+We also encourage (but do not require) adherence to the principles of the https://github.com/hyperpolymath/palimpsest-license[Palimpsest License] — a framework for consent-based digital interaction.
 
-*Making software development ecologically and economically conscious, one PR at a time.*
+See link:LICENSE.txt[LICENSE.txt] for full details.
+
+'''
+
+_Part of the https://github.com/hyperpolymath[hyperpolymath] ecosystem. Politically autonomous software for ecologically and economically conscious development._

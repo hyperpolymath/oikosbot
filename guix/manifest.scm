@@ -1,6 +1,9 @@
-;;; Eco-Bot Guix Manifest
+;;; SPDX-License-Identifier: AGPL-3.0-or-later
+;;; SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 ;;;
-;;; Development environment manifest for eco-bot.
+;;; Oikos Bot Guix Manifest
+;;;
+;;; Development environment manifest for oikos-bot.
 ;;; Use with: guix shell -m manifest.scm
 
 (specifications->manifest
@@ -69,12 +72,12 @@
    "zlib"
 
    ;; ========================================
-   ;; Container Tools
+   ;; Container Tools (Vörðr preferred)
    ;; ========================================
 
-   "nerdctl"
-   "containerd"
-   "buildkit"
+   "podman"
+   "buildah"
+   "skopeo"
    "cni-plugins"
 
    ;; ========================================

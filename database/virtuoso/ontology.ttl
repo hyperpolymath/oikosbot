@@ -1,11 +1,12 @@
-# Eco-Bot Ontology for Virtuoso/RDF
 # SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 #
-# This ontology defines the semantic vocabulary for eco-bot's
+# Oikos Bot Ontology for Virtuoso/RDF
+# This ontology defines the semantic vocabulary for Oikos Bot's
 # knowledge graph, enabling SPARQL queries for ecological and
 # economic code analysis.
 
-@prefix eco: <http://eco-bot.dev/ontology#> .
+@prefix eco: <http://oikos-bot.dev/ontology#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -19,7 +20,7 @@
 # =============================================================================
 
 eco: a owl:Ontology ;
-    dc:title "Eco-Bot Ontology"@en ;
+    dc:title "Oikos Bot Ontology"@en ;
     dc:description "Semantic vocabulary for ecological and economic code analysis"@en ;
     dc:creator "Hyperpolymath" ;
     dc:license <https://spdx.org/licenses/AGPL-3.0-or-later.html> ;

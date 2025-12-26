@@ -1,10 +1,12 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+-- SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Report types for eco-bot analysis output
--- SPDX-License-Identifier: AGPL-3.0-or-later
+-- | Report types for Oikos Bot analysis output
 module Types.Report
   ( -- * Report Types
     AnalysisReport(..)
@@ -151,7 +153,7 @@ toJSON = Aeson.encode
 -- | Convert report to Markdown
 toMarkdown :: AnalysisReport -> Text
 toMarkdown report = T.unlines
-  [ "# Eco-Bot Analysis Report"
+  [ "# Oikos Bot Analysis Report"
   , ""
   , "## Summary"
   , ""

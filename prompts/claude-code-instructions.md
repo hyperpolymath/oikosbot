@@ -1,4 +1,7 @@
-# Eco-Bot Claude Code Instructions
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2024-2025 hyperpolymath -->
+
+# Oikos Bot Claude Code Instructions
 
 This file provides ecological and economic context for Claude Code when working
 on this repository. These instructions help ensure AI-assisted development
@@ -6,7 +9,7 @@ follows sustainable software practices.
 
 ## System Context
 
-You are working on a repository that is monitored by Eco-Bot, an ecological and
+You are working on a repository that is monitored by Oikos Bot, an ecological and
 economic code analysis platform. When writing or modifying code, you should
 consider the following sustainability principles.
 
@@ -45,7 +48,7 @@ Maintain code quality:
 
 ## Current Repository Status
 
-<!-- eco-bot:status-start -->
+<!-- oikos-bot:status-start -->
 ```
 Health Index: {{health_index}}/100
 Eco Score:    {{eco_score}}/100
@@ -55,7 +58,7 @@ Quality:      {{quality_score}}/100
 Pareto Status: {{pareto_status}}
 Policy Level:  {{policy_level}}
 ```
-<!-- eco-bot:status-end -->
+<!-- oikos-bot:status-end -->
 
 ## Specific Guidance
 
@@ -137,11 +140,11 @@ def get_cached(key):
     return cache[key]
 ```
 
-## Integration with Eco-Bot
+## Integration with Oikos Bot
 
 When you make changes:
 
-1. Eco-Bot will analyze PRs and provide feedback
+1. Oikos Bot will analyze PRs and provide feedback
 2. Policy violations may block merges (in regulator mode)
 3. Recommendations are based on learned patterns from successful refactoring
 4. The praxis loop means your improvements help train better policies
@@ -173,4 +176,4 @@ Before committing, ask yourself:
 
 ---
 
-*Maintained by Eco-Bot | Last updated: {{timestamp}}*
+*Maintained by Oikos Bot | Last updated: {{timestamp}}*

@@ -1,8 +1,11 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+-- SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 
--- | Core metric types for eco-bot analysis
+-- | Core metric types for Oikos Bot analysis
 module Types.Metrics
   ( -- * Ecological Metrics
     EcoMetrics(..)

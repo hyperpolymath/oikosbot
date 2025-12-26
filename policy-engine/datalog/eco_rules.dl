@@ -1,5 +1,8 @@
-// Eco-Bot Policy Engine - Datalog Rules
-// ======================================
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+//
+// Oikos Bot Policy Engine - Datalog Rules
+// =======================================
 // Deterministic rules for ecological and economic code analysis
 // These rules form the "certain" knowledge base, complementing
 // DeepProbLog's probabilistic inference.

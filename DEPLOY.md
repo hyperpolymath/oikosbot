@@ -1,11 +1,12 @@
-# Eco-Bot Deployment Guide
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 
-SPDX-License-Identifier: AGPL-3.0-or-later
+# Oikos Bot Deployment Guide
 
 ## Prerequisites
 
 ### Required
-- Podman or Docker
+- Podman or Vörðr (preferred)
 - Deno 2.1+ (for local development)
 - Git
 
@@ -19,25 +20,25 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 ### 1. Build Container Image
 
 ```bash
-# From repository root
-podman build -t eco-bot:latest -f containers/Containerfile .
+# From repository root (uses Vörðr if available, falls back to Podman)
+./containers/vordr-build.sh
 
-# Or with Docker
-docker build -t eco-bot:latest -f containers/Containerfile .
+# Or directly with Podman
+podman build -t oikos:latest -f containers/Containerfile .
 ```
 
 ### 2. Run Container
 
 ```bash
 # Basic run
-podman run -p 3000:3000 eco-bot:latest
+podman run -p 3000:3000 oikos:latest
 
 # With environment variables
 podman run -p 3000:3000 \
   -e BOT_MODE=advisor \
   -e ANALYSIS_ENDPOINT=http://analyzer:8080 \
   -e GITHUB_WEBHOOK_SECRET=your-secret \
-  eco-bot:latest
+  oikos:latest
 ```
 
 ### 3. Verify Health
@@ -76,7 +77,7 @@ curl http://localhost:3000/health
 version: "3.9"
 
 services:
-  eco-bot:
+  oikos:
     build:
       context: .
       dockerfile: containers/Containerfile
@@ -97,14 +98,14 @@ services:
     working_dir: /app
     volumes:
       - ./analyzers/code-haskell:/app
-    command: cabal run eco-analyzer -- --server --port 8080
+    command: cabal run oikos-analyzer -- --server --port 8080
     ports:
       - "8080:8080"
 
   arangodb:
     image: docker.io/arangodb:3.11
     environment:
-      - ARANGO_ROOT_PASSWORD=eco-bot-dev
+      - ARANGO_ROOT_PASSWORD=oikos-dev
     ports:
       - "8529:8529"
     volumes:
@@ -113,7 +114,7 @@ services:
   virtuoso:
     image: docker.io/openlink/virtuoso-opensource-7:7.2
     environment:
-      - DBA_PASSWORD=eco-bot-dev
+      - DBA_PASSWORD=oikos-dev
     ports:
       - "8890:8890"
       - "1111:1111"
@@ -135,9 +136,9 @@ podman-compose up -d
 
 ```bash
 # Load schema
-podman exec -it eco-bot-arangodb-1 arangosh \
+podman exec -it oikos-arangodb-1 arangosh \
   --server.username root \
-  --server.password eco-bot-dev \
+  --server.password oikos-dev \
   < database/arango/schema.js
 ```
 
@@ -145,9 +146,9 @@ podman exec -it eco-bot-arangodb-1 arangosh \
 
 ```bash
 # Load ontology
-podman exec -it eco-bot-virtuoso-1 isql 1111 dba eco-bot-dev exec="
+podman exec -it oikos-virtuoso-1 isql 1111 dba oikos-dev exec="
   DB.DBA.TTLP_MT(file_to_string_output('/database/ontology.ttl'),
-                 '', 'http://eco-bot.dev/ontology');
+                 '', 'http://oikos-bot.dev/ontology');
 "
 ```
 
@@ -183,7 +184,7 @@ The fastest way to register the GitHub App using the manifest file:
    ```bash
    export GITHUB_APP_ID="123456"
    export GITHUB_WEBHOOK_SECRET="generated-secret"
-   export GITHUB_PRIVATE_KEY_PATH="/path/to/eco-bot.pem"
+   export GITHUB_PRIVATE_KEY_PATH="/path/to/oikos-bot.pem"
    ```
 
 ### Option B: Manual Registration
@@ -192,7 +193,7 @@ If you prefer manual setup:
 
 1. Go to GitHub Settings → Developer settings → GitHub Apps → New GitHub App
 2. Configure:
-   - **Name**: Eco-Bot (your-org)
+   - **Name**: Oikos Bot (your-org)
    - **Homepage URL**: `https://your-domain.com`
    - **Webhook URL**: `https://your-domain.com/webhooks/github`
    - **Webhook Secret**: Generate and save this
@@ -209,7 +210,7 @@ After registration (either option):
 2. Click "Install App"
 3. Select repositories to monitor
 
-### Configure Eco-Bot
+### Configure Oikos Bot
 
 ```bash
 export GITHUB_WEBHOOK_SECRET="your-webhook-secret"
@@ -227,7 +228,7 @@ export GITHUB_PRIVATE_KEY_PATH="/path/to/private-key.pem"
    - **Secret token**: Generate and save this
    - **Triggers**: Merge request events, Push events
 
-### 2. Configure Eco-Bot
+### 2. Configure Oikos Bot
 
 ```bash
 export GITLAB_WEBHOOK_SECRET="your-webhook-token"
@@ -239,10 +240,10 @@ export GITLAB_WEBHOOK_SECRET="your-webhook-token"
 
 ```bash
 # Add Helm repo (when available)
-helm repo add eco-bot https://charts.eco-bot.dev
+helm repo add oikos https://charts.oikos-bot.dev
 
 # Install
-helm install eco-bot eco-bot/eco-bot \
+helm install oikos oikos/oikos-bot \
   --set mode=advisor \
   --set github.webhookSecret=$GITHUB_WEBHOOK_SECRET \
   --set persistence.enabled=true
@@ -251,19 +252,19 @@ helm install eco-bot eco-bot/eco-bot \
 ### Systemd (Bare Metal)
 
 ```ini
-# /etc/systemd/system/eco-bot.service
+# /etc/systemd/system/oikos-bot.service
 [Unit]
-Description=Eco-Bot Code Analysis Platform
+Description=Oikos Bot Code Analysis Platform
 After=network.target
 
 [Service]
 Type=simple
-User=eco-bot
+User=oikos
 Environment=PORT=3000
 Environment=BOT_MODE=advisor
 ExecStart=/usr/local/bin/deno run \
   --allow-net --allow-env --allow-read \
-  /opt/eco-bot/bot-integration/src/Main.res.js
+  /opt/oikos-bot/bot-integration/src/Oikos.res.js
 Restart=always
 RestartSec=5
 
@@ -272,7 +273,7 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-sudo systemctl enable --now eco-bot
+sudo systemctl enable --now oikos-bot
 ```
 
 ## Monitoring
@@ -287,7 +288,7 @@ curl http://localhost:3000/metrics
 
 ```bash
 # Container health check built-in
-podman inspect --format='{{.State.Health.Status}}' eco-bot
+podman inspect --format='{{.State.Health.Status}}' oikos
 
 # Manual check
 curl -f http://localhost:3000/health || exit 1
@@ -298,14 +299,14 @@ curl -f http://localhost:3000/health || exit 1
 Logs are JSON-formatted for easy parsing:
 
 ```json
-{"timestamp":"2024-12-08T10:00:00.000Z","level":"info","message":"Starting Eco-Bot","data":{"port":3000,"mode":"advisor"}}
+{"timestamp":"2024-12-08T10:00:00.000Z","level":"info","message":"Starting Oikos Bot","data":{"port":3000,"mode":"advisor"}}
 ```
 
 ## Troubleshooting
 
 ### Container won't start
 
-1. Check logs: `podman logs eco-bot`
+1. Check logs: `podman logs oikos`
 2. Verify Deno permissions: ensure `--allow-net`, `--allow-env`, `--allow-read`
 3. Check port availability: `ss -tlnp | grep 3000`
 
@@ -338,7 +339,7 @@ deno task dev
 
 # Haskell analyzer
 cd analyzers/code-haskell
-cabal run eco-analyzer -- --path /path/to/analyze
+cabal run oikos-analyzer -- --path /path/to/analyze
 
 # Build ReScript
 npm install  # Only for ReScript compiler

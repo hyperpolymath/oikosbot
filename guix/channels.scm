@@ -1,6 +1,9 @@
-;;; Eco-Bot Guix Channel Configuration
+;;; SPDX-License-Identifier: AGPL-3.0-or-later
+;;; SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 ;;;
-;;; This defines the Guix channels needed for the eco-bot project.
+;;; Oikos Bot Guix Channel Configuration
+;;;
+;;; This defines the Guix channels needed for the oikos-bot project.
 ;;; Use with: guix pull -C channels.scm
 
 (list
@@ -32,8 +35,8 @@
   (url "https://gitlab.inria.fr/guix-hpc/guix-hpc.git")
   (branch "master"))
 
- ;; Eco-bot custom channel
+ ;; Oikos Bot custom channel
  (channel
-  (name 'eco-bot)
-  (url "https://gitlab.com/hyperpolymath/eco-bot-guix")
+  (name 'oikos-bot)
+  (url "https://github.com/hyperpolymath/oikos-bot-guix")
   (branch "main")))

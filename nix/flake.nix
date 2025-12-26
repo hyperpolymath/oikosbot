@@ -1,5 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 {
-  description = "Eco-Bot: Ecological & Economic Code Analysis Platform";
+  description = "Oikos Bot: Ecological & Economic Code Analysis Platform";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -29,12 +31,12 @@
 
         # Haskell packages
         haskellPackages = pkgs.haskellPackages.extend (hself: hsuper: {
-          eco-analyzer = hself.callCabal2nix "eco-analyzer"
+          oikos-analyzer = hself.callCabal2nix "oikos-analyzer"
             ./analyzers/code-haskell { };
         });
 
         # OCaml packages via opam-nix
-        ocamlScope = opam-nix.lib.${system}.buildOpamProject { } "eco-doc-analyzer" ./analyzers/docs-ocaml { };
+        ocamlScope = opam-nix.lib.${system}.buildOpamProject { } "oikos-doc-analyzer" ./analyzers/docs-ocaml { };
 
         # Common development tools
         commonDeps = with pkgs; [
@@ -57,10 +59,10 @@
           bat
           fzf
 
-          # Container tools
-          nerdctl
-          containerd
-          buildkit
+          # Container tools (Vörðr preferred, Podman fallback)
+          podman
+          buildah
+          skopeo
 
           # Databases
           arangodb
@@ -133,7 +135,7 @@
           buildInputs = commonDeps ++ haskellDeps ++ ocamlDeps ++ rescriptDeps ++ pythonDeps ++ rustDeps;
 
           shellHook = ''
-            echo "🌱 Eco-Bot Development Environment"
+            echo "🏛️ Oikos Bot Development Environment"
             echo "=================================="
             echo ""
             echo "Languages:"
@@ -183,15 +185,15 @@
 
         # Packages
         packages = {
-          eco-analyzer = haskellPackages.eco-analyzer;
+          oikos-analyzer = haskellPackages.oikos-analyzer;
 
           # Container image
           container = pkgs.dockerTools.buildLayeredImage {
-            name = "eco-bot";
+            name = "oikos-bot";
             tag = "latest";
 
             contents = with pkgs; [
-              haskellPackages.eco-analyzer
+              haskellPackages.oikos-analyzer
               deno
               souffle
               swiProlog
@@ -201,7 +203,7 @@
             ];
 
             config = {
-              Cmd = [ "deno" "run" "--allow-net" "--allow-env" "--allow-read" "/app/bot-integration/src/Main.res.js" ];
+              Cmd = [ "deno" "run" "--allow-net" "--allow-env" "--allow-read" "/app/bot-integration/src/Oikos.res.js" ];
               WorkingDir = "/app";
               Env = [
                 "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
@@ -217,12 +219,12 @@
 
         # Apps
         apps = {
-          eco-bot = {
+          oikos-bot = {
             type = "app";
-            program = "${pkgs.deno}/bin/deno run --allow-net --allow-env --allow-read bot-integration/src/Main.res.js";
+            program = "${pkgs.deno}/bin/deno run --allow-net --allow-env --allow-read bot-integration/src/Oikos.res.js";
           };
 
-          default = self.apps.${system}.eco-bot;
+          default = self.apps.${system}.oikos-bot;
         };
       }
     );

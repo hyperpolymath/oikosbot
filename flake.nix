@@ -1,5 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 {
-  description = "Eco-Bot: Ecological & Economic Code Analysis Platform";
+  description = "Oikos Bot: Ecological & Economic Code Analysis Platform";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -50,12 +52,12 @@
 
             # Tools
             git gnumake jq ripgrep fd
-            nerdctl containerd
+            podman buildah
             souffle swiProlog
           ];
 
           shellHook = ''
-            echo "🌱 Eco-Bot Dev Shell"
+            echo "🏛️ Oikos Bot Dev Shell"
             export DENO_DIR="$PWD/.deno"
           '';
         };

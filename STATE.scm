@@ -206,12 +206,12 @@
 ;;;============================================================================
 
 (define state-summary
-  '((project . "git-eco-bot")
-    (version . "0.1.0")
+  '((project . "oikos-bot")
+    (version . "0.1.0-beta")
     (overall-completion . 30)
     (next-milestone . "v0.2 - Core Functionality")
     (critical-blockers . 0)
     (high-priority-issues . 0)
-    (updated . "2025-12-25")))
+    (updated . "2025-12-26")))
 
 ;;; End of STATE.scm

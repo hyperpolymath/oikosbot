@@ -1,13 +1,15 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+-- SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 cabal-version:      3.0
-name:               eco-analyzer
+name:               oikos-analyzer
 version:            0.1.0.0
 synopsis:           Ecological and economic code analysis engine
-description:        Haskell-based code analyzer for eco-bot platform.
+description:        Haskell-based code analyzer for Oikos Bot platform.
                     Analyzes code for carbon intensity, energy efficiency,
                     Pareto optimality, and software quality metrics.
-license:            Apache-2.0
+license:            AGPL-3.0-or-later
 author:             Hyperpolymath
-maintainer:         eco-bot@hyperpolymath.dev
+maintainer:         oikos@hyperpolymath.dev
 category:           Development
 build-type:         Simple
 
@@ -48,19 +50,19 @@ library
     hs-source-dirs:   src
     default-language: GHC2021
 
-executable eco-analyzer
+executable oikos-analyzer
     import:           warnings
     main-is:          Main.hs
     build-depends:
         base ^>=4.17,
-        eco-analyzer,
+        oikos-analyzer,
         aeson,
         text,
         optparse-applicative
     hs-source-dirs:   app
     default-language: GHC2021
 
-test-suite eco-analyzer-test
+test-suite oikos-analyzer-test
     import:           warnings
     default-language: GHC2021
     type:             exitcode-stdio-1.0
@@ -68,6 +70,6 @@ test-suite eco-analyzer-test
     main-is:          Main.hs
     build-depends:
         base ^>=4.17,
-        eco-analyzer,
+        oikos-analyzer,
         hspec >= 2.10,
         QuickCheck >= 2.14

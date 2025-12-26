@@ -1,9 +1,10 @@
-# Eco-Bot SPARQL Queries for Virtuoso
 # SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 #
-# Collection of useful SPARQL queries for the eco-bot knowledge graph.
+# Oikos Bot SPARQL Queries for Virtuoso
+# Collection of useful SPARQL queries for the Oikos Bot knowledge graph.
 
-PREFIX eco: <http://eco-bot.dev/ontology#>
+PREFIX eco: <http://oikos-bot.dev/ontology#>
 PREFIX dc: <http://purl.org/dc/terms/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -60,7 +61,7 @@ LIMIT 10
 # =============================================================================
 
 # Query 4: Get all files in a repository with their metrics
-# Parameters: ?repoUri = <http://eco-bot.dev/data/repo/owner/name>
+# Parameters: ?repoUri = <http://oikos-bot.dev/data/repo/owner/name>
 SELECT ?file ?path ?language ?carbonScore ?energyScore
 WHERE {
     ?file a eco:File ;
@@ -97,7 +98,7 @@ ORDER BY DESC(?severity)
 ---
 
 # Query 6: Get dependency graph for an entity
-# Parameters: ?startEntity = <http://eco-bot.dev/data/file/123>
+# Parameters: ?startEntity = <http://oikos-bot.dev/data/file/123>
 SELECT ?entity ?dependency ?depPath
 WHERE {
     ?startEntity eco:dependsOn+ ?dependency .

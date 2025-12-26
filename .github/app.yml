@@ -1,28 +1,28 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+# SPDX-FileCopyrightText: 2025 hyperpolymath
 #
-# GitHub App Manifest for Eco-Bot
+# GitHub App Manifest for Oikos Bot
 # https://docs.github.com/en/apps/creating-github-apps/setting-up-a-github-app/creating-a-github-app-from-a-manifest
 #
 # Register at: https://github.com/settings/apps/new?manifest_code=...
 # Or use the manifest flow endpoint
 
-name: Eco-Bot
+name: Oikos Bot
 description: |
   Ecological & Economic Code Analysis Platform.
   Provides carbon intensity analysis, Pareto optimization insights,
   and sustainability scoring for your codebase.
 
 # Public page URL
-url: https://github.com/hyperpolymath/git-eco-bot
+url: https://github.com/hyperpolymath/oikos-bot
 
 # Setup/callback URLs (update with your deployment domain)
 hook_attributes:
-  url: https://eco-bot.example.com/webhooks/github
+  url: https://oikos-bot.example.com/webhooks/github
   active: true
 
-setup_url: https://eco-bot.example.com/setup
-redirect_url: https://eco-bot.example.com/callback
+setup_url: https://oikos-bot.example.com/setup
+redirect_url: https://oikos-bot.example.com/callback
 
 # Can be installed on user accounts and organizations
 public: true
@@ -66,7 +66,7 @@ default_events:
 request_oauth_on_install: false
 
 # Callback URL for OAuth (if enabled)
-# callback_url: https://eco-bot.example.com/oauth/callback
+# callback_url: https://oikos-bot.example.com/oauth/callback
 
 # Single file the app needs (optional)
-# single_file_name: .eco-bot.yml
+# single_file_name: .oikos.yml

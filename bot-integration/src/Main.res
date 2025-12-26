@@ -1,4 +1,7 @@
-// Eco-Bot Main Entry Point
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+//
+// Oikos Bot Main Entry Point
 // ReScript + Deno implementation
 
 open Deno
@@ -375,8 +378,8 @@ let handler = (config: config): Http.handler => {
       jsonResponse(
         Js.Json.object_(
           Js.Dict.fromArray([
-            ("eco_bot_requests_total", Js.Json.number(0.0)),
-            ("eco_bot_analyses_total", Js.Json.number(0.0)),
+            ("oikos_bot_requests_total", Js.Json.number(0.0)),
+            ("oikos_bot_analyses_total", Js.Json.number(0.0)),
           ]),
         ),
       )
@@ -391,7 +394,7 @@ let main = () => {
   switch Config.load() {
   | Ok(config) =>
     info(
-      `Starting Eco-Bot`,
+      `Starting Oikos Bot`,
       ~data=Js.Json.object_(
         Js.Dict.fromArray([
           ("port", Js.Json.number(Belt.Int.toFloat(config.port))),

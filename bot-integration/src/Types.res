@@ -1,4 +1,7 @@
-// Core types for Eco-Bot analysis
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+//
+// Core types for Oikos Bot analysis
 
 type codeLocation = {
   file: string,

@@ -1,5 +1,8 @@
-%% Eco-Bot Policy Engine - DeepProbLog Rules
-%% ==========================================
+%% SPDX-License-Identifier: AGPL-3.0-or-later
+%% SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+%%
+%% Oikos Bot Policy Engine - DeepProbLog Rules
+%% ===========================================
 %% Probabilistic logic programming rules that learn from practice.
 %% These rules complement the deterministic Datalog rules by handling
 %% uncertainty and learning patterns from observed outcomes.
@@ -136,7 +139,7 @@ adaptive_threshold(eco_minimum, energy, 50) :- \+ project_baseline(energy, _).
 
 %% Query patterns for Virtuoso (RDF) integration
 sparql_query(eco_best_practices, "
-    PREFIX eco: <http://eco-bot.dev/ontology#>
+    PREFIX eco: <http://oikos-bot.dev/ontology#>
     PREFIX sw: <http://schema.org/SoftwareSourceCode>
 
     SELECT ?practice ?description ?impact

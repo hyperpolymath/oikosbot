@@ -1,6 +1,9 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2024-2025 hyperpolymath -->
+
 # GitHub App Setup Guide
 
-This guide explains how to create and configure a GitHub App for git-eco-bot.
+This guide explains how to create and configure a GitHub App for Oikos Bot.
 
 ## Prerequisites
 
@@ -15,7 +18,7 @@ This guide explains how to create and configure a GitHub App for git-eco-bot.
 
    | Field | Value |
    |-------|-------|
-   | **GitHub App name** | git-eco-bot (or your chosen name) |
+   | **GitHub App name** | Oikos Bot (or your chosen name) |
    | **Homepage URL** | Your repo URL |
    | **Webhook URL** | `https://your-domain.com/webhooks/github` |
    | **Webhook secret** | Generate a secure random string |
@@ -78,7 +81,7 @@ For production, use a secrets manager. For Kubernetes:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: git-eco-bot
+  name: oikos-bot
 type: Opaque
 stringData:
   GITHUB_APP_ID: "123456"

@@ -1,8 +1,11 @@
-# Eco-Bot SPARQL Queries for Virtuoso
-# ====================================
-# Common queries for the eco-bot semantic knowledge base
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+#
+# Oikos Bot SPARQL Queries for Virtuoso
+# =====================================
+# Common queries for the Oikos Bot semantic knowledge base
 
-PREFIX eco: <http://eco-bot.dev/ontology#>
+PREFIX eco: <http://oikos-bot.dev/ontology#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>

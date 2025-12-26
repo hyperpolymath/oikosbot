@@ -1,13 +1,14 @@
-// ArangoDB Schema for Eco-Bot
 // SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 //
+// ArangoDB Schema for Oikos Bot
 // This script creates the database schema for storing code analysis results,
 // dependency graphs, and praxis observations.
 //
 // Run with: arangosh --server.endpoint tcp://localhost:8529 < schema.js
 
 // Database name
-const dbName = "eco_bot";
+const dbName = "oikos";
 
 // Create database if not exists
 try {

@@ -1,12 +1,12 @@
 ;; SPDX-License-Identifier: AGPL-3.0-or-later
 ;; SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 ;; ECOSYSTEM.scm - Project Ecosystem Relationships
-;; git-eco-bot
+;; oikos-bot
 ;; Reference: https://github.com/hyperpolymath/ECOSYSTEM.scm
 
 (ecosystem
   (version "1.0.0")
-  (name "git-eco-bot")
+  (name "oikos-bot")
   (type "tool")
   (purpose "**Ecological & Economic Code Analysis Platform**")
 

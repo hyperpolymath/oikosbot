@@ -1,6 +1,9 @@
-# Eco-Bot Configuration
-# =====================
-# Main configuration file for the Eco-Bot platform
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+#
+# Oikos Bot Configuration
+# =======================
+# Main configuration file for the Oikos Bot platform
 
 # Bot operating mode
 # - consultant: Answers questions, provides alternatives, explains trade-offs
@@ -80,13 +83,13 @@ analysis:
 databases:
   arangodb:
     url: "http://localhost:8529"
-    database: "eco_bot"
+    database: "oikos"
     username: "${ARANGO_USER}"
     password: "${ARANGO_PASSWORD}"
 
   virtuoso:
     sparql_endpoint: "http://localhost:8890/sparql"
-    graph_uri: "https://eco-bot.dev/knowledge"
+    graph_uri: "https://oikos-bot.dev/knowledge"
 
 # External integrations
 integrations:
@@ -164,14 +167,14 @@ notifications:
     enabled: false
     webhook_url: "${SLACK_WEBHOOK}"
     channels:
-      violations: "#eco-bot-alerts"
+      violations: "#oikos-bot-alerts"
       weekly_report: "#engineering"
 
   # Email
   email:
     enabled: false
     smtp_host: "${SMTP_HOST}"
-    from: "eco-bot@example.com"
+    from: "oikos-bot@example.com"
 
 # Logging
 logging:

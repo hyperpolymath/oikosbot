@@ -1,8 +1,11 @@
-# Eco-Bot: Ecological & Economic Code Analysis Platform
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+
+# Oikos Bot: Ecological & Economic Code Analysis Platform
 
 ## Vision
 
-Eco-Bot is an intelligent code analysis platform that acts as a **consultant, advisor, regulator, and policy developer** for software repositories. It **complements** existing tools like Dependabot, CodeQL, and Copilot by adding a dedicated **ecological and economic lens** to code analysis.
+Oikos Bot is an intelligent code analysis platform that acts as a **consultant, advisor, regulator, and policy developer** for software repositories. It **complements** existing tools like Dependabot, CodeQL, and Copilot by adding a dedicated **ecological and economic lens** to code analysis.
 
 ### Complementary, Not Competing
 
@@ -27,7 +30,7 @@ Eco-Bot is an intelligent code analysis platform that acts as a **consultant, ad
 │                                    ▲                                        │
 │                                    │                                        │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                           ECO-BOT                                    │   │
+│  │                           OIKOS BOT                                  │   │
 │  │  - Ecological analysis (carbon, energy, resources)                   │   │
 │  │  - Economic optimization (Pareto, allocative efficiency)             │   │
 │  │  - Quality metrics with eco/econ weighting                           │   │
@@ -38,7 +41,7 @@ Eco-Bot is an intelligent code analysis platform that acts as a **consultant, ad
 ```
 
 **Key Integration Principles:**
-1. **Additive Value**: Eco-Bot adds eco/econ analysis; doesn't duplicate security/dependency work
+1. **Additive Value**: Oikos Bot adds eco/econ analysis; doesn't duplicate security/dependency work
 2. **Shared Prompts**: Provide prompt templates that Copilot/AI tools can use for eco-aware suggestions
 3. **Data Exchange**: Consume and produce data in formats other tools understand
 4. **Non-Blocking**: Advisory by default; teams opt-in to enforcement
@@ -70,7 +73,7 @@ Eco-Bot is an intelligent code analysis platform that acts as a **consultant, ad
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           ECO-BOT PLATFORM                                   │
+│                           OIKOS BOT PLATFORM                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐                 │
@@ -265,7 +268,7 @@ ArangoDB                          Virtuoso
 ─────────                         ────────
 {                                 <project:123>
   "_key": "123",          ──►       a :SoftwareProject ;
-  "type": "project",                :hasName "eco-bot" ;
+  "type": "project",                :hasName "oikos-bot" ;
   "metrics": {...}                  :hasCarbonScore "0.3"^^xsd:float .
 }
 ```
@@ -385,7 +388,7 @@ Default weights: α=0.4, β=0.3, γ=0.3
 | Doc Analyzer | OCaml | NLP, semantic extraction |
 | Policy Engine | Python + Datalog | Rule inference, ML |
 | DeepProbLog | Python | Probabilistic logic learning |
-| Bot Interface | TypeScript | GitHub/GitLab integration |
+| Bot Interface | ReScript + Deno | GitHub/GitLab integration |
 | Graph DB | ArangoDB | Relationships, history |
 | Triple Store | Virtuoso | Semantic knowledge |
 | Math Proofs | Echidna (external) | Formal verification |
@@ -396,29 +399,29 @@ Default weights: α=0.4, β=0.3, γ=0.3
 
 **GitHub Actions/Apps Integration:**
 ```yaml
-# .github/workflows/eco-bot.yml
-name: Eco-Bot Analysis
+# .github/workflows/oikos.yml
+name: Oikos Analysis
 on: [pull_request, push]
 
 jobs:
   eco-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: hyperpolymath/eco-bot-action@v1
+      - uses: hyperpolymath/oikos-bot-action@v1
         with:
           mode: advisor  # consultant | advisor | regulator
           eco-threshold: 60
           econ-threshold: 50
 
-      # Eco-Bot results feed into other tools
+      # Oikos Bot results feed into other tools
       - uses: actions/upload-artifact@v3
         with:
           name: eco-analysis
-          path: .eco-bot/results.json
+          path: .oikos-bot/results.json
 ```
 
 **Integration Points:**
-- Dependabot: Eco-Bot can add eco-scores to dependency update PRs
+- Dependabot: Oikos Bot can add eco-scores to dependency update PRs
 - CodeQL: Share SARIF format results for unified security+eco view
 - Copilot: Provide context via `.github/copilot-instructions.md`
 
@@ -426,10 +429,10 @@ jobs:
 
 **Shared Prompt Templates** (`/prompts/`):
 
-Eco-Bot provides prompt templates that AI coding assistants can use:
+Oikos Bot provides prompt templates that AI coding assistants can use:
 
 ```markdown
-<!-- .github/copilot-instructions.md (auto-generated by eco-bot) -->
+<!-- .github/copilot-instructions.md (auto-generated by oikos-bot) -->
 ## Ecological Code Guidelines
 
 When writing or reviewing code in this repository, consider:
@@ -452,9 +455,9 @@ Areas needing attention: Memory allocation in /src/processing/*
   "runs": [{
     "tool": {
       "driver": {
-        "name": "eco-bot",
+        "name": "oikos-bot",
         "version": "1.0.0",
-        "informationUri": "https://eco-bot.dev"
+        "informationUri": "https://oikos-bot.dev"
       }
     },
     "results": [{
@@ -473,10 +476,10 @@ Areas needing attention: Memory allocation in /src/processing/*
 
 **OpenTelemetry Integration:**
 ```
-eco_bot_analysis_score{type="ecological",repo="myrepo"} 72
-eco_bot_analysis_score{type="economic",repo="myrepo"} 68
-eco_bot_carbon_intensity{repo="myrepo"} 0.34
-eco_bot_pareto_distance{repo="myrepo"} 0.12
+oikos_bot_analysis_score{type="ecological",repo="myrepo"} 72
+oikos_bot_analysis_score{type="economic",repo="myrepo"} 68
+oikos_bot_carbon_intensity{repo="myrepo"} 0.34
+oikos_bot_pareto_distance{repo="myrepo"} 0.12
 ```
 
 ### Cross-Tool Workflows
@@ -490,17 +493,17 @@ eco_bot_pareto_distance{repo="myrepo"} 0.12
 │      │                                                                   │
 │      ├──► Dependabot: Check dependencies ────────────────┐              │
 │      │         │                                          │              │
-│      │         └──► Eco-Bot: Score eco-impact ◄──────────┤              │
+│      │         └──► Oikos Bot: Score eco-impact ◄────────┤              │
 │      │                   of new dependencies              │              │
 │      │                                                    │              │
 │      ├──► CodeQL: Security scan ─────────────────────────┤              │
 │      │         │                                          │              │
-│      │         └──► Eco-Bot: Security + Eco ◄────────────┤              │
+│      │         └──► Oikos Bot: Security + Eco ◄──────────┤              │
 │      │                   combined risk score              │              │
 │      │                                                    │              │
 │      ├──► Copilot: Review suggestions ───────────────────┤              │
 │      │         │                                          │              │
-│      │         └──► Eco-Bot: Enhance suggestions ◄───────┤              │
+│      │         └──► Oikos Bot: Enhance suggestions ◄─────┤              │
 │      │                   with eco/econ context            │              │
 │      │                                                    ▼              │
 │      │                                          ┌─────────────────┐     │

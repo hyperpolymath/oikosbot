@@ -1,8 +1,11 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<!-- SPDX-FileCopyrightText: 2024-2025 hyperpolymath -->
+
 ## Description
 
 <!-- Describe your changes here -->
 
-## Eco-Bot Checklist
+## Oikos Bot Checklist
 
 Before submitting, please verify:
 
@@ -36,7 +39,7 @@ Before submitting, please verify:
 
 ## Eco Impact
 
-<!-- eco-bot will fill this section automatically -->
+<!-- oikos-bot will fill this section automatically -->
 
 **Estimated Changes:**
 - Carbon Impact: [ ] Improved [ ] Neutral [ ] Needs Review

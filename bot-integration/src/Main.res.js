@@ -379,11 +379,11 @@ function handler(config) {
             case "/metrics" :
                 return jsonResponse(Js_dict.fromArray([
                                 [
-                                  "eco_bot_requests_total",
+                                  "oikos_bot_requests_total",
                                   0.0
                                 ],
                                 [
-                                  "eco_bot_analyses_total",
+                                  "oikos_bot_analyses_total",
                                   0.0
                                 ]
                               ]), undefined);
@@ -421,7 +421,7 @@ function main() {
     return error("Failed to load config: " + config._0, undefined);
   }
   var config$1 = config._0;
-  info("Starting Eco-Bot", Js_dict.fromArray([
+  info("Starting Oikos Bot", Js_dict.fromArray([
             [
               "port",
               config$1.port

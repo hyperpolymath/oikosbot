@@ -1,4 +1,4 @@
-@prefix eco: <http://eco-bot.dev/ontology#> .
+@prefix eco: <http://oikos-bot.dev/ontology#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -7,12 +7,14 @@
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 # =============================================================================
-# ECO-BOT ONTOLOGY
+# OIKOS BOT ONTOLOGY
 # =============================================================================
 
-eco:EcoBotOntology a owl:Ontology ;
-    rdfs:label "Eco-Bot Software Ecology Ontology"@en ;
+eco:OikosBotOntology a owl:Ontology ;
+    rdfs:label "Oikos Bot Software Ecology Ontology"@en ;
     rdfs:comment "Ontology for describing ecological and economic aspects of software systems"@en ;
     dct:creator "Hyperpolymath" ;
     owl:versionInfo "0.1.0" .
@@ -311,7 +313,7 @@ eco:EcoExcellence a eco:EcoPolicy ;
 # =============================================================================
 
 # Query: Find all entities below eco minimum
-# PREFIX eco: <http://eco-bot.dev/ontology#>
+# PREFIX eco: <http://oikos-bot.dev/ontology#>
 # SELECT ?entity ?carbonScore ?energyScore
 # WHERE {
 #     ?entity a eco:SoftwareEntity .
@@ -326,7 +328,7 @@ eco:EcoExcellence a eco:EcoPolicy ;
 # }
 
 # Query: Find best practices applicable to an entity's anti-patterns
-# PREFIX eco: <http://eco-bot.dev/ontology#>
+# PREFIX eco: <http://oikos-bot.dev/ontology#>
 # PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 # SELECT ?entity ?antiPattern ?bestPractice ?impact
 # WHERE {

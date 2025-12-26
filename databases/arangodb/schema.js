@@ -1,5 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 /**
- * Eco-Bot ArangoDB Schema Setup
+ * Oikos Bot ArangoDB Schema Setup
  *
  * This script initializes the ArangoDB collections and graphs
  * for storing code analysis results, dependency graphs, and

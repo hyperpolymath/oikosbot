@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: AGPL-3.0-or-later
+-- SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Pareto optimality analysis for multi-objective optimization
@@ -41,7 +44,7 @@ data Objective = Objective
   , objWeight    :: !Double  -- ^ Importance weight (0-1)
   } deriving (Show, Eq)
 
--- | Standard objectives for eco-bot analysis
+-- | Standard objectives for Oikos Bot analysis
 standardObjectives :: [Objective]
 standardObjectives =
   [ Objective "carbon_intensity" Minimize 0.20

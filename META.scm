@@ -2,10 +2,10 @@
 ;; SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 
 ;;; META.scm — Architecture Decisions and Development Practices
-;;; git-eco-bot
+;;; oikos-bot
 ;;; Reference: https://github.com/hyperpolymath/META.scm
 
-(define-module (git-eco-bot meta)
+(define-module (oikos-bot meta)
   #:export (architecture-decisions
             development-practices
             design-rationale))

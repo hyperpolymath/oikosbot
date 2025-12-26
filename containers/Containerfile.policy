@@ -1,7 +1,10 @@
-# Eco-Bot Policy Engine Container
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2024-2025 hyperpolymath
+#
+# Oikos Bot Policy Engine Container
 # Datalog + DeepProbLog based policy engine
 #
-# Build: nerdctl build -t eco-bot-policy:latest -f containers/Containerfile.policy .
+# Build: podman build -t oikos-policy:latest -f containers/Containerfile.policy .
 
 FROM /cerro-torre AS builder
 
