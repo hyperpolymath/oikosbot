@@ -1,13 +1,13 @@
 {
   "name": "@oikos/bot",
-  "version": "0.1.0-beta",
+  "version": "0.1.1-beta",
   "exports": {
     ".": "./src/Oikos.res.js",
     "./router": "./src/Router.res.js",
     "./tea": "./src/tea/ServerTea.res.js"
   },
   "publish": {
-    "include": ["src/**/*.js", "src/**/*.res", "bindings/**/*.js", "bindings/**/*.res", "README.md", "LICENSE"]
+    "include": ["src/**/*.js", "src/**/*.res", "bindings/**/*.js", "bindings/**/*.res", "rescript-runtime/**/*.js", "README.md", "LICENSE"]
   },
   "tasks": {
     "build:rescript": "rescript build",
