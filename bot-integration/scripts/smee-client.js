@@ -57,18 +57,18 @@ async function connectToSmee() {
   }
 }
 
-async function forwardWebhook(data: Record<string, unknown>) {
+async function forwardWebhook(data) {
   const headers = new Headers();
 
   // Forward GitHub headers
   if (data["x-github-event"]) {
-    headers.set("x-github-event", data["x-github-event"] as string);
+    headers.set("x-github-event", data["x-github-event"]);
   }
   if (data["x-github-delivery"]) {
-    headers.set("x-github-delivery", data["x-github-delivery"] as string);
+    headers.set("x-github-delivery", data["x-github-delivery"]);
   }
   if (data["x-hub-signature-256"]) {
-    headers.set("x-hub-signature-256", data["x-hub-signature-256"] as string);
+    headers.set("x-hub-signature-256", data["x-hub-signature-256"]);
   }
   headers.set("content-type", "application/json");
 
