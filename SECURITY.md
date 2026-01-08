@@ -1,62 +1,75 @@
 # Security Policy
+*Scarcity-Bot* adheres to **Rhodium Standard Repo (RSR)** principles, emphasizing **reversibility, attestation, and minimal attack surfaces**.
+
+---
 
 ## Supported Versions
+| Version | Supported          | Notes                                  |
+|---------|--------------------|----------------------------------------|
+| 0.x.x   | :white_check_mark: | Only the **latest minor version** receives security updates. |
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.x.x   | :white_check_mark: |
+> **Note**: Scarcity-Bot is in **early development**. Security updates are prioritized for the latest release.
 
-As Oikos Bot is in early development, only the latest version receives security updates.
+---
 
 ## Reporting a Vulnerability
+**Do not report vulnerabilities publicly** (e.g., GitHub Issues).
+Instead, use one of these **private channels**:
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+1. **GitLab Security Advisories**:
+   [Report a vulnerability](https://gitlab.com/hyperpolymath/scarcity-bot/-/security/advisories/new)
+   *(Preferred for traceability and RSR compliance.)*
 
-Instead, please report vulnerabilities via one of:
+2. **Email**:
+   `security@hyperpolymath.org` (PGP: `0xYOUR_ED448_KEY`)
+   *(For urgent or sensitive disclosures.)*
 
-1. **GitHub Security Advisories**: [Report a vulnerability](https://github.com/hyperpolymath/oikos-bot/security/advisories/new)
-2. **Email**: security@hyperpolymath.com (if available)
+---
 
-### What to include
+### What to Include
+Provide **detailed, actionable information**:
+- **Type of issue**:
+  - Example: Buffer overflow, XSS, supply chain tampering, or **waste metric spoofing**.
+- **Affected components**:
+  - Source file paths (e.g., `lib/audit/exec.rb`).
+  - **Commit hash/tag/branch** or direct URL.
+- **Reproduction steps**:
+  - Command-line invocations, config snippets, or **Justfile recipes** used.
+- **Impact**:
+  - How could an attacker exploit this? (e.g., "Fake carbon savings reports," "CI/CD pipeline hijacking.")
+- **Proof-of-Concept**:
+  - Code snippets or **SHAKE256 hashes** of malicious inputs (if applicable).
 
-- Type of issue (e.g., buffer overflow, SQL injection, cross-site scripting)
-- Full paths of source file(s) related to the issue
-- Location of affected source code (tag/branch/commit or direct URL)
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit it
+---
 
-### Response Timeline
+## Response Timeline
+| Phase               | Target          | Notes                                  |
+|---------------------|-----------------|----------------------------------------|
+| **Initial Response** | ≤48 hours       | Acknowledges receipt.                  |
+| **Status Update**   | ≤7 days         | Progress or mitigation advice.         |
+| **Resolution**      | ≤30 days        | For **critical issues** (e.g., RCE, data leaks). |
+| **Attestation**     | Post-resolution | Logs signed with **Ed448** in `logs/`. |
 
-- **Initial Response**: Within 48 hours
-- **Status Update**: Within 7 days
-- **Resolution Target**: Within 30 days for critical issues
+---
 
 ## Security Considerations
 
 ### Data Handling
+Scarcity-Bot processes:
+- **Source code** (for waste analysis).
+- **Dependency graphs** (economic/ecological impact).
+- **CI/CD configurations** (e.g., GitLab pipelines).
+- **VoID/Dublin Core metadata** (interoperability with WordPress/Drupal).
 
-Oikos Bot analyzes code repositories and may process:
-- Source code content
-- Dependency information
-- Build configurations
-- CI/CD pipeline definitions
+**Guiding Principles**:
+- **Minimal Retention**: Data deleted post-audit unless **explicitly logged for reversibility**.
+- **Hashing**: All logs use **SHAKE256/Ed448** (see `logs/README.md`).
+- **BOINC Distributed Audits**:
+  - Nodes **never store raw repo data**; only **hashed waste metrics** are shared.
 
 ### Integration Security
-
-When integrating Oikos Bot:
-- Use environment variables for sensitive configuration
-- Never commit API keys or tokens
-- Use GitHub's encrypted secrets for CI/CD
-- Review permissions granted to GitHub Apps
-
-### Dependency Security
-
-This project uses:
-- Dependabot for automated dependency updates
-- CodeQL for static analysis
-- OpenSSF Scorecard for supply chain security
-
-## Acknowledgments
-
-We appreciate security researchers who help keep Oikos Bot secure. Contributors will be acknowledged (with permission) in release notes.
+- **Environment Variables**:
+  ```bash
+  # Example: .env
+  SCARCITY_API_KEY="x"  # Never commit this!
+  GITHUB_TOKEN="y"      # Use GitLab CI variables or encrypted secrets.
