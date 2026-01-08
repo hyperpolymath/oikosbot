@@ -30,3 +30,19 @@ jobs:
         uses: github/codeql-action/upload-sarif@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v3.31.8
         with:
           sarif_file: results.sarif
+name: Scorecard
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly
+  push:
+    branches: [main]
+jobs:
+  scorecard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ossf/scorecard-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_results: true
+
+
