@@ -1,5 +1,5 @@
 # Security Policy
-*Scarcity-Bot* adheres to **Rhodium Standard Repo (RSR)** principles, emphasizing **reversibility, attestation, and minimal attack surfaces**.
+*SustainaBot* adheres to **Rhodium Standard Repo (RSR)** principles, emphasizing **reversibility, attestation, and minimal attack surfaces**.
 
 ---
 
@@ -8,12 +8,12 @@
 |---------|--------------------|----------------------------------------|
 | 0.x.x   | :white_check_mark: | Only the **latest minor version** receives security updates. |
 
-> **Note**: Scarcity-Bot is in **early development**. Security updates are prioritized for the latest release.
+> **Note**: SustainaBot is in **early development**. Security updates are prioritized for the latest release.
 
 ---
 
 ## Reporting a Vulnerability
-**Do not report vulnerabilities publicly** (e.g., GitHub Issues).
+**Do not report vulnerabilities publicly** (e.g., GitHub/GitLab Issues).
 Instead, use one of these **private channels**:
 
 1. **GitLab Security Advisories**:
@@ -55,7 +55,7 @@ Provide **detailed, actionable information**:
 ## Security Considerations
 
 ### Data Handling
-Scarcity-Bot processes:
+SustainaBot processes:
 - **Source code** (for waste analysis).
 - **Dependency graphs** (economic/ecological impact).
 - **CI/CD configurations** (e.g., GitLab pipelines).
@@ -66,6 +66,9 @@ Scarcity-Bot processes:
 - **Hashing**: All logs use **SHAKE256/Ed448** (see `logs/README.md`).
 - **BOINC Distributed Audits**:
   - Nodes **never store raw repo data**; only **hashed waste metrics** are shared.
+- **Cloud Backups**:
+  - Metadata backed up to **Dropbox/OneDrive/Syncthing/iDrive** (per Memory #3).
+  - Full backups stored on **RAID 10 + Acronis** (per Memory #4).
 
 ### Integration Security
 - **Environment Variables**:
