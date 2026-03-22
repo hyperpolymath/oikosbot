@@ -7,7 +7,7 @@ synopsis:           Ecological and economic code analysis engine
 description:        Haskell-based code analyzer for Oikos Bot platform.
                     Analyzes code for carbon intensity, energy efficiency,
                     Pareto optimality, and software quality metrics.
-license:            AGPL-3.0-or-later
+license:            PMPL-1.0-or-later
 author:             Hyperpolymath
 maintainer:         oikos@hyperpolymath.dev
 category:           Development
