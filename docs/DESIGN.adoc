@@ -399,6 +399,72 @@ can be discharged as a JtV-style formal proof rather than a custom Oikos proof.
 * The integration is documentation/proof-level, not code-level.
   No shared crate dependency is anticipated.
 
+== DR-009 — Pre-Ephapax type checker: three-mechanism sufficiency
+
+*Date:* 2026-04-11 +
+*Status:* accepted
+
+=== Context
+
+Phase 6 (Ephapax desugar + type checking) is blocked on the `subst` lemma
+closing in `ephapax-typing`.  The question arose: is the set of type-theoretic
+mechanisms Ephapax provides — phantom types, region-scoped immutable values
+(Tofte–Talpin regions), and linear types — actually sufficient for all the
+semantic guarantees Oikos requires?  Or does Oikos need anything beyond them?
+
+=== Decision
+
+The three mechanisms are *exactly sufficient*.  No additional mechanism is
+needed.  The mapping is:
+
+[cols="2,2,3"]
+|===
+| Oikos requirement | Ephapax mechanism | Notes
+
+| Stock ≠ Flow
+| Phantom type `Account<Kind>`
+| Different `Kind` phantom parameters are incompatible types at compile time.
+
+| GBP ≠ USD (currency mixing)
+| Phantom type `Money<Currency>`
+| Currency codes become phantom type parameters; mixing is a type error.
+
+| Period scoping (FY2024 values cannot bleed into FY2025)
+| Tofte–Talpin regions
+| Each fiscal period is a region; balance values are region-scoped.
+  `close from P into Q` is a region transfer, not a copy.
+
+| Godley column-sum invariant
+| _Already proved pre-desugar_
+| Handled entirely in Phase 4 (`godley_check`); Ephapax does not need to
+  re-prove it.
+
+| Instrument lifecycle (`Draft → OnAuction → Issued → Settled\|Void`)
+| Linear typestate
+| Typestate is specialised linear typing: the old state type is consumed,
+  a new state type is returned.  Ephapax's linear types subsume this directly.
+
+| Linear transfers (source consumed, cannot be double-spent)
+| Linear types
+| Direct application: transfer consumes the value at the source linearly.
+|===
+
+The `subst` lemma that is currently blocking `ephapax-typing` is specifically
+the lemma required to typecheck `close from P into Q` (a value moving from
+one region to another).  Closing that lemma unblocks the most important
+remaining piece of Oikos.
+
+=== Consequences
+
+* No exotic type theory is needed.  The existing Ephapax design is the right
+  level of expressiveness for Oikos — no dependent types, no refinement types,
+  no substructural systems beyond linear.
+* The three pre-desugar phases that already exist (cross-reference, currency,
+  instrument) are correctly scoped: they catch what can be caught without
+  type-theoretic machinery, leaving the genuine type-checking to Ephapax.
+* Decision to return to Ephapax work is confirmed: completing `subst` is the
+  single most valuable thing to do next for both Ephapax and Oikos.
+
 == Open architectural questions
 
 The following questions require a decision before v1.0:
