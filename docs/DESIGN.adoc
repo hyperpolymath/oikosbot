@@ -179,30 +179,41 @@ outgoing transitions).
 * The BFS is linear in the number of states + transitions; performance
   is not a concern for realistic instrument definitions.
 
-== DR-005 — Forge strategy: GitLab primary, GitHub mirror
+== DR-005 — Forge strategy: GitHub primary, GitLab downstream mirror
 
 *Date:* 2026-04-11 +
-*Status:* proposed — pending confirmation from project owner
+*Status:* accepted — 2026-04-11
 
 === Context
 
-The hyperpolymath estate standard is GitHub-primary with downstream mirrors.
-Oikos was specified by the project owner as GitLab-primary.
+Oikos was initially specified as GitLab-primary.
+On review, every project Oikos depends on or integrates with (Ephapax,
+Betlang, Eclexia, Julia the Viper) is hosted on GitHub under
+`hyperpolymath`.  The estate toolchain (hypatia-scan, gitbot-fleet,
+scorecard, the mirror system) is wired to GitHub.
+GitLab-primary would require maintaining a parallel CI pipeline with no
+audience or tooling benefit.
 
 === Decision
 
-Oikos's canonical remote is `https://gitlab.com/hyperpolymath/oikos`.
-GitHub (`https://github.com/hyperpolymath/oikos`) is a downstream mirror,
-populated by GitLab CI push mirroring.
+Oikos follows the estate standard: *GitHub-primary*.
+
+* Canonical remote: `https://github.com/hyperpolymath/oikos`
+* GitLab (`https://gitlab.com/hyperpolymath/oikos`) is a downstream mirror,
+  populated by the estate hub-and-spoke mirror system.
+* CI/CD will use GitHub Actions (`.github/workflows/`) rather than
+  `.gitlab-ci.yml`; the existing `.gitlab-ci.yml` scaffold can be removed
+  once GitHub Actions workflows are in place.
 
 === Consequences
 
-* This is an explicit exception to the estate-wide GitHub-primary rule.
-* CI/CD is `.gitlab-ci.yml`; no `.github/workflows/` directory exists.
-* The estate's hypatia-scan, scorecard, and mirror workflows are absent.
-  These can be added as GitLab CI equivalents post-v1.0.
-* _Flag: confirm this exception is intentional and update the estate
-  mirror configuration accordingly._
+* Consistent with the estate-wide rule; no special case to maintain.
+* All estate tooling (hypatia-scan, scorecard, gitbot-fleet) applies
+  without adaptation.
+* Dependency references to Ephapax and other `hyperpolymath` projects
+  work without cross-forge coordination.
+* GitLab still receives the repo via the downstream mirror, satisfying
+  any EU-institution preference for GitLab access.
 
 == DR-006 — Betlang interoperability: stochastic monetary expressions
 
