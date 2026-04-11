@@ -72,3 +72,65 @@ impl<T> Spanned<T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn span_len_is_end_minus_start() {
+        assert_eq!(Span::new(4, 10).len(), 6);
+    }
+
+    #[test]
+    fn span_zero_length_is_empty() {
+        assert!(Span::SYNTHETIC.is_empty());
+        assert!(Span::new(7, 7).is_empty());
+    }
+
+    #[test]
+    fn span_non_zero_is_not_empty() {
+        assert!(!Span::new(0, 1).is_empty());
+    }
+
+    #[test]
+    fn hull_of_non_overlapping_spans() {
+        let a = Span::new(0, 5);
+        let b = Span::new(10, 20);
+        assert_eq!(a.hull(b), Span::new(0, 20));
+    }
+
+    #[test]
+    fn hull_of_overlapping_spans() {
+        let a = Span::new(3, 12);
+        let b = Span::new(8, 17);
+        assert_eq!(a.hull(b), Span::new(3, 17));
+    }
+
+    #[test]
+    fn hull_is_commutative() {
+        let a = Span::new(1, 5);
+        let b = Span::new(3, 9);
+        assert_eq!(a.hull(b), b.hull(a));
+    }
+
+    #[test]
+    fn hull_with_self_is_identity() {
+        let s = Span::new(4, 8);
+        assert_eq!(s.hull(s), s);
+    }
+
+    #[test]
+    fn spanned_map_preserves_span() {
+        let s = Spanned::new(42u32, Span::new(5, 10));
+        let mapped = s.map(|n| n.to_string());
+        assert_eq!(mapped.node, "42");
+        assert_eq!(mapped.span, Span::new(5, 10));
+    }
+
+    #[test]
+    fn spanned_into_node_drops_span() {
+        let s = Spanned::new("hello", Span::new(0, 5));
+        assert_eq!(s.into_node(), "hello");
+    }
+}

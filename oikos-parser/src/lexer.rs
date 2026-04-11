@@ -3,44 +3,48 @@
 
 //! Logos lexer for the Oikos DSL.
 //!
-//! # Status: scaffold
+//! Longest-match rules (Logos guarantees):
+//! - `2025-04-01` → `Date` (10 chars) beats `Number` (4 chars) + `Minus`.
+//! - `model` → `KwModel` (`#[token]` beats `#[regex]` at equal length).
+//! - `model_x` → `Ident` (7 chars) beats `KwModel` (5 chars).
 //!
-//! Token variants are declared; the regex patterns are stubs to be filled in
-//! once the surface syntax grammar is stable.  All keywords follow the
-//! economic naming register: `account`, `sector`, `godley`, `instrument`,
-//! `transfer`, `close`, `convert`, `period`, `rate`, `model`.
+//! Value-carrying variants (`Ident`, `Number`, `Date`, `StringLit`) store
+//! the matched text as a `SmolStr` so the parser need not reach back into
+//! the source string.
 
 use logos::Logos;
+use smol_str::SmolStr;
 
 /// The token stream produced by the Logos lexer.
 #[derive(Logos, Debug, Clone, PartialEq)]
-#[logos(skip r"[ \t\r\n]+")] // skip whitespace
-#[logos(skip r"--[^\n]*")]    // skip line comments (`--` like Haskell/Lua)
+#[logos(skip r"[ \t\r\n]+")]  // skip whitespace
+#[logos(skip r"--[^\n]*")]    // line comments: -- like Haskell/Lua
 pub enum Token {
-    // ── Keywords ─────────────────────────────────────────────────────────────
-    #[token("model")]      KwModel,
-    #[token("period")]     KwPeriod,
-    #[token("rate")]       KwRate,
-    #[token("account")]    KwAccount,
-    #[token("sector")]     KwSector,
-    #[token("instrument")] KwInstrument,
-    #[token("godley")]     KwGodley,
-    #[token("transfer")]   KwTransfer,
-    #[token("convert")]    KwConvert,
-    #[token("close")]      KwClose,
-    #[token("from")]       KwFrom,
-    #[token("into")]       KwInto,
-    #[token("via")]        KwVia,
-    #[token("on")]         KwOn,
-    #[token("states")]     KwStates,
-    #[token("initial")]    KwInitial,
-    #[token("transitions")]KwTransitions,
-    #[token("asset")]      KwAsset,
-    #[token("liability")]  KwLiability,
-    #[token("amount")]     KwAmount,
-    #[token("description")]KwDescription,
-    #[token("balance")]    KwBalance,
-    #[token("fraction")]   KwFraction,
+    // ── Keywords (unit variants; #[token] beats #[regex] at equal length) ────
+    #[token("model")]       KwModel,
+    #[token("period")]      KwPeriod,
+    #[token("rate")]        KwRate,
+    #[token("account")]     KwAccount,
+    #[token("sector")]      KwSector,
+    #[token("instrument")]  KwInstrument,
+    #[token("godley")]      KwGodley,
+    #[token("transfer")]    KwTransfer,
+    #[token("convert")]     KwConvert,
+    #[token("close")]       KwClose,
+    #[token("from")]        KwFrom,
+    #[token("to")]          KwTo,
+    #[token("into")]        KwInto,
+    #[token("via")]         KwVia,
+    #[token("on")]          KwOn,
+    #[token("states")]      KwStates,
+    #[token("initial")]     KwInitial,
+    #[token("transitions")] KwTransitions,
+    #[token("asset")]       KwAsset,
+    #[token("liability")]   KwLiability,
+    #[token("amount")]      KwAmount,
+    #[token("description")] KwDescription,
+    #[token("balance")]     KwBalance,
+    #[token("fraction")]    KwFraction,
 
     // ── Account kinds ─────────────────────────────────────────────────────────
     #[token("Stock")] KwStock,
@@ -53,33 +57,43 @@ pub enum Token {
     #[token("Month")]      KwMonth,
     #[token("Week")]       KwWeek,
 
+    // ── Arithmetic signs (for Godley matrix cells) ────────────────────────────
+    #[token("+")] Plus,
+    #[token("-")] Minus,
+
     // ── Punctuation ───────────────────────────────────────────────────────────
-    #[token("{")]  LBrace,
-    #[token("}")]  RBrace,
-    #[token("(")]  LParen,
-    #[token(")")]  RParen,
-    #[token("|")]  Pipe,
-    #[token(":")]  Colon,
-    #[token(",")]  Comma,
-    #[token(";")]  Semicolon,
-    #[token("→")]  Arrow,       // U+2192 RIGHTWARDS ARROW
-    #[token("->")]  AsciiArrow, // ASCII fallback
+    #[token("{")] LBrace,
+    #[token("}")] RBrace,
+    #[token("(")] LParen,
+    #[token(")")] RParen,
+    #[token("|")] Pipe,
+    #[token(":")] Colon,
+    #[token(",")] Comma,
+    #[token(";")] Semicolon,
+    #[token("→")]  Arrow,      // U+2192
+    #[token("->")] AsciiArrow, // ASCII fallback
 
-    // ── Literals ─────────────────────────────────────────────────────────────
-    /// Decimal number, optionally with underscores as digit separators.
-    #[regex(r"[0-9][0-9_]*(\.[0-9][0-9_]*)?")]
-    Number,
+    // ── Literals (value-carrying) ─────────────────────────────────────────────
 
-    /// ISO 8601 date: YYYY-MM-DD
-    #[regex(r"\d{4}-\d{2}-\d{2}")]
-    Date,
+    /// ISO 8601 date.  Must be tried before `Number` to get longest match.
+    /// The Logos longest-match rule handles this: `\d{4}-\d{2}-\d{2}` wins
+    /// over `[0-9][0-9_]*` for input `2025-04-01`.
+    #[regex(r"\d{4}-\d{2}-\d{2}", |lex| SmolStr::from(lex.slice()))]
+    Date(SmolStr),
 
-    /// Identifier: starts with a letter or underscore, continues with
-    /// alphanumerics and underscores.
-    #[regex(r"[A-Za-z_][A-Za-z0-9_]*")]
-    Ident,
+    /// Decimal numeral, optionally with underscore digit separators.
+    #[regex(r"[0-9][0-9_]*(\.[0-9][0-9_]*)?", |lex| SmolStr::from(lex.slice()))]
+    Number(SmolStr),
 
-    /// Double-quoted string literal.
-    #[regex(r#""([^"\\]|\\.)*""#)]
-    StringLit,
+    /// Identifier: `[A-Za-z_][A-Za-z0-9_]*`.
+    /// Keywords are separate variants and take priority at equal length.
+    #[regex(r"[A-Za-z_][A-Za-z0-9_]*", |lex| SmolStr::from(lex.slice()))]
+    Ident(SmolStr),
+
+    /// Double-quoted string literal; the stored value has the quotes stripped.
+    #[regex(r#""([^"\\]|\\.)*""#, |lex| {
+        let s = lex.slice();
+        SmolStr::from(&s[1..s.len() - 1])
+    })]
+    StringLit(SmolStr),
 }
