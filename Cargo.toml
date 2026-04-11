@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: EUPL-1.2
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+[workspace]
+resolver = "2"
+members = [
+    "oikos-syntax",
+    "oikos-parser",
+    "oikos-desugar",
+    "oikos-check",
+]
+
+[workspace.package]
+version    = "0.1.0"
+edition    = "2021"
+rust-version = "1.83"
+license    = "EUPL-1.2"
+authors    = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+repository = "https://gitlab.com/hyperpolymath/oikos"
+keywords   = ["economics", "stock-flow-consistent", "macroeconomics", "dsl", "ephapax"]
+categories = ["compilers", "science"]
+
+[workspace.dependencies]
+# ── Internal crates ──────────────────────────────────────────────────────────
+oikos-syntax   = { path = "oikos-syntax" }
+oikos-parser   = { path = "oikos-parser" }
+oikos-desugar  = { path = "oikos-desugar" }
+oikos-check    = { path = "oikos-check" }
+
+# ── Serialisation ─────────────────────────────────────────────────────────────
+serde          = { version = "1.0", features = ["derive"] }
+
+# ── String interning ─────────────────────────────────────────────────────────
+smol_str       = { version = "0.3", features = ["serde"] }
+
+# ── Error handling ────────────────────────────────────────────────────────────
+thiserror      = "2"
+
+# ── Lexing / parsing ──────────────────────────────────────────────────────────
+logos          = "0.14"
+chumsky        = "1.0.0-alpha.7"
+
+# ── Diagnostic reporting ─────────────────────────────────────────────────────
+ariadne        = "0.4"
+
+# ── Ephapax IR (blocked: Ephapax parser not yet complete) ────────────────────
+# Uncomment once `hyperpolymath/ephapax` ships a stable parser.
+# ephapax-ir     = { path = "../ephapax/src/ephapax-ir" }
+# ephapax-typing = { path = "../ephapax/src/ephapax-typing" }

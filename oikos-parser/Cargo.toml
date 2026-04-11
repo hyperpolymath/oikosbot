@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: EUPL-1.2
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+[package]
+name        = "oikos-parser"
+description = "Logos lexer + Chumsky parser for the Oikos SFC modelling DSL"
+version.workspace    = true
+edition.workspace    = true
+rust-version.workspace = true
+license.workspace    = true
+authors.workspace    = true
+repository.workspace = true
+
+[dependencies]
+oikos-syntax.workspace = true
+logos.workspace        = true
+chumsky.workspace      = true
+thiserror.workspace    = true
+ariadne.workspace      = true
+smol_str.workspace     = true

@@ -1,0 +1,240 @@
+// SPDX-License-Identifier: EUPL-1.2
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Oikos — Architectural Decision Record
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+v0.1.0, 2026-04-11
+:toc: left
+:toclevels: 2
+:sectnums:
+:doctype: article
+:icons: font
+:source-highlighter: rouge
+:note-caption: NOTE
+:warning-caption: WARNING
+:tip-caption: TIP
+
+This document records architectural decisions for the Oikos project.
+Each decision is an ADR (Architectural Decision Record) with a status,
+context, decision, and consequences.
+
+ADR statuses: `proposed` | `accepted` | `deprecated` | `superseded` | `rejected`
+
+== DR-001 — DSL on Ephapax rather than a new language
+
+*Date:* 2026-04-11 +
+*Status:* accepted
+
+=== Context
+
+Stock-flow consistent macroeconomic modelling requires a type system capable
+of expressing:
+
+* *Linear* monetary values (money spent cannot be spent again)
+* *Phantom type* parameters (currency as a compile-time dimension)
+* *Region* scoping (values live only within a fiscal period)
+* *Typestate* machines (financial instruments have lifecycle constraints)
+* A *global structural invariant* (the Godley column-sum rule)
+
+The Ephapax project (`hyperpolymath/ephapax`) was designed specifically to
+provide all four of these mechanisms for a systems-programming setting:
+linear types, Tofte–Talpin regions, and typestate.
+
+The question was: build Oikos as (a) a standalone language with its own type
+checker implementing the above, or (b) a surface grammar that desugars to
+Ephapax IR and delegates type checking to Ephapax.
+
+=== Decision
+
+*Option (b): Oikos is a grammar and desugaring pass, not a language.*
+
+Oikos defines a surface syntax designed for economists, a parser that
+produces `oikos-syntax::Model`, and a desugaring pass
+(`oikos-desugar`) that lowers `Model` to Ephapax IR.
+Type checking is delegated entirely to the Ephapax type checker
+(`ephapax-typing`).
+
+=== Consequences
+
+*Positive:*
+
+* The formal semantic guarantees come from Ephapax, which has a Coq-verified
+  type soundness proof.  Oikos inherits that proof for free.
+* Oikos does not need its own type checker, region inference, or linearity
+  analysis — substantial work avoided.
+* Improvements to the Ephapax backend (better errors, WASM codegen,
+  incremental compilation) automatically benefit Oikos users.
+* The codebase boundary is clear: syntax and desugaring in Oikos,
+  semantics in Ephapax.
+
+*Negative / risks:*
+
+* Oikos is blocked on Ephapax's parser milestone.
+  The scaffold and spec can proceed independently; the desugaring pass
+  cannot be end-to-end tested until `ephapax-parser` ships.
+  This is tracked as a known blocker in `oikos-desugar/src/lib.rs`.
+* Ephapax error messages may use systems-programming vocabulary that is
+  unfamiliar to economists.  Oikos will need an error-translation layer
+  that rewrites Ephapax type errors into economic language.
+  This is deferred to a later ADR.
+* If Ephapax changes its IR in a breaking way, Oikos must update its
+  desugaring pass.  This coupling is acceptable given shared authorship.
+
+=== Alternatives considered
+
+* *Standalone language with custom type checker:* rejected.
+  Duplicating region inference and linearity checking correctly is months
+  of work; the Coq proof would need to be reproduced.
+* *Dependently typed host (Idris2, Lean 4):* considered.
+  Idris2 dependent types could encode the Godley invariant at the type level
+  more directly.  Rejected for this iteration because the economist audience
+  would face a steep learning curve with dependent-type error messages.
+  Revisit post-v1.0 if Ephapax integration proves awkward.
+* *Embedding in Julia (ModelingToolkit):* rejected.
+  Julia/MTK does not enforce linearity or period scoping statically;
+  violations would be runtime errors.  The core design requirement is
+  compile-time rejection of invalid models.
+
+== DR-002 — EUPL-1.2 licence
+
+*Date:* 2026-04-11 +
+*Status:* accepted
+
+=== Context
+
+The hyperpolymath estate uses PMPL-1.0-or-later as its standard licence.
+Oikos is intended for use by academic economists and public-sector
+institutions, particularly within the European Union.
+
+=== Decision
+
+Oikos is licensed under EUPL-1.2 (European Union Public Licence).
+
+=== Consequences
+
+* EUPL-1.2 is an OSI-approved copyleft licence compatible with GPL-2.0,
+  LGPL-2.1, AGPL-3.0, and several other copyleft licences.
+* EUPL-1.2 has official EU translations in 23 languages, which is
+  appropriate for a tool targeting European public-sector economists.
+* PMPL-1.0-or-later is the standing estate default; this is an explicit
+  exception.  The exception is recorded here and in the SPDX headers.
+* Ephapax (PMPL-1.0-or-later) is a dependency.
+  PMPL compatibility with EUPL is an open question pending legal review.
+  _Flag: confirm PMPL ↔ EUPL compatibility before v1.0 release._
+
+== DR-003 — Godley invariant checking before desugaring
+
+*Date:* 2026-04-11 +
+*Status:* accepted
+
+=== Context
+
+The Godley column-sum rule is the most important accounting invariant.
+It could be enforced in two places:
+
+1. In `oikos-check` as a structural pre-check on the `GodleyMatrix` AST node.
+2. In `ephapax-typing` as a linear type constraint after desugaring.
+
+=== Decision
+
+Enforce the Godley invariant as a *pre-desugar structural check* in
+`oikos-check::godley_check`.
+
+=== Consequences
+
+* The check runs even while the Ephapax desugar/type-check path is blocked.
+  Economist users get meaningful error messages immediately.
+* Error messages can be expressed in economic vocabulary ("sector X column
+  does not sum to zero") rather than Ephapax type system vocabulary.
+* The check is conservative: it checks sign-pattern balance, not
+  value-magnitude balance.  Full magnitude checking will be added once the
+  Ephapax integration is complete.
+* Duplication risk is low because the post-desugar Ephapax check will catch
+  anything the pre-check misses.
+
+== DR-004 — Instrument typestate reachability check
+
+*Date:* 2026-04-11 +
+*Status:* accepted
+
+=== Context
+
+Financial instrument typestate machines can contain unreachable states or
+states from which no terminal state is reachable.
+These are bugs in the model definition, not valid instrument designs.
+
+=== Decision
+
+Implement BFS-based reachability checks in `oikos-check::instrument_check`:
+
+1. Every declared state must be reachable from the initial state.
+2. Every non-terminal state must have at least one path to a terminal state.
+
+Terminal states are `Settled` and `Void` (or custom states with no
+outgoing transitions).
+
+=== Consequences
+
+* Models with dead states in their instrument typestate machines are
+  rejected at compile time.
+* The BFS is linear in the number of states + transitions; performance
+  is not a concern for realistic instrument definitions.
+
+== DR-005 — Forge strategy: GitLab primary, GitHub mirror
+
+*Date:* 2026-04-11 +
+*Status:* proposed — pending confirmation from project owner
+
+=== Context
+
+The hyperpolymath estate standard is GitHub-primary with downstream mirrors.
+Oikos was specified by the project owner as GitLab-primary.
+
+=== Decision
+
+Oikos's canonical remote is `https://gitlab.com/hyperpolymath/oikos`.
+GitHub (`https://github.com/hyperpolymath/oikos`) is a downstream mirror,
+populated by GitLab CI push mirroring.
+
+=== Consequences
+
+* This is an explicit exception to the estate-wide GitHub-primary rule.
+* CI/CD is `.gitlab-ci.yml`; no `.github/workflows/` directory exists.
+* The estate's hypatia-scan, scorecard, and mirror workflows are absent.
+  These can be added as GitLab CI equivalents post-v1.0.
+* _Flag: confirm this exception is intentional and update the estate
+  mirror configuration accordingly._
+
+== Open architectural questions
+
+The following questions require a decision before v1.0:
+
+[cols="1,3,1"]
+|===
+| ID | Question | Priority
+
+| Q-1
+| *Ephapax error translation:* how should Ephapax type errors be
+  translated into economic language for economist users?
+  Options: post-processing the error message string; a dedicated
+  `oikos-diagnostics` crate; teaching Ephapax to carry domain metadata.
+| High
+
+| Q-2
+| *Decimal representation:* `MoneyLiteral.amount` is stored as a `SmolStr`.
+  Before arithmetic (in the type checker or desugaring), we need a
+  fixed-point or arbitrary-precision decimal type.
+  Options: `rust_decimal`, `bigdecimal`, custom.
+| Medium
+
+| Q-3
+| *PMPL ↔ EUPL licence compatibility:* legal review required before
+  distributing Oikos (EUPL-1.2) as a binary that statically links
+  Ephapax (PMPL-1.0-or-later).
+| High
+
+| Q-4
+| *IDE integration:* an LSP server would make Oikos useful to economists
+  working in standard editors.  The Ephapax project has `ephapax-lsp`;
+  Oikos can either extend it or ship `oikos-lsp`.
+| Low (post-v1.0)
+|===

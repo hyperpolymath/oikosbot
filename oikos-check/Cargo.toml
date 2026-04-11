@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: EUPL-1.2
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+[package]
+name        = "oikos-check"
+description = "Type checker for Oikos: wraps Ephapax typing, enforces SFC invariants"
+version.workspace    = true
+edition.workspace    = true
+rust-version.workspace = true
+license.workspace    = true
+authors.workspace    = true
+repository.workspace = true
+
+[dependencies]
+oikos-syntax.workspace   = true
+oikos-desugar.workspace  = true
+thiserror.workspace      = true
+smol_str.workspace       = true
+
+# Ephapax type checker — uncomment once ephapax-typing is stable.
+# ephapax-typing.workspace = true

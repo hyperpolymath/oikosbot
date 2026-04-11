@@ -1,0 +1,150 @@
+// SPDX-License-Identifier: EUPL-1.2
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Oikos
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+v0.1.0-dev
+:toc: macro
+:toclevels: 2
+:icons: font
+:source-highlighter: rouge
+
+*A typed DSL for stock-flow consistent macroeconomic modelling.*
+
+Oikos provides a surface language for
+https://en.wikipedia.org/wiki/Stock-flow_consistent_model[stock-flow consistent (SFC)]
+macroeconomic models in the tradition of Godley & Lavoie (2007).
+It desugars into https://github.com/hyperpolymath/ephapax[Ephapax], inheriting
+its linear types, Tofte–Talpin regions, and typestate.
+
+The core guarantee:
+
+[quote]
+____
+A model that violates any accounting identity *does not compile*.
+____
+
+toc::[]
+
+== Status
+
+`0.1.0-dev` — *scaffold only.*
+The AST and type-checking scaffolds are in place.
+The parser and desugaring pass are in progress;
+desugaring is blocked on the Ephapax parser milestone.
+
+See link:docs/DESIGN.adoc[DESIGN.adoc] for the full architectural decision log.
+
+== What Oikos gives you
+
+[cols="1,2"]
+|===
+| Guarantee | Mechanism
+
+| *Stock ≠ Flow*
+| Distinct phantom types; adding them without integration is a type error.
+
+| *GBP ≠ USD*
+| Currency as a phantom type parameter; FX requires an explicit dated rate.
+
+| *Period scoping*
+| Fiscal periods are Tofte–Talpin regions; crossing a boundary requires `close`.
+
+| *Godley invariant*
+| The column-sum rule is enforced at compile time, not test time.
+
+| *Instrument lifecycle*
+| Financial contracts progress through typestate; invalid transitions are errors.
+
+| *Linear transfers*
+| `transfer A → B` consumes A at the type level; double-counting is impossible.
+|===
+
+== Quick example
+
+[source,oikos]
+----
+-- Minimal two-sector SFC model (Godley & Lavoie, Model SIM)
+model ModelSIM (period: FY2025) {
+
+    period FY2025 : FiscalYear from 2025-01-01 to 2025-12-31
+
+    account wages       : Flow  GBP
+    account taxes       : Flow  GBP
+    account deposits    : Stock GBP
+
+    sector Households { asset deposits }
+    sector Government { liability deposits }
+
+    godley {
+        | Account   | Households | Government |
+        | wages     | +          | -          |
+        | taxes     | -          | +          |
+        | deposits  | +          | -          |
+    }
+
+    transfer wages    → deposits { amount: 100.00 GBP }
+    transfer deposits → taxes    { amount: 20.00 GBP }
+}
+----
+
+Mismatched Godley columns, currency mixtures, and invalid typestate
+transitions all produce compiler errors — not runtime panics.
+
+== Building
+
+=== Prerequisites
+
+* Rust ≥ 1.83 (via https://asdf-vm.com/[asdf] or https://rustup.rs/[rustup])
+* https://just.systems/[just] task runner
+
+=== Tasks
+
+[source,shell]
+----
+just check   # clippy + doc check
+just test    # full test suite
+just fmt     # format check (use `just fmt-fix` to apply)
+just build   # release build
+just all     # fmt + check + build + test
+----
+
+== Repository structure
+
+----
+oikos/
+├── oikos-syntax/     # AST: stocks, flows, sectors, Godley matrix, instruments
+├── oikos-parser/     # Logos lexer + Chumsky parser → oikos-syntax::Model
+├── oikos-desugar/    # Desugaring pass → Ephapax IR  (blocked: see below)
+├── oikos-check/      # Type checker wrapping Ephapax  (blocked: see below)
+├── spec/SPEC.adoc    # Language specification
+└── docs/DESIGN.adoc  # Architectural decision log
+----
+
+=== Blocked on Ephapax
+
+The `oikos-desugar` and `oikos-check` crates require `ephapax-ir` and
+`ephapax-typing` from the https://github.com/hyperpolymath/ephapax[Ephapax]
+project.
+Those crates are stable; the blocker is Ephapax's surface-language parser,
+which is not yet complete.
+Pre-desugar checks (Godley invariant, instrument typestate reachability) are
+implemented and runnable today.
+
+== Specification
+
+See link:spec/SPEC.adoc[spec/SPEC.adoc] for:
+
+* Full BNF grammar (draft)
+* Type system overview with examples for each of the six semantic requirements
+* A complete worked example (Model SIM)
+
+== Licence
+
+EUPL-1.2.
+See link:LICENSES/EUPL-1.2.txt[LICENSES/EUPL-1.2.txt].
+
+== References
+
+* Godley, W.A.H. & Lavoie, M. (2007). _Monetary Economics_. Palgrave Macmillan.
+* Godley, W.A.H. & Lavoie, M. (2012). _Monetary Economics_, 2nd ed.
+* Ephapax: https://github.com/hyperpolymath/ephapax

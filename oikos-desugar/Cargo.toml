@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: EUPL-1.2
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+[package]
+name        = "oikos-desugar"
+description = "Desugaring pass: Oikos AST → Ephapax IR"
+version.workspace    = true
+edition.workspace    = true
+rust-version.workspace = true
+license.workspace    = true
+authors.workspace    = true
+repository.workspace = true
+
+[dependencies]
+oikos-syntax.workspace  = true
+thiserror.workspace     = true
+smol_str.workspace      = true
+
+# Ephapax IR — uncomment once the Ephapax parser is complete.
+# Desugaring is blocked on that milestone; this crate compiles but
+# the `desugar` function will return `Err(DesugarError::EphapaxNotAvailable)`
+# until the dependency is wired in.
+#
+# ephapax-ir.workspace = true
