@@ -527,6 +527,114 @@ fn transition_from_and_to_captured() {
     assert_eq!(t[1].to,   InstrumentState::Void);
 }
 
+// ── FX rate declarations ──────────────────────────────────────────────────────
+
+#[test]
+fn rate_declaration_parsed() {
+    let src = r#"
+        model M (period: P) {
+            godley { | Account | }
+            rate GBP_USD_Q4 : GBP → USD 1.2650 on 2025-12-31
+        }
+    "#;
+    let m = parse_ok(src);
+    assert_eq!(m.fx_rates.len(), 1);
+    let r = &m.fx_rates[0];
+    assert_eq!(r.name.as_str(), "GBP_USD_Q4");
+    assert_eq!(r.from.code.as_str(), "GBP");
+    assert_eq!(r.to.code.as_str(), "USD");
+    assert_eq!(r.rate.as_str(), "1.2650");
+    assert_eq!(r.on.as_str(), "2025-12-31");
+}
+
+#[test]
+fn rate_ascii_arrow_parsed() {
+    let src = r#"
+        model M (period: P) {
+            godley { | Account | }
+            rate EUR_GBP : EUR -> GBP 0.8550 on 2025-06-30
+        }
+    "#;
+    let m = parse_ok(src);
+    assert_eq!(m.fx_rates[0].from.code.as_str(), "EUR");
+    assert_eq!(m.fx_rates[0].to.code.as_str(), "GBP");
+}
+
+#[test]
+fn multiple_rates_parsed() {
+    let src = r#"
+        model M (period: P) {
+            godley { | Account | }
+            rate GBP_USD : GBP → USD 1.2650 on 2025-12-31
+            rate EUR_GBP : EUR → GBP 0.8550 on 2025-12-31
+        }
+    "#;
+    let m = parse_ok(src);
+    assert_eq!(m.fx_rates.len(), 2);
+}
+
+// ── Convert expressions ───────────────────────────────────────────────────────
+
+#[test]
+fn convert_expr_parsed() {
+    let src = r#"
+        model M (period: P) {
+            godley { | Account | }
+            rate GBP_USD : GBP → USD 1.2650 on 2025-12-31
+            convert 1_000.00 GBP via GBP_USD into usd_account
+        }
+    "#;
+    let m = parse_ok(src);
+    assert_eq!(m.body.len(), 1);
+    let oikos_syntax::expr::Expr::FxConversion(fx) = &m.body[0] else {
+        panic!("expected FxConversion");
+    };
+    assert_eq!(fx.rate_name.as_str(), "GBP_USD");
+    assert_eq!(fx.destination.name.as_str(), "usd_account");
+}
+
+#[test]
+fn convert_amount_preserved() {
+    let src = r#"
+        model M (period: P) {
+            godley { | Account | }
+            rate GBP_USD : GBP → USD 1.2650 on 2025-12-31
+            convert 500.00 GBP via GBP_USD into usd_reserve
+        }
+    "#;
+    let m = parse_ok(src);
+    let oikos_syntax::expr::Expr::FxConversion(fx) = &m.body[0] else {
+        panic!("expected FxConversion");
+    };
+    let oikos_syntax::expr::MoneyExpr::Literal(lit) = &fx.amount else {
+        panic!("expected Literal");
+    };
+    assert_eq!(lit.amount.as_str(), "500.00");
+    assert_eq!(lit.currency.code.as_str(), "GBP");
+}
+
+#[test]
+fn rate_and_convert_in_full_model() {
+    let src = r#"
+        model UK (period: FY2025) {
+            period FY2025 : FiscalYear from 2025-01-01 to 2025-12-31
+            account gbp_reserve : Stock GBP
+            account usd_reserve : Stock USD
+            rate GBP_USD : GBP → USD 1.2650 on 2025-12-31
+            godley {
+                | Account     | BoE  |
+                | gbp_reserve | +    |
+                | usd_reserve | -    |
+            }
+            convert 10_000.00 GBP via GBP_USD into usd_reserve
+        }
+    "#;
+    let m = parse_ok(src);
+    assert_eq!(m.fx_rates.len(), 1);
+    assert_eq!(m.body.len(), 1);
+    assert!(matches!(m.body[0], oikos_syntax::expr::Expr::FxConversion(_)));
+}
+
 // ── Error cases ───────────────────────────────────────────────────────────────
 
 #[test]

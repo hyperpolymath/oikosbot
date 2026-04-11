@@ -7,9 +7,7 @@
 //! throughout; diagnostic spans are a follow-up once the parser is stable).
 //!
 //! # Implemented
-//! `model`, `period`, `account`, `sector`, `godley`, `transfer`, `close`, `instrument`.
-//!
-//! # Stubs
+//! `model`, `period`, `account`, `sector`, `godley`, `transfer`, `close`, `instrument`,
 //! `rate`, `convert`.
 
 use chumsky::prelude::*;
@@ -17,8 +15,8 @@ use smol_str::SmolStr;
 
 use oikos_syntax::{
     account::{AccountDecl, AccountKind},
-    dimension::{CurrencyCode, MoneyLiteral},
-    expr::{Expr, MoneyExpr, PeriodCloseExpr, TransferExpr},
+    dimension::{CurrencyCode, FxRate, MoneyLiteral},
+    expr::{Expr, FxConversionExpr, MoneyExpr, PeriodCloseExpr, TransferExpr},
     godley::{GodleyCell, GodleyMatrix, GodleySign},
     instrument::{InstrumentDecl, InstrumentState, StateTransition},
     model::Model,
@@ -312,6 +310,38 @@ fn close_expr<'src>() -> impl Parser<'src, &'src [Token], Expr, Extra<'src>> + C
         })
 }
 
+// ── FX rate declarations and convert expressions ──────────────────────────────
+
+/// `rate GBP_USD_Q4 : GBP → USD 1.2650 on 2025-12-31`
+///
+/// The `FxRate(...)` wrapper from the spec is simplified: `FxRate` is implied
+/// by the `rate` keyword; only the `from → to` currency pair is needed.
+fn rate_decl<'src>() -> impl Parser<'src, &'src [Token], FxRate, Extra<'src>> + Clone {
+    just(Token::KwRate)
+        .ignore_then(ident())       // rate name
+        .then_ignore(just(Token::Colon))
+        .then(currency())           // from currency
+        .then_ignore(arrow())
+        .then(currency())           // to currency
+        .then(number())             // rate value
+        .then_ignore(just(Token::KwOn))
+        .then(date())               // effective date
+        .map(|((((name, from), to), rate), on)| FxRate { name, from, to, rate, on, span: syn() })
+}
+
+/// `convert 1_000.00 GBP via GBP_USD_Q4 into usd_account`
+fn convert_expr<'src>() -> impl Parser<'src, &'src [Token], Expr, Extra<'src>> + Clone {
+    just(Token::KwConvert)
+        .ignore_then(money_expr())          // amount and source currency
+        .then_ignore(just(Token::KwVia))
+        .then(ident())                      // named FX rate
+        .then_ignore(just(Token::KwInto))
+        .then(account_ref())                // destination account
+        .map(|((amount, rate_name), destination)| {
+            Expr::FxConversion(FxConversionExpr { amount, rate_name, destination, span: syn() })
+        })
+}
+
 // ── Instrument declarations ───────────────────────────────────────────────────
 
 /// Map a bare identifier to an `InstrumentState`.
@@ -396,6 +426,7 @@ enum Item {
     Account(AccountDecl),
     Sector(SectorDecl),
     Instrument(InstrumentDecl),
+    FxRate(FxRate),
     Godley(GodleyMatrix),
     Expr(Expr),
 }
@@ -406,9 +437,11 @@ fn model_parser<'src>() -> impl Parser<'src, &'src [Token], Model, Extra<'src>> 
         account_decl().map(Item::Account),
         sector_decl().map(Item::Sector),
         instrument_decl().map(Item::Instrument),
+        rate_decl().map(Item::FxRate),
         godley_block().map(Item::Godley),
         transfer_expr().map(Item::Expr),
         close_expr().map(Item::Expr),
+        convert_expr().map(Item::Expr),
     ));
 
     just(Token::KwModel)
@@ -428,6 +461,7 @@ fn model_parser<'src>() -> impl Parser<'src, &'src [Token], Model, Extra<'src>> 
             let mut accounts = Vec::new();
             let mut sectors = Vec::new();
             let mut instruments = Vec::new();
+            let mut fx_rates = Vec::new();
             let mut godley_opt: Option<GodleyMatrix> = None;
             let mut body = Vec::new();
             for item in items {
@@ -436,6 +470,7 @@ fn model_parser<'src>() -> impl Parser<'src, &'src [Token], Model, Extra<'src>> 
                     Item::Account(a)    => accounts.push(a),
                     Item::Sector(s)     => sectors.push(s),
                     Item::Instrument(i) => instruments.push(i),
+                    Item::FxRate(r)     => fx_rates.push(r),
                     Item::Godley(g)     => godley_opt = Some(g),
                     Item::Expr(e)       => body.push(e),
                 }
@@ -443,7 +478,7 @@ fn model_parser<'src>() -> impl Parser<'src, &'src [Token], Model, Extra<'src>> 
             let godley = godley_opt.unwrap_or(GodleyMatrix {
                 cells: vec![], sectors: vec![], accounts: vec![], span: syn(),
             });
-            Model { name, active_period, periods, fx_rates: vec![], accounts, instruments, sectors, godley, body, span: syn() }
+            Model { name, active_period, periods, fx_rates, accounts, instruments, sectors, godley, body, span: syn() }
         })
 }
 
@@ -452,9 +487,23 @@ fn model_parser<'src>() -> impl Parser<'src, &'src [Token], Model, Extra<'src>> 
 pub fn parse_model(source: &str) -> Result<(Option<Model>, Vec<ParseError>), ParseError> {
     use logos::Logos;
 
-    let tokens: Vec<Token> = Token::lexer(source)
-        .filter_map(|r| r.ok())
-        .collect();
+    // Collect tokens alongside their source byte-ranges from Logos.
+    // We keep a parallel `token_spans` vec so that chumsky's token-index-based
+    // error spans can be translated back to character offsets for diagnostics.
+    let mut tokens: Vec<Token> = Vec::new();
+    let mut token_spans: Vec<std::ops::Range<usize>> = Vec::new();
+
+    for (result, range) in Token::lexer(source).spanned() {
+        match result {
+            Ok(tok) => {
+                tokens.push(tok);
+                token_spans.push(range);
+            }
+            // Unrecognised characters are silently skipped for now.
+            // TODO: collect lexer errors and surface them as ParseError::UnknownChar.
+            Err(_) => {}
+        }
+    }
 
     let (model, raw_errors) = model_parser()
         .parse(tokens.as_slice())
@@ -463,10 +512,19 @@ pub fn parse_model(source: &str) -> Result<(Option<Model>, Vec<ParseError>), Par
     let errors = raw_errors
         .into_iter()
         .map(|e| {
-            let span = Span::new(e.span().start, e.span().end);
+            // e.span() is a SimpleSpan<usize> over token indices.
+            // Map to the corresponding source byte offsets.
+            let tok_start = e.span().start;
+            let tok_end   = e.span().end;
+            let char_start = token_spans.get(tok_start).map(|r| r.start).unwrap_or(0);
+            let char_end   = token_spans
+                .get(tok_end.saturating_sub(1))
+                .map(|r| r.end)
+                .unwrap_or(source.len());
+            let span = Span::new(char_start, char_end);
             ParseError::UnexpectedToken {
                 expected: e.expected().map(|t| format!("{t:?}")).collect::<Vec<_>>().join(", "),
-                found: format!("{:?}", e.found()),
+                found:    format!("{:?}", e.found()),
                 span,
             }
         })
