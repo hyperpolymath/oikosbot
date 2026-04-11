@@ -204,6 +204,190 @@ populated by GitLab CI push mirroring.
 * _Flag: confirm this exception is intentional and update the estate
   mirror configuration accordingly._
 
+== DR-006 — Betlang interoperability: stochastic monetary expressions
+
+*Date:* 2026-04-11 +
+*Status:* proposed
+
+=== Context
+
+Real SFC models require scenario analysis: "what if wages grow at this
+distribution of rates?"  Currently `MoneyExpr` is limited to
+`Literal | Balance | Fraction` — all deterministic.
+Betlang (`nextgen-languages/betlang`) is a ternary probabilistic DSL with
+Bayesian inference, MCMC sampling, and 14 number systems for uncertainty.
+
+A secondary motivation is **auction theory**.
+Treasury/gilt auctions are financial instruments in SFC models: the government
+issues a bond through an auction mechanism, and the auction price determines
+the balance-sheet entry.
+This maps naturally to an extended instrument typestate
+`Draft → OnAuction → Issued → Settled | Void`, where Betlang models the
+distribution of clearing prices and Oikos records the resulting flows.
+
+=== Proposed decision
+
+Add `MoneyExpr::Stochastic(BetExpr)` as a fourth variant.
+The type constraint holds in all branches: if all branches of a `BetExpr`
+resolve to `Money[C]` for the same currency `C`, the whole expression is
+`Money[C]`.  This is enforceable at the Ephapax level because both DSLs
+share the same desugar target.
+
+An `oikos-sim` crate wraps betlangiser (the existing Rust bridge to Betlang)
+and runs the Oikos interpreter N times under sampled parameter regimes,
+returning distributional results over end-of-period stock balances.
+
+=== Separation of concerns
+
+Oikos owns the accounting structure (Godley invariant, linearity, period
+regions).  Betlang owns the uncertainty (distributions, inference, sampling).
+The Godley column-sum rule continues to hold as a hard constraint in every
+sampled branch — stochasticity cannot violate the accounting identity.
+
+=== Consequences
+
+*Positive:*
+
+* Economists can express parameter uncertainty without leaving the Oikos DSL.
+* The betlangiser Rust crate already exists; the integration surface is
+  well-defined (one new `MoneyExpr` variant + a simulation runner).
+* Auction models become first-class: instrument typestate + stochastic amounts
+  + Godley accounting in a single model.
+
+*Negative / open questions:*
+
+* `MoneyExpr::Stochastic` must carry type information at the point of use,
+  not just at evaluation time.  The Betlang expression must be typed
+  `Bet[Money[C], Money[C], Money[C]]` before Oikos accepts it.
+  This requires Betlang to have a typed expression representation that Oikos
+  can inspect, or a narrowing convention at the interop boundary.
+* Betlang is currently Racket/Julia; betlangiser provides a Rust FFI bridge.
+  The bridge API will need to expose typed money expressions specifically.
+* Simulation outputs (distributions over stock balances) are not yet
+  representable in the `oikos-syntax` AST.  A separate `oikos-sim` output type
+  is needed.
+
+=== Alternatives considered
+
+* *Julia/ModelingToolkit with stochastic parameters:* rejected.  MTK does not
+  enforce linearity or accounting identities statically; violations would be
+  runtime errors (see DR-001).
+* *Inline distribution literals in Oikos:* considered.  A mini-distribution
+  sub-language in Oikos itself would avoid the Betlang dependency.
+  Rejected because Betlang's Bayesian inference and 14 number systems are
+  substantially more powerful than what Oikos would re-implement.
+
+== DR-007 — Eclexia interoperability: resource-constrained SFC models
+
+*Date:* 2026-04-11 +
+*Status:* proposed
+
+=== Context
+
+Eclexia (`nextgen-languages/eclexia`) is a statically-typed compiled language
+that treats energy, carbon, time, and memory as first-class phantom type
+parameters with compile-time dimensional analysis and an LP shadow-price engine.
+
+Post-Keynesian and ecological economics increasingly demand that SFC models
+account for physical resource flows alongside monetary flows.
+An Eclexia integration would let an Oikos model answer questions like:
+"what is the carbon cost of this monetary transfer?" or
+"under a carbon budget of X, which transfer schedule minimises economic
+disruption?" (using Eclexia's LP duality).
+
+=== Proposed decision
+
+Annotate `TransferExpr` with optional Eclexia resource annotations:
+
+[source,oikos]
+----
+transfer wages → deposits {
+    amount: 2_500.00 GBP
+    @requires energy: 0.05 kWh
+    @requires carbon: 0.02 kgCO2e
+}
+----
+
+The annotations are transparent to the Oikos type checker (they do not affect
+monetary types or linearity) but are forwarded to Eclexia's resource checker,
+which verifies that the annotated totals satisfy declared resource budgets.
+
+Dimensional analysis is shared: both Oikos (currencies as phantom types) and
+Eclexia (physical units as phantom types) use the same conceptual mechanism
+via Ephapax phantom-type parameters.
+
+=== Consequences
+
+*Positive:*
+
+* Enables true ecological SFC modelling — monetary and physical resource flows
+  in one coherent model.
+* Eclexia's LP shadow-price engine can supply the marginal resource cost of
+  relaxing a constraint (e.g. "relaxing the carbon budget by 1 tonne permits
+  £500 of additional wage payments").
+* No changes to the Oikos core type system; annotations are a pass-through.
+
+*Negative / open questions:*
+
+* Eclexia's resource types and Oikos's monetary types do not currently share
+  an Ephapax encoding.  An adapter layer is needed.
+* The Eclexia LP solver is a runtime component; Oikos's model compilation is
+  static.  The integration point is post-compilation simulation, not
+  compile-time checking.
+* Resource annotation syntax needs to be defined and reserved in the Oikos
+  lexer/parser without conflicting with existing keywords.
+
+== DR-008 — Julia the Viper interoperability: data/control separation
+
+*Date:* 2026-04-11 +
+*Status:* proposed
+
+=== Context
+
+Julia the Viper (`julia-the-viper`) enforces Harvard Architecture separation
+between a Turing-incomplete Data Language (total, no effects, addition and
+negation only) and a Turing-complete Control Language (loops, conditionals, I/O).
+
+Oikos has an analogous structure:
+
+* `MoneyExpr` (the amount sub-language) is pure and should be total —
+  a `balance(account)` expression always terminates with a monetary value.
+* The model body (sequence of `transfer` / `close` / `convert` expressions)
+  is the control layer; it is Turing-complete if loops or conditionals are
+  ever added.
+
+JtV's purity levels (`@total` / `@pure` / `@impure`) map naturally:
+`MoneyExpr` is `@total`, `transfer` bodies are `@pure` (no I/O),
+future simulation loops would be `@impure`.
+
+=== Proposed decision
+
+Adopt JtV's purity vocabulary as annotation syntax in Oikos's type error
+messages and documentation, without a hard runtime dependency.
+
+If JtV's Lean 4 proof infrastructure is available, the totality of
+`MoneyExpr` evaluation (every expression terminates with a `Money[C]` value)
+can be discharged as a JtV-style formal proof rather than a custom Oikos proof.
+
+=== Consequences
+
+*Positive:*
+
+* Conceptual alignment: SFC economists and JtV users share the intuition that
+  "amounts are data, transfers are control."
+* The JtV Lean 4 formalisation of totality avoids duplicating a proof that
+  already exists in the JtV proof infrastructure.
+* Shared vocabulary makes cross-project documentation clearer.
+
+*Negative / open questions:*
+
+* JtV's Data Language is deliberately limited to addition and negation.
+  Oikos `MoneyExpr` includes `balance(account)` and `fraction(ratio, account)`,
+  which are read operations, not just arithmetic.  The totality argument
+  requires extending JtV's proof to cover these read operations.
+* The integration is documentation/proof-level, not code-level.
+  No shared crate dependency is anticipated.
+
 == Open architectural questions
 
 The following questions require a decision before v1.0:

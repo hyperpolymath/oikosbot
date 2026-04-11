@@ -1,0 +1,138 @@
+// SPDX-License-Identifier: EUPL-1.2
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Oikos — Roadmap
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+v0.1.0-dev, 2026-04-11
+:toc: left
+:toclevels: 2
+:sectnums:
+:icons: font
+
+This document tracks the planned milestones for Oikos from current scaffold
+to v1.0.  Each milestone has clear entry and exit criteria.
+
+Status legend: `done` | `in-progress` | `blocked` | `planned`
+
+== v0.1 — Scaffold (current)
+
+*Status:* in-progress
+
+=== Done
+
+* [x] Cargo workspace (oikos-syntax, oikos-parser, oikos-check, oikos-desugar)
+* [x] Full AST covering all six semantic requirements
+* [x] Logos lexer with value-carrying token variants
+* [x] Chumsky parser for all core constructs:
+  `period`, `account`, `sector`, `instrument`, `godley`, `transfer`, `close`
+* [x] Godley column-sum invariant checker (`oikos-check::godley_check`)
+* [x] Instrument typestate reachability checker (`oikos-check::instrument_check`)
+* [x] 57 passing tests across the workspace
+* [x] Language specification (`spec/SPEC.adoc`)
+* [x] Architectural decision log (`docs/DESIGN.adoc`)
+
+=== Remaining for v0.1 exit
+
+* [ ] `check_model` entry point composing all pre-desugar checks
+* [ ] Cross-reference checker: undeclared accounts, unknown periods, unknown sectors
+* [ ] `rate` / `convert` parser support (FX rate declarations and expressions)
+* [ ] `balance(account)` and `fraction(ratio, account)` in `MoneyExpr`
+* [ ] Uniqueness enforcement (duplicate account/sector/instrument names)
+* [ ] Basic CLI binary (`oikos check <file>`) with Ariadne diagnostics
+
+=== Known gaps deferred past v0.1
+
+* Source spans (all `Span::SYNTHETIC` — no source location in diagnostics)
+* Parser error recovery (one syntax error currently stops the whole parse)
+* Lexer error reporting (unrecognised characters silently dropped)
+
+== v0.2 — Usable checker
+
+*Status:* planned
+
+=== Goals
+
+A full pre-desugar checking pass that an economist can run on a real model
+file and receive actionable diagnostics.
+
+=== Planned work
+
+* [ ] Propagate real source spans throughout the lexer and parser
+* [ ] Parser error recovery (report multiple errors per file)
+* [ ] Lexer error reporting
+* [ ] Period validation: `active_period` must name a declared period;
+  `from` date must precede `to` date;
+  `close from P1 into P2` must reference declared periods
+* [ ] Currency compatibility across transfers
+* [ ] Godley structural validation: sectors in matrix header match declared sectors;
+  accounts in matrix rows match declared accounts
+* [ ] Decimal representation decision (`rust_decimal` or `bigdecimal` — see Q-2)
+* [ ] `AccountDecl.description` and `PeriodDecl.parent` parser support
+* [ ] Sector-local account declarations (currently `SectorDecl.accounts` is always empty)
+
+== v0.3 — Ephapax integration
+
+*Status:* blocked on `ephapax-parser` milestone
+
+=== Goals
+
+End-to-end type checking via the Ephapax type system.
+
+=== Planned work
+
+* [ ] `oikos-desugar`: lower `Model` AST to Ephapax IR
+* [ ] Wire `oikos-check` to call `ephapax-typing::check`
+* [ ] Error translation layer: rewrite Ephapax type errors into economic vocabulary
+  (see open question Q-1 in DESIGN.adoc)
+* [ ] Currency phantom-type enforcement (GBP ≠ USD is a type error)
+* [ ] Tofte–Talpin fiscal period region enforcement
+* [ ] Linear money transfer enforcement (source consumed after transfer)
+* [ ] Account kind compatibility (Stock vs Flow semantics)
+
+=== Blocker
+
+`ephapax-ir` and `ephapax-typing` are available.
+The blocker is `ephapax-parser` (Ephapax's own surface language parser),
+which is needed to test the desugaring pass end-to-end.
+Tracked in: `oikos-desugar/src/lib.rs`.
+
+== v1.0 — Production release
+
+*Status:* planned
+
+=== Goals
+
+A stable, documented, deployable tool for academic and public-sector economists.
+
+=== Planned work
+
+* [ ] LSP server (`oikos-lsp`) — either extending `ephapax-lsp` or standalone
+* [ ] PMPL ↔ EUPL licence compatibility legal review (see Q-3 in DESIGN.adoc)
+* [ ] Forge strategy finalised (GitLab primary or GitHub primary — see DR-005)
+* [ ] Hypatia CI/CD integration and OpenSSF Scorecard
+* [ ] Published to crates.io
+* [ ] Language reference documentation (AsciiDoc, published to GitLab/GitHub Pages)
+
+== Post-v1.0 ecosystem integrations
+
+These are design-stage only.
+See link:DESIGN.adoc[DESIGN.adoc] DR-006, DR-007, DR-008 for rationale.
+
+=== Betlang — stochastic SFC modelling
+
+`MoneyExpr::Stochastic(BetExpr)` for uncertain transfer amounts.
+Enables scenario analysis (parameter uncertainty over model runs) and
+auction-theoretic models (Treasury/gilt auction typestate +
+Betlang bid-distribution modelling + Oikos balance-sheet accounting).
+
+=== Eclexia — resource-constrained SFC models
+
+Optional energy/carbon annotations on `TransferExpr`, forwarded to
+Eclexia's LP shadow-price engine.
+Enables ecological SFC modelling: monetary and physical resource flows
+in one coherent model.
+
+=== Julia the Viper — data/control purity
+
+Adopt JtV purity vocabulary (`@total` / `@pure` / `@impure`) for
+Oikos expression annotations.  Leverage JtV's Lean 4 totality proof
+for `MoneyExpr` rather than writing a separate Oikos proof.
