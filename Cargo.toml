@@ -37,7 +37,7 @@ smol_str       = { version = "0.3", features = ["serde"] }
 thiserror      = "2"
 
 # ── Lexing / parsing ──────────────────────────────────────────────────────────
-logos          = "0.14"
+logos          = "0.16"
 chumsky        = "1.0.0-alpha.7"
 
 # ── Diagnostic reporting ─────────────────────────────────────────────────────
