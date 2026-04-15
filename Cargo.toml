@@ -41,7 +41,7 @@ logos          = "0.14"
 chumsky        = "1.0.0-alpha.7"
 
 # ── Diagnostic reporting ─────────────────────────────────────────────────────
-ariadne        = "0.4"
+ariadne        = "0.6"
 
 # ── Ephapax IR (blocked: Ephapax parser not yet complete) ────────────────────
 # Uncomment once `hyperpolymath/ephapax` ships a stable parser.
