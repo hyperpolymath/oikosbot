@@ -101,7 +101,7 @@ Type checking is delegated entirely to the Ephapax type checker
 
 === Context
 
-The hyperpolymath estate uses PMPL-1.0-or-later as its standard licence.
+The hyperpolymath estate uses MPL-2.0 as its standard licence.
 Oikos is intended for use by academic economists and public-sector
 institutions, particularly within the European Union.
 
@@ -115,9 +115,9 @@ Oikos is licensed under EUPL-1.2 (European Union Public Licence).
   LGPL-2.1, AGPL-3.0, and several other copyleft licences.
 * EUPL-1.2 has official EU translations in 23 languages, which is
   appropriate for a tool targeting European public-sector economists.
-* PMPL-1.0-or-later is the standing estate default; this is an explicit
+* MPL-2.0 is the standing estate default; this is an explicit
   exception.  The exception is recorded here and in the SPDX headers.
-* Ephapax (PMPL-1.0-or-later) is a dependency.
+* Ephapax (MPL-2.0) is a dependency.
   PMPL compatibility with EUPL is an open question pending legal review.
   _Flag: confirm PMPL ↔ EUPL compatibility before v1.0 release._
 
@@ -490,7 +490,7 @@ The following questions require a decision before v1.0:
 | Q-3
 | *PMPL ↔ EUPL licence compatibility:* legal review required before
   distributing Oikos (EUPL-1.2) as a binary that statically links
-  Ephapax (PMPL-1.0-or-later).
+  Ephapax (MPL-2.0).
 | High
 
 | Q-4

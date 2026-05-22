@@ -125,7 +125,7 @@ scope.
 
 | EUPL-1.2 licence
 | This repo
-| Unique licence in the estate — other repos use PMPL-1.0-or-later
+| Unique licence in the estate — other repos use MPL-2.0
 |===
 
 == Known Gaps

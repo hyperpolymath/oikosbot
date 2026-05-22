@@ -364,4 +364,4 @@ python -m pytest
 
 ## License
 
-PMPL-1.0-or-later - See LICENSE file for details.
+MPL-2.0 - See LICENSE file for details.
