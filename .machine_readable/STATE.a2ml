@@ -68,7 +68,9 @@
     (dr-006 "Betlang interop — stochastic MoneyExpr::Stochastic(BetExpr); auction typestate. Status: proposed.")
     (dr-007 "Eclexia interop — resource annotations on TransferExpr. Status: proposed.")
     (dr-008 "Julia-the-Viper interop — purity vocabulary for MoneyExpr. Status: proposed.")
-    (dr-009 "Three Ephapax mechanisms (phantom, region, linear) are exactly sufficient. No exotic type theory needed. Accepted 2026-04-11."))
+    (dr-009 "Three Ephapax mechanisms (phantom, region, linear) are exactly sufficient. No exotic type theory needed. Accepted 2026-04-11; amended by dr-011.")
+    (dr-010 "MPL-2.0 licence, supersedes dr-002. Accepted 2026-05-22.")
+    (dr-011 "Affine echo-residue extension (amends dr-009): admit linear-to-affine weakening carrying an echo residue for transfer/close/FX provenance. Surface non-dependent. No new proof obligation — residue proven in echo-types (Agda) + Ephapax formal/Echo.v (Coq). Surface+desugar blocked on Ephapax IR/parser. See docs/echo-residue-mapping.adoc. Accepted 2026-06-04."))
 
   (next-actions
     (when-collaborator-responds

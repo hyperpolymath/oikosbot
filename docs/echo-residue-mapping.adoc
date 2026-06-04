@@ -1,0 +1,131 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Oikos echo-residue mapping — the proof journey
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+v1, 2026-06-04
+:toc: macro
+:toclevels: 2
+:icons: font
+
+This is a *navigation and provenance* document.  Per
+link:DESIGN.adoc#DR-011[DR-011], it maps each Oikos collapse operation to
+the structured-loss (*echo*) residue it produces, and to the
+*already-proven* theorem that backs that residue's guarantee.
+
+[IMPORTANT]
+====
+This document asserts *no new proof*.  Every guarantee named below is
+discharged upstream — in `echo-types` (Agda, `--safe --without-K`, zero
+postulates) and, for Oikos's actual desugar target, in Ephapax's
+`formal/Echo.v` (Coq, 24 `Qed`, zero `Axiom`).  Oikos *inherits* these; it
+does not re-prove them.  The surface syntax and desugaring that would let an
+Oikos model *use* a residue are deferred (see <<status>>).
+====
+
+toc::[]
+
+== The journey in one line
+
+[source,text]
+----
+echo-types          Agda source of truth:  Echo f y := Σ (x : A), (f x ≡ y)
+   │                 the unary/decoration shadow is `LEcho` (linear ⊑ affine)
+   ▼
+EchoTypes.jl        executable finite-domain shadow (falsifies by counterexample)
+   │
+   ▼
+Ephapax             formal/Echo.v — Coq port of EchoLinear + EchoResidue
+formal/Echo.v       (24 Qed, 0 Admitted, 0 Axiom)   ◀── Oikos's desugar target
+   │
+   ▼
+Oikos (this repo)   provenance-decorated transfer / close / convert
+                    desugars the affine echo residue into Ephapax L3
+----
+
+The cross-repo pin lives at `echo-types/proofs/agda/EchoEphapaxBridge.agda`
+(`ephapax-L3-weaken`, `ephapax-L3-no-section-collapse`).
+
+== Operation → residue → backing theorem
+
+Each Oikos operation is an *irreversible collapse*.  Bare linear typing
+makes the collapse safe (no double-spend) but *forgetful*.  The affine echo
+residue is the retained, discardable witness of what was forgotten.
+
+[cols="1a,2a,2a,2a", options="header"]
+|===
+| Oikos collapse | What is forgotten | Echo residue | Backing theorem (Agda / Coq)
+
+| `transfer A → B`
+| which source flow funded the value now at `B`
+| affine echo on the linearly-consumed source value
+| `EchoLinear.weaken` / `weaken`
+
+| `close from P into Q`
+| the intra-period decomposition behind the closing balance
+| affine echo on the region transfer
+| `EchoLinear.affine-canonical` / `affine_canonical`
+
+| `convert` (FX, dated rate)
+| the pre-conversion currency identity of the amount
+| affine echo on the source `Money[C]`
+| `EchoLinear.weaken-collapses-distinction` / `weaken_collapses_distinction`
+
+| Godley column netting
+| the gross `+`/`−` components behind a net-zero column
+| read-only residue over the column's signed entries
+| `EchoResidue.no-section-collapse-to-residue` / `no_section_collapse_to_residue`
+|===
+
+== Why bare linear is not enough (the load-bearing negative)
+
+The temptation is to record provenance in a runtime side-table after the
+collapse.  The estate already has the theorem that says this is unsound:
+
+* `EchoLinear.no-section-weaken` — there is *no* left inverse to `weaken`.
+  Once a value is degraded to its affine residue, no total function recovers
+  the original witness.  In Oikos terms: *you cannot reconstruct which flows
+  composed a balance from the balance alone.*
+* `EchoLLEncoding.ll-encoding-gap` + `gap-paired` — the standard linear-logic
+  shadow encoding (`!A := 1`) admits a section, i.e. it is *too weak* to be a
+  faithful residue.  A residue that can be trivially rebuilt records nothing.
+
+Together these say: provenance must be carried *at the type level, from the
+point of collapse*.  That is precisely what the affine echo residue does, and
+why DR-011 admits it rather than leaving provenance to runtime.
+
+[#status]
+== What is proven vs. what is blocked
+
+[cols="3a,1a", options="header"]
+|===
+| Item | Status
+
+| Affine echo residue + no-section + collapse, in Agda (`EchoLinear`, `EchoResidue`, `EchoLLEncoding`)
+| *Proven* (upstream, 0 postulates)
+
+| Coq port in Ephapax `formal/Echo.v` (`weaken`, `no_section_collapse_to_residue`, `affine_canonical`, `degrade_mode_comp`)
+| *Proven* (upstream, 0 axioms)
+
+| Cross-repo pin `EchoEphapaxBridge.agda`
+| *Landed* (narrow, definitional)
+
+| Oikos architecture decision to admit the residue (DR-011)
+| *Accepted* (this change)
+
+| Ephapax exposing the L3 affine-residue type as an `ephapax-ir` constructor
+| *Blocked* (upstream IR surfacing)
+
+| Oikos provenance annotation grammar + `oikos-syntax` AST node
+| *Not started* (gated on the above)
+
+| `oikos-desugar` lowering the residue into Ephapax L3
+| *Blocked* (Ephapax parser milestone; DR-001 Phase 6)
+|===
+
+== Cross references
+
+* link:DESIGN.adoc#DR-011[DR-011] — the decision; link:DESIGN.adoc#DR-009[DR-009] — what it amends; link:DESIGN.adoc#DR-006[DR-006] — Betlang stochastic interop (the `sample_echo` analogue).
+* `echo-types`: `proofs/agda/EchoLinear.agda`, `EchoResidue.agda`,
+  `EchoLLEncoding.agda`, `EchoEphapaxBridge.agda`.
+* Ephapax: `formal/Echo.v` (the L3 Coq layer).
+* Betlang: `Echo T` / `EchoR T` type formers (already in its type checker).

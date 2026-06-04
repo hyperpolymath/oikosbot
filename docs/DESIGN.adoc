@@ -223,6 +223,7 @@ Oikos follows the estate standard: *GitHub-primary*.
 * GitLab still receives the repo via the downstream mirror, satisfying
   any EU-institution preference for GitLab access.
 
+[#DR-006]
 == DR-006 — Betlang interoperability: stochastic monetary expressions
 
 *Date:* 2026-04-11 +
@@ -407,10 +408,11 @@ can be discharged as a JtV-style formal proof rather than a custom Oikos proof.
 * The integration is documentation/proof-level, not code-level.
   No shared crate dependency is anticipated.
 
+[#DR-009]
 == DR-009 — Pre-Ephapax type checker: three-mechanism sufficiency
 
 *Date:* 2026-04-11 +
-*Status:* accepted
+*Status:* accepted — amended by <<DR-011>> (2026-06-04)
 
 === Context
 
@@ -473,6 +475,17 @@ remaining piece of Oikos.
 * Decision to return to Ephapax work is confirmed: completing `subst` is the
   single most valuable thing to do next for both Ephapax and Oikos.
 
+[NOTE]
+====
+*Amended by <<DR-011>> (2026-06-04).*  The "no substructural systems beyond
+linear" clause is narrowed: one in-family extension — an *affine echo
+residue* (`linear ⊑ affine` with a retained witness) — is admitted for
+transfer/close/FX *provenance*.  The exclusion of dependent and refinement
+types still stands.  DR-011 adds no new proof obligation: the residue is
+already mechanised in `echo-types` (Agda) and in Ephapax's `formal/Echo.v`
+(Coq).
+====
+
 [#DR-010]
 == DR-010 — MPL-2.0 licence (supersedes DR-002)
 
@@ -517,6 +530,137 @@ status.
 * The historical `LICENSES/EUPL-1.2.txt` file is kept for a transition
   period as a record of the prior choice and removed in a separate
   cleanup.
+
+[#DR-011]
+== DR-011 — Affine echo-residue extension (amends DR-009)
+
+*Date:* 2026-06-04 +
+*Status:* accepted — amends <<DR-009>>
+
+=== Context
+
+DR-009 fixed the type-theoretic budget at "phantom types + Tofte–Talpin
+regions + linear types", with the explicit consequence "no substructural
+systems beyond linear".  That budget is sufficient to make an invalid model
+*fail to compile*.  It is *not* sufficient to answer a question SFC
+practitioners ask constantly once a model *does* compile:
+
+[quote]
+____
+Given an end-of-period balance, *which* flows composed it?
+____
+
+Bare linearity is the reason the question is hard.  `transfer A → B`
+consumes `A` linearly — which correctly forbids double-counting — but in
+doing so it *forgets* the provenance of the value that arrived at `B`.
+Period `close` (a region transfer) and `convert` (FX) are larger collapses
+of the same kind: they net or re-denominate, discarding the decomposition.
+The lost information is real and structured; it is not noise.  This is
+exactly the object the estate already formalises as a *structured loss* /
+*echo* residue.
+
+=== Decision
+
+Admit *one* extension to the DR-009 budget: an *affine echo residue*.
+
+* The surface stays economist-facing and *non-dependent*: there is no
+  `Σ`-fibre, no identity type, and no refinement predicate in Oikos syntax.
+  DR-009's exclusion of dependent and refinement types *stands unchanged*.
+* The single admitted move is `linear ⊑ affine`, where the weakening step
+  from linear to affine carries an *echo residue* recording what the
+  collapse discarded.  Affine typing (linear + weakening) is in the same
+  substructural family Ephapax already implements; this *narrows* rather
+  than overturns DR-009's "nothing beyond linear" clause.
+* A `transfer` / `close` / `convert` therefore gains an *optional*
+  provenance decoration.  Undecorated, it behaves exactly as today (pure
+  linear consume).  Decorated, the consumed value's residue is retained as
+  an affine echo that downstream audit/reporting can read and may discard.
+
+=== Why this is sound today — the proofs already exist
+
+Per the standing rule that Oikos must not assert a guarantee its foundation
+cannot produce, *this DR creates no new proof obligation*.  The affine echo
+residue is already mechanised — twice, with zero axioms:
+
+[cols="3,3,2", options="header"]
+|===
+| Property | Agda (`echo-types`, `--safe --without-K`, 0 postulates) | Coq (Ephapax `formal/Echo.v`, 24 `Qed`, 0 `Axiom`)
+
+| weakening `linear → affine` exists
+| `EchoLinear.weaken`
+| `weaken`
+
+| weakening forgets the distinction
+| `EchoLinear.weaken-collapses-distinction`
+| `weaken_collapses_distinction`
+
+| the residue is *not* recoverable (no left inverse)
+| `EchoLinear.no-section-weaken` / `EchoResidue.no-section-collapse-to-residue`
+| `no_section_collapse_to_residue` (lines 502–517)
+
+| affine residues are canonical (the "forgotten" endpoint)
+| `EchoLinear.affine-canonical`
+| `affine_canonical`
+
+| degradation composes
+| `EchoLinear.degradeMode-comp`
+| `degrade_mode_comp`
+
+| bare linear (LL `!A := 1`) is *too weak* to be a faithful residue
+| `EchoLLEncoding.ll-encoding-gap` + `gap-paired`
+| (consumer of the above)
+|===
+
+The cross-repo correspondence is pinned by
+`echo-types/proofs/agda/EchoEphapaxBridge.agda` (`ephapax-L3-weaken`,
+`ephapax-L3-no-section-collapse`) and is discharged by `coqc` on the
+Ephapax side — there is no Agda↔Coq round-trip for Oikos to re-run.  See
+link:echo-residue-mapping.adoc[`docs/echo-residue-mapping.adoc`] for the
+operation-by-operation map from Oikos collapses to these theorems.
+
+=== Consequences
+
+*Positive:*
+
+* Typed provenance becomes a *feature of the type system*, not a runtime
+  side-table.  An auditor's "drill into this balance" is the residue
+  projection, and `no-section-weaken` is the formal reason the balance
+  alone cannot reconstruct it.
+* The economist-facing surface is unchanged for anyone who does not opt in;
+  provenance is purely additive.
+* Betlang interop (<<DR-006>>) lines up exactly: Betlang already carries the
+  unary `Echo T` / `EchoR T` formers in its type checker, and its reserved
+  `sample_echo : Dist T → Echo T` is the stochastic analogue of this
+  residue.  An auction model's sampled clearing price can retain *which*
+  bid scenario produced a balance-sheet entry.
+
+*Negative / deferred (honest scope):*
+
+* *Surface + desugar are NOT implemented in this DR.*  This DR is the
+  architecture decision and the proof citation only.  The provenance
+  annotation grammar, the `oikos-syntax` AST node, and the desugaring to an
+  Ephapax affine-residue constructor are gated on:
+  . Ephapax exposing the L3 affine-residue type in `ephapax-ir` /
+    `ephapax-typing` (the `formal/Echo.v` content is proven but not yet
+    surfaced as an IR constructor), and
+  . the Ephapax surface-parser milestone that already blocks Phase 6
+    (DR-001, DR-009).
+* No magnitude / SFC-consistency claim is added; this is provenance of the
+  *structure* of a collapse, not a numerical reconciliation.
+* The full dependent `Echo f y` fibre stays in the `echo-types` meta-theory
+  (the source of truth).  Oikos consumes only its unary, decoration-level
+  shadow.
+
+=== Alternatives considered
+
+* *Keep DR-009 unchanged; record provenance at runtime.*  Rejected: the
+  no-section theorem says a runtime side-table is exactly the unsound
+  option — provenance cannot be reconstructed from the collapsed balance, so
+  it must be carried at the type level from the point of collapse.
+* *Admit the full dependent fibre into the surface.*  Rejected for this
+  iteration for the same economist-audience reason DR-001 rejected an
+  Idris2/Lean host; the unary affine residue gives the audit guarantee
+  without dependent-type error messages.
 
 == Open architectural questions
 
