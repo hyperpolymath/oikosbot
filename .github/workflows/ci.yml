@@ -17,6 +17,7 @@ jobs:
   haskell:
     name: Haskell Analyzer
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -49,6 +50,7 @@ jobs:
   security:
     name: Security Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
