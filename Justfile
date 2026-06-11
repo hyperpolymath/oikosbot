@@ -79,3 +79,6 @@ tree:
 # Verify SPDX licence headers (requires `reuse` tool)
 reuse-check:
     reuse lint
+
+secret-scan-trufflehog:
+    @command -v trufflehog >/dev/null && trufflehog filesystem . --only-verified || true
