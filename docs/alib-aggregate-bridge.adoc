@@ -1,0 +1,208 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= The oikos/betlang Aggregate Library (alib): a micro-accounting ↔ macroeconomics bridge
+:toc: macro
+:toclevels: 3
+
+[NOTE]
+====
+*Status:* DRAFT / proposed. Design note only — no code, no proof obligations
+discharged here. This document defines the *seam* between deterministic
+stock-flow accounting (oikos), stochastic valuation (betlang), and the
+empirical macro-dynamics packages (Cliodynamics.jl, Cliometrics.jl, …).
+It is toolchain-free by construction; the mechanised parts (§5) are gated on
+their checkers being installed and green.
+====
+
+toc::[]
+
+== 1. The two bridges
+
+The phrase "bridge between accounting/bookkeeping and the macroeconomic
+disciplines" resolves into *two distinct bridges*. Conflating them is the
+usual source of confusion; separating them is what makes a clean library.
+
+Bridge 1 — *intensional / a priori*:: _accounting identities ⟷ macro
+consistency._ This is stock-flow-consistent (SFC) modelling in the
+Godley–Lavoie tradition, and *oikos already embodies it*: "a model that
+violates any accounting identity does not compile" (`README.adoc`). The
+Godley column-sum rule, linear `transfer A → B` (consumes `A`, so
+double-counting is a type error), currencies-as-phantom-types, and fiscal
+periods as Tofte–Talpin regions are this bridge, *enforced at compile time*.
+**This bridge is largely built.** The `alib` does not re-implement it; it
+*consumes* it.
+
+Bridge 2 — *extensional / empirical*:: _oikos's internally-consistent models
+⟷ the empirical/historical macro disciplines_ (Cliodynamics secular cycles
+and elite dynamics; Cliometrics growth accounting). This is the
+*aggregation + data-interchange* bridge. **This bridge is not built.** The
+`alib` *is* this bridge.
+
+== 2. Keystone: aggregation is structured loss (an Echo)
+
+The dependable foundation already exists in the estate and is shared by all
+three layers (oikos `DR-011`/`echo-residue-mapping.adoc`; betlang
+`docs/echo-types.adoc`, `Echo T`/`EchoR T` operational; echo-types itself).
+
+Echo types define the fibre of a map:
+
+[source]
+----
+Echo f y  :=  Σ (x : A) , (f x ≡ y)
+----
+
+Let `aggregate : MicroLedgers → MacroState` be the aggregation map (§3–4).
+Then:
+
+* `Echo aggregate m` = *all micro ledger configurations consistent with macro
+  state `m`* — the economist's "aggregation is many-to-one", as a type.
+* `no-section-collapse-to-residue` (echo-types `EchoResidue`) = *there is no
+  canonical disaggregation* — the aggregation / non-identifiability problem,
+  as a theorem.
+* the *residue* is exactly what the macro models are entitled to observe
+  after the loss.
+
+This is the *same* `weaken` / `no-section` machinery that underwrites the
+affine⊑linear story in the wasm proof layer (echo-types `EchoLinear.weaken`,
+machine-checked equal to AffineScript subtyping in
+`nextgen-typing/.../EchoTyping.agda`). One type language serves
+micro→macro aggregation, cross-language ABI, *and* uncertainty.
+
+== 3. The shared `MacroState` schema (the interchange type)
+
+A single versioned record, the lingua franca between layers. Seshat-shaped
+so Cliodynamics.jl (`load_seshat_csv`) consumes it with minimal adaptation —
+Seshat is the *only* existing micro→macro interchange precedent in the
+estate.
+
+[source]
+----
+record MacroState (t : Period) where
+  population      : Quantity People          -- N
+  elites          : Quantity People          -- E   (elite cohort)
+  capital_stock   : Money base-ccy           -- K
+  labor_force     : Quantity People          -- L
+  state_revenue   : Money base-ccy / Period   -- S   (a flow)
+  wages           : Money base-ccy / Period   -- W   (a flow)
+  surplus         : Money base-ccy / Period   -- W − subsistence·N
+----
+
+Stock vs flow is preserved from oikos (it is a *type* there, not a
+convention). `base-ccy` records the phantom currency so FX provenance is not
+lost in aggregation.
+
+== 4. Aggregation morphisms (written as Echo maps)
+
+The library exposes `aggregate` *as an explicit structured-loss map*, so the
+loss is typed and the residue named:
+
+[cols="1,2",options="header"]
+|===
+| MacroState field | Aggregation over the oikos `Model`
+| `population`    | `Σ` household head-counts
+| `elites`        | `Σ` over the elite-indicator partition
+| `capital_stock` | `Σ` asset *stocks* across sectors
+| `labor_force`   | `count` of labour-supplying agents
+| `state_revenue` | `Σ` tax *flows* into the government sector (a Godley column)
+| `wages`         | `Σ` wage *flows* into the household sector
+| `surplus`       | `wages − subsistence_minimum · population`
+|===
+
+Each morphism is a fibre projection; `Echo aggregate m` is its fibre. The
+Godley invariant from Bridge 1 is what guarantees these sums *reconcile*
+(no money created or destroyed in the rollup) — that is the load-bearing
+contribution of oikos to the macro layer.
+
+== 5. The betlang stochastic seam
+
+Real SFC scenario work needs distributions over flows, not point values.
+This seam is *already proposed* in oikos `DR-006` (`MoneyExpr::Stochastic(BetExpr)`,
+the `oikos-sim` crate wrapping a `betlangiser` bridge) and on the betlang side
+as "FFI preparation for aggregate-library" (`betlang/ROADMAP.adoc`).
+
+* A flow may be `Stochastic(BetExpr)`; `aggregate` then yields a
+  *distribution over `MacroState`*, not a single state.
+* betlang's distributions are *Dutch-book-free by construction*
+  (`lib/dutch-book.rkt`) — so the uncertainty layer preserves coherence the
+  same way oikos's linear transfers preserve the accounting identity. Two
+  "no leaks" guarantees that compose.
+* Type discipline is preserved through the stochastic layer:
+  `Bet[Money[GBP], Money[GBP], Money[GBP]]` still resolves to `Money[GBP]`
+  (oikos `DR-006`), so Bridge 1's currency/stock-flow guarantees survive.
+
+== 6. Macro consumers
+
+[cols="1,2,1",options="header"]
+|===
+| Package | Role | Maturity
+| *Cliodynamics.jl* | Primary consumer: population pressure, elite-overproduction index, political-stress indicator, secular-cycle analysis from the `MacroState` time series | v1.0, mature
+| *Cliometrics.jl*  | Growth accounting / Solow decomposition / convergence on `(K, L, output)` | v0.2, mature
+| *Causals.jl*      | Tests micro→macro causal hypotheses ("surplus decline → conflict intensity") on the aggregated panel | v0.2, ~95%
+| *ZeroProb.jl*     | Tail-risk overlay: household-bankruptcy cascades → systemic-crash (`BlackSwanEvent`/`MarketCrashEvent`) | v0.1, ~95%
+| *Axiology.jl*     | Value scoring of trajectories (welfare from `wages`, fairness from wealth Gini, efficiency from output/input) | v0.1 alpha
+|===
+
+== 7. Two routes, and the recommendation
+
+Route A — *typed-wasm-native*:: All layers meet at the typed-wasm ABI; the
+economic "aggregate" and the technical "aggregate library" become the *same
+artifact* (`nextgen-typing` typed-wasm is literally documented as an
+"aggregate library — formally verified binary conventions for AffineScript
+and Ephapax cross-language calls"). *Elegant long-term target*, but **gated**:
+`oikos-desugar` is blocked on `ephapax-parser`; `bet-wasm` is paused (E0308);
+the AffineScript compiler submodule is empty; there is no Julia→wasm path.
+Not buildable today.
+
+Route B — *data-interchange*:: Define the §3 schema; serialise via a2ml/CSV
+(Seshat-shaped). oikos-check (phases 1–5) works; betlang's Racket layer is
+production; the consumer packages are mature. betlang sits in the middle as
+the distribution layer. **Buildable now, touching none of the blocked
+toolchain.**
+
+*Recommendation:* build **Route B now**, with its schema designed to *be* the
+eventual Route A ABI. Smallest useful artifact: the `MacroState` type + one
+honest `aggregate` Echo map from an oikos `Model SIM` to a Cliodynamics input
+vector. That makes the philosophical bridge *executable* and de-risks
+everything downstream.
+
+== 8. Toolchain gating (honest scope)
+
+* This note and the §3 schema / §4 morphism *signatures* are design artifacts
+  — no checker required.
+* Promoting §2 ("aggregation = Echo", "non-disaggregability = no-section")
+  into a *mechanised* result is proof work. It must live where its checker is
+  installed and green. The natural home is *echo-types* (Agda 2.6.3 +
+  stdlib 2.3 + absolute-zero — provisioned), as a small module
+  `EchoAggregation.agda` (`aggregate` as a concrete finite map; its fibre is
+  an `Echo`; `no-section` instantiated). Every edit ends with
+  `agda All.agda` exiting 0; if the checker is not live, *nothing is written*.
+* The betlang Lean 4 layer and ephapax/absolute-zero Coq layers are *not*
+  assumed installed; no proof is authored there until their toolchains are
+  confirmed.
+
+== 9. Open questions
+
+. Subsistence minimum: constant, or itself a `MacroState`-dependent flow?
+  (Affects whether `surplus` is a pure projection or a fixpoint.)
+. Elite-indicator partition: a tag on accounts in oikos, or derived
+  post-aggregation by a wealth threshold? (Determines whether `elites` is a
+  fibre projection or a downstream classifier.)
+. Period alignment: oikos fiscal periods vs Cliodynamics' century/decade
+  bins — resampling belongs in the `alib`, not in either endpoint.
+. Versioning: the schema is the long-lived ABI; it needs an explicit version
+  tag from day one (Route B → Route A migration depends on it).
+
+== 10. References
+
+* oikos — `README.adoc`, `docs/DESIGN.adoc` (DR-006 betlang interop, DR-011
+  affine echo-residue), `docs/echo-residue-mapping.adoc`
+* betlang — `docs/echo-types.adoc`, `lib/dutch-book.rkt`, `ROADMAP.adoc`
+  ("FFI preparation for aggregate-library"), `docs/hyperpolymath-julia-integration.md`
+* echo-types — `proofs/agda/EchoResidue.agda` (`no-section-collapse-to-residue`),
+  `proofs/agda/EchoLinear.agda` (`weaken`)
+* nextgen-typing — `README.adoc` (typed-wasm as "aggregate library"),
+  `verification/proofs/agda/EchoTyping.agda`
+* Cliodynamics.jl — `load_seshat_csv`, `demographic_structural_model`,
+  `elite_overproduction_index`, `political_stress_indicator`
+* Cliometrics.jl — growth accounting / Solow decomposition
+* Godley, W. & Lavoie, M. (2007, 2012) — _Monetary Economics_ (SFC foundation)
