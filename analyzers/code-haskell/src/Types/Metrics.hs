@@ -12,6 +12,8 @@ module Types.Metrics
   , CarbonScore(..)
   , EnergyScore(..)
   , ResourceScore(..)
+  , EnergyPattern(..)
+  , CodeLocation(..)
 
     -- * Economic Metrics
   , EconMetrics(..)
@@ -19,6 +21,7 @@ module Types.Metrics
   , ParetoFrontier(..)
   , AllocationScore(..)
   , DebtEstimate(..)
+  , DebtItem(..)
 
     -- * Quality Metrics
   , QualityMetrics(..)

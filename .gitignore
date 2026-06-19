@@ -14,3 +14,4 @@ deps/
 Thumbs.db
 build/
 dist/
+dist-newstyle/

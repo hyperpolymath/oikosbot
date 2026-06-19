@@ -1,72 +1,44 @@
 # SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 #
-# Oikos CI pipeline (GitLab)
-#
-# Stages: lint → test → build
-# All jobs run in a Chainguard Rust image (distroless, no shell surprises).
+# OikosBot CI pipeline (GitLab mirror)
 
 default:
-  image: cgr.dev/chainguard/rust:latest
+  image: haskell:9.4
+
 variables:
-  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
-  CARGO_INCREMENTAL: "0" # deterministic builds in CI
-  RUST_BACKTRACE: "1"
-# Cache the Cargo registry and build artefacts across pipelines.
-.cargo-cache: &cargo-cache
-  cache:
-    key:
-      files:
-        - Cargo.lock
-    paths:
-      - .cargo/registry/
-      - .cargo/git/
-      - target/
+  CABAL_DIR: "$CI_PROJECT_DIR/.cabal"
+
+cache:
+  key:
+    files:
+      - analyzers/code-haskell/oikos-analyzer.cabal
+  paths:
+    - .cabal/packages/
+    - .cabal/store/
+    - analyzers/code-haskell/dist-newstyle/
+
 stages:
   - lint
-  - test
   - build
-# ── Lint stage ────────────────────────────────────────────────────────────────
-fmt:
+  - test
+
+shell-wrapper:
   stage: lint
+  image: bash:latest
   script:
-    - cargo fmt --all --check
-  allow_failure: false
-clippy:
-  stage: lint
-  script:
-    - cargo clippy --workspace --all-targets --all-features -- -D warnings
-  !!merge <<: *cargo-cache
-reuse:
-  stage: lint
-  image: fsfe/reuse:latest
-  script:
-    - reuse lint
-  allow_failure: false
-# ── Test stage ────────────────────────────────────────────────────────────────
-unit-tests:
-  stage: test
-  script:
-    - cargo test --workspace --lib
-  !!merge <<: *cargo-cache
-doc-tests:
-  stage: test
-  script:
-    - cargo test --workspace --doc
-  !!merge <<: *cargo-cache
-# ── Build stage ───────────────────────────────────────────────────────────────
-build-release:
+    - bash -n bot-integration-affine/check.sh
+
+haskell-build:
   stage: build
   script:
-    - cargo build --workspace --release
-  !!merge <<: *cargo-cache
-  artifacts:
-    # Preserve the release binary for downstream jobs if/when a CLI crate exists.
-    paths:
-      - target/release/
-    expire_in: 1 week
-trufflehog:
-  stage: security
-  image: trufflesecurity/trufflehog:latest
+    - cd analyzers/code-haskell
+    - cabal update
+    - cabal build all
+
+haskell-test:
+  stage: test
   script:
-    - trufflehog git file://. --only-verified --fail
+    - cd analyzers/code-haskell
+    - cabal update
+    - cabal test all

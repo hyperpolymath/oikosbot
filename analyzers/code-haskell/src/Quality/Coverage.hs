@@ -131,20 +131,20 @@ suggestCoverageImprovements config analysis = concat
   ]
   where
     lineSuggestions =
-      [ T.concat ["Line coverage (", T.pack (show $ round $ caLineCoverage analysis :: Int),
-                  "%) below threshold (", T.pack (show $ round $ covMinLine config :: Int), "%)"]
+      [ T.concat ["Line coverage (", pct (caLineCoverage analysis),
+                  "%) below threshold (", pct (covMinLine config), "%)"]
       | caLineCoverage analysis < covMinLine config
       ]
 
     branchSuggestions =
-      [ T.concat ["Branch coverage (", T.pack (show $ round $ caBranchCoverage analysis :: Int),
-                  "%) below threshold (", T.pack (show $ round $ covMinBranch config :: Int), "%)"]
+      [ T.concat ["Branch coverage (", pct (caBranchCoverage analysis),
+                  "%) below threshold (", pct (covMinBranch config), "%)"]
       | caBranchCoverage analysis < covMinBranch config
       ]
 
     functionSuggestions =
-      [ T.concat ["Function coverage (", T.pack (show $ round $ caFunctionCoverage analysis :: Int),
-                  "%) below threshold (", T.pack (show $ round $ covMinFunction config :: Int), "%)"]
+      [ T.concat ["Function coverage (", pct (caFunctionCoverage analysis),
+                  "%) below threshold (", pct (covMinFunction config), "%)"]
       | caFunctionCoverage analysis < covMinFunction config
       ]
 
@@ -153,6 +153,8 @@ suggestCoverageImprovements config analysis = concat
                   " in ", locFile loc]
       | loc <- take 5 $ caUncoveredHotspots analysis
       ]
+
+    pct value = T.pack (show (round value :: Int))
 
 -- | Calculate coverage score (0-100)
 calculateCoverageScore :: CoverageConfig -> CoverageAnalysis -> Double

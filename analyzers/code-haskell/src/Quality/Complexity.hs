@@ -13,6 +13,7 @@ module Quality.Complexity
   , calculateCognitive
   , calculateMaintainability
   , ComplexityConfig(..)
+  , FunctionAST(..)
   , defaultComplexityConfig
   ) where
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 //
-// Analysis.affine — invokes the `oikos-check` analyser endpoint.
+// Analysis.affine — invokes the analyzer endpoint.
 //
-// Ports `oikos/bot-integration/src/Analysis.res`. The analyser is a
+// Ports the retired ReScript `bot-integration/src/Analysis.res`. The analyser is a
 // separate HTTP service (default `http://localhost:8080/analyze`) that
 // receives a JSON request describing the diff and returns the eco /
 // econ / quality / health breakdown.
@@ -66,7 +66,7 @@ pub fn analyze_diff(endpoint: String,
 
   if status >= 200 && status < 300 {
     // Parse the analyser response. The JSON shape is fixed by the
-    // analyser API (`oikos-check`'s `/analyze` endpoint); future work
+    // analyser API (`/analyze` endpoint); future work
     // could surface field-level parse errors, but for the initial
     // port we trust the analyser and surface only top-level failure.
     parse_health_response(resp_body)

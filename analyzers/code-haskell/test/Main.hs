@@ -33,7 +33,7 @@ main = hspec $ do
     it "identifies dominated points correctly" $ do
       let objectives = standardObjectives
           point = [10, 20, 30, 40, 50, 60, 70]
-          betterPoint = [5, 10, 15, 20, 25, 30, 35]  -- Better in all dimensions
+          betterPoint = [5, 10, 15, 20, 75, 80, 35]  -- Better under each objective direction
           points = [point, betterPoint]
       isDominated objectives point points `shouldBe` True
       isDominated objectives betterPoint points `shouldBe` False
@@ -66,25 +66,3 @@ normalizeScore rawScore
   | rawScore <= 0.001 = 100
   | rawScore >= 1.0   = 0
   | otherwise = 100 * (1 - (log rawScore + 6.9) / 6.9)
-
--- Placeholder data types for tests
-data FunctionAST = FunctionAST
-  { astName :: Text
-  , astLocation :: CodeLocation
-  , astBranches :: Int
-  , astLoops :: Int
-  , astNesting :: Int
-  , astOperators :: Int
-  , astOperands :: Int
-  , astTotalOps :: Int
-  , astTotalOpnds :: Int
-  , astLines :: Int
-  }
-
-data CodeAnalysisInput = CodeAnalysisInput
-  { caiComplexity :: Int
-  , caiLoopDepth :: Int
-  , caiAllocations :: Int
-  , caiIOOperations :: Int
-  , caiParallelism :: Int
-  }

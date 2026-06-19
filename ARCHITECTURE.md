@@ -14,10 +14,9 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 > previous ReScript codebase at `bot-integration/` was retired on
 > 2026-05-28 — see git history for the prior implementation).
 > The DSL of the same root name (a typed compiler for stock-flow consistent
-> macroeconomic models) is documented in [`README.adoc`](README.adoc) and
-> [`docs/DESIGN.adoc`](docs/DESIGN.adoc).
+> macroeconomic models) now lives in
+> [`hyperpolymath/oikos-economics-accounting-dsl`](https://github.com/hyperpolymath/oikos-economics-accounting-dsl).
 > They share the οἶκος root but are otherwise unrelated.
-> See [`docs/disambiguation/oikos-dsl-vs-oikosbot.adoc`](docs/disambiguation/oikos-dsl-vs-oikosbot.adoc).
 
 ## Vision
 
@@ -423,7 +422,7 @@ jobs:
   eco-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: hyperpolymath/oikos-bot-action@v1
+      - uses: hyperpolymath/oikosbot-action@v1
         with:
           mode: advisor  # consultant | advisor | regulator
           eco-threshold: 60

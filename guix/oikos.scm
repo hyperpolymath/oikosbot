@@ -30,7 +30,7 @@
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/hyperpolymath/oikos-bot")
+             (url "https://github.com/hyperpolymath/oikosbot")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -50,7 +50,7 @@
     (description
      "Analyzes code for carbon intensity, energy efficiency,
       Pareto optimality, and software quality metrics.")
-    (home-page "https://github.com/hyperpolymath/oikos-bot")
+    (home-page "https://github.com/hyperpolymath/oikosbot")
     (license license:agpl3+)))
 
 ;; OCaml Documentation Analyzer
@@ -62,7 +62,7 @@
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/hyperpolymath/oikos-bot")
+             (url "https://github.com/hyperpolymath/oikosbot")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -80,7 +80,7 @@
     (description
      "Analyzes documentation for completeness, consistency,
       and alignment with ecological/economic principles.")
-    (home-page "https://github.com/hyperpolymath/oikos-bot")
+    (home-page "https://github.com/hyperpolymath/oikosbot")
     (license license:agpl3+)))
 
 ;; Python Policy Engine
@@ -92,7 +92,7 @@
      (origin
        (method git-fetch)
        (uri (git-reference
-             (url "https://github.com/hyperpolymath/oikos-bot")
+             (url "https://github.com/hyperpolymath/oikosbot")
              (commit (string-append "v" version))))
        (file-name (git-file-name name version))
        (sha256
@@ -112,7 +112,7 @@
     (description
      "Hybrid Datalog + DeepProbLog policy engine for
       deterministic and probabilistic reasoning.")
-    (home-page "https://github.com/hyperpolymath/oikos-bot")
+    (home-page "https://github.com/hyperpolymath/oikosbot")
     (license license:agpl3+)))
 
 ;; Combined oikos-bot package
@@ -145,5 +145,5 @@
      "Oikos Bot analyzes code for ecological soundness and economic
       efficiency using Pareto optimality and allocative efficiency
       as normative criteria.")
-    (home-page "https://github.com/hyperpolymath/oikos-bot")
+    (home-page "https://github.com/hyperpolymath/oikosbot")
     (license license:agpl3+)))

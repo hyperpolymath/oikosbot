@@ -3,7 +3,7 @@
 //
 // Config.affine — environment-variable loading.
 //
-// Ports `oikos/bot-integration/src/Config.res`. Uses the builtin
+// Ports the retired ReScript `bot-integration/src/Config.res`. Uses the builtin
 // `getenv` (returns Option<String>) for process-env reads.
 // `OIKOS_ALLOW_UNVERIFIED_WEBHOOKS=true` is the dev-only escape hatch
 // (NEVER set in production).

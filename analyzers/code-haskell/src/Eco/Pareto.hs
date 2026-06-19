@@ -79,7 +79,7 @@ calculateParetoFrontier objectives solutions = ParetoFrontier
 -- | Check if a solution is dominated by any other solution
 isDominated :: [Objective] -> [Double] -> [[Double]] -> Bool
 isDominated objectives point allPoints =
-  any (dominates objectives point) (filter (/= point) allPoints)
+  any (\candidate -> dominates objectives candidate point) (filter (/= point) allPoints)
 
 -- | Check if point A dominates point B
 -- A dominates B if A is at least as good in all objectives

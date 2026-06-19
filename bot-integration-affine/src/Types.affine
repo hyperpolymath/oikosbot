@@ -3,7 +3,7 @@
 //
 // Types.affine — record types for the bot.
 //
-// Mirrors the ReScript reference at `oikos/bot-integration/src/Types.res`.
+// Mirrors the retired ReScript reference at `bot-integration/src/Types.res`.
 // Field names are snake_case (AS canonical face); the ReScript camelCase
 // originals are noted in comments where the divergence is non-obvious.
 

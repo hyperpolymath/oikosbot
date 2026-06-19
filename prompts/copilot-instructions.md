@@ -166,5 +166,5 @@ Based on analysis of this repository:
 
 ---
 
-*This file is maintained by [Oikos Bot](https://github.com/hyperpolymath/oikos-bot).
+*This file is maintained by [Oikos Bot](https://github.com/hyperpolymath/oikosbot).
 Last updated: {{timestamp}}*

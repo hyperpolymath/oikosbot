@@ -1,33 +1,54 @@
 // SPDX-License-Identifier: MPL-2.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= Oikos — repository roadmap index
+= OikosBot Roadmap
 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-v2, 2026-05-27
+v0.1.0-dev, 2026-06-19
+:toc: left
+:toclevels: 2
 :icons: font
 
-This repository contains *two separate products*. They each have their own
-roadmap.
+This roadmap tracks OikosBot, the ecological and economic code-analysis app.
+The Oikos economics accounting DSL now lives in
+https://github.com/hyperpolymath/oikos-economics-accounting-dsl[`hyperpolymath/oikos-economics-accounting-dsl`].
 
-[cols="1,3", options="header"]
-|===
-| Product | Roadmap
+Status legend: `done` | `in-progress` | `blocked` | `planned`
 
-| *Oikos* (the DSL)
-| link:docs/ROADMAP.adoc[`docs/ROADMAP.adoc`] — typed compiler for stock-flow
-  consistent macroeconomic models.
-  Currently `v0.1.0-dev` scaffold; v0.3 milestone is blocked on the Ephapax
-  parser milestone.
+== v0.1 - Scaffold
 
-| *OikosBot* (the GitHub App)
-| AffineScript port at `bot-integration-affine/` — code-analysis bot at
-  https://github.com/apps/oikosbot[`apps/oikosbot`]. Phase 5 scaffold
-  landed in PR #35 (2026-05-28); the previous ReScript implementation
-  at `bot-integration/` was retired the same day. Cross-module
-  type-check, JSON payload extraction, and HTTP-server accept loop are
-  gated on upstream AffineScript stdlib work (`Json` v0.3 RSR rewire +
-  `http-capability-gateway` extern surfacing).
-|===
+*Status:* in-progress
 
-See link:docs/disambiguation/oikos-dsl-vs-oikosbot.adoc[`docs/disambiguation/oikos-dsl-vs-oikosbot.adoc`]
-for why these are different products despite the shared name.
+=== Done
+
+* [x] Haskell analyzer scaffold at `analyzers/code-haskell/`
+* [x] AffineScript webhook receiver scaffold at `bot-integration-affine/`
+* [x] GitHub App manifest at `.github/app.yml`
+* [x] Policy rules in Datalog and DeepProbLog
+* [x] Bot configuration, prompt templates, and database schema assets
+* [x] Repository split from the Oikos DSL
+
+=== Remaining
+
+* [ ] Stabilize the analyzer request and response schema
+* [ ] Wire the AffineScript receiver to the analyzer service
+* [ ] Replace mock health reports with analyzer-backed reports
+* [ ] Add a repeatable local development runtime
+* [ ] Decide how to package the bot service and policy engine
+
+== v0.2 - Operational App
+
+*Status:* planned
+
+* [ ] Register or update the GitHub App from `.github/app.yml`
+* [ ] Add webhook signature verification tests
+* [ ] Add fixture-based pull request event tests
+* [ ] Publish a staging deployment runbook
+* [ ] Emit check runs and pull request comments from real analysis output
+
+== v1.0 - Production Release
+
+*Status:* planned
+
+* [ ] Production deployment with health checks and rollback instructions
+* [ ] Document installation and organization policy modes
+* [ ] Define support and security response process
+* [ ] Publish release artifacts and versioned App documentation

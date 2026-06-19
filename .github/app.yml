@@ -14,7 +14,7 @@ description: |
   and sustainability scoring for your codebase.
 
 # Public page URL
-url: https://github.com/hyperpolymath/oikos-bot
+url: https://github.com/hyperpolymath/oikosbot
 
 # Setup/callback URLs (update with your deployment domain)
 hook_attributes:

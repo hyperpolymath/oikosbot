@@ -221,7 +221,7 @@ findSourceFiles config rootPath = do
     findFiles dir = do
       entries <- listDirectory dir
       let fullPaths = map (dir </>) entries
-          excluded = any (\p -> T.pack p `T.isInfixOf` T.pack dir) (acExcludePatterns config)
+          excluded = any (`T.isInfixOf` T.pack dir) (acExcludePatterns config)
       if excluded
         then pure []
         else do

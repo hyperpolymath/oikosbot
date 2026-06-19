@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0-or-later
 # SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 #
-# Oikos Bot - Continuous Integration
+# OikosBot - Continuous Integration
 
 name: CI
 on:
@@ -32,13 +32,26 @@ jobs:
             ~/.cabal/packages
             ~/.cabal/store
             analyzers/code-haskell/dist-newstyle
-          key: cabal-${{ runner.os }}-ghc9.4-${{ hashFiles('analyzers/code-haskell/eco-analyzer.cabal') }}
+          key: cabal-${{ runner.os }}-ghc9.4-${{ hashFiles('analyzers/code-haskell/oikos-analyzer.cabal') }}
       - name: Build Haskell analyzer
         working-directory: analyzers/code-haskell
         run: |
           cabal update
           cabal build all
-        continue-on-error: true
+      - name: Test Haskell analyzer
+        working-directory: analyzers/code-haskell
+        run: cabal test all
+  affine:
+    name: AffineScript Scaffold
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Check shell wrapper syntax
+        run: bash -n bot-integration-affine/check.sh
   security:
     name: Security Checks
     runs-on: ubuntu-latest

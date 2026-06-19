@@ -6,7 +6,8 @@
 :toclevels: 2
 
 *AffineScript port of the OikosBot webhook receiver, replacing the
-legacy ReScript implementation at `oikos/bot-integration/`.*
+legacy ReScript implementation that previously lived at `bot-integration/`
+in the combined Oikos repository.*
 
 Phase 5 of the RSR-stack adoption. Consumes the composite Phase 4
 library `libhpm_github_api.so` (which itself composes `libhpm_crypto`,
@@ -64,7 +65,7 @@ toc::[]
   `/metrics`.
 
 `src/Analysis.affine`::
-  Invokes `oikos-check` against the changed-files diff.
+  Invokes the analyzer service against the changed-files diff.
 
 `src/Report.affine`::
   Formats analysis result as Markdown for PR comments.
@@ -111,15 +112,15 @@ $PWD/../../hpm-github-api-rsr/ffi/zig/zig-out/lib"
 | `GITHUB_PRIVATE_KEY` | PKCS#8 PEM. Required for posting comments / check-runs.
 | `GITHUB_WEBHOOK_SECRET` | Shared secret for HMAC verification.
 | `GITLAB_WEBHOOK_SECRET` | Shared secret for GitLab token verification.
-| `ANALYSIS_ENDPOINT` | `oikos-check` analyser endpoint (default `http://localhost:8080/analyze`).
+| `ANALYSIS_ENDPOINT` | Analyzer endpoint (default `http://localhost:8080/analyze`).
 | `OIKOS_ALLOW_UNVERIFIED_WEBHOOKS` | DEV ONLY. `true` skips HMAC verification. NEVER set in production.
 |===
 
 == Licence
 
-MPL-2.0. See link:../LICENSE[../LICENSE] (oikos top-level).
+MPL-2.0. See link:../LICENSE[../LICENSE].
 
 == Status
 
 Initial scaffold — module skeletons + Externs shim. Full port follows
-the ReScript reference at `../bot-integration/src/*.res`.
+the retired ReScript reference preserved in git history.

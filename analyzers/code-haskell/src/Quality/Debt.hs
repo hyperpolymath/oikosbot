@@ -49,11 +49,11 @@ data DebtType
 
 -- | Debt indicator from code analysis
 data DebtIndicator = DebtIndicator
-  { diType        :: !DebtType
-  , diLocation    :: !CodeLocation
-  , diSeverity    :: !Double         -- ^ 1-10 severity
-  , diDescription :: !Text
-  , diEffort      :: !Double         -- ^ Estimated hours to fix
+  { debtIndicatorType        :: !DebtType
+  , debtIndicatorLocation    :: !CodeLocation
+  , debtIndicatorSeverity    :: !Double         -- ^ 1-10 severity
+  , debtIndicatorDescription :: !Text
+  , debtIndicatorEffort      :: !Double         -- ^ Estimated hours to fix
   } deriving (Show, Eq)
 
 -- | Code analysis results for debt estimation
@@ -83,10 +83,10 @@ analyzeDebt config analysis = DebtEstimate
     items = map toDebtItem (cadCodeSmells analysis ++ cadSecurityIssues analysis)
 
     toDebtItem di = DebtItem
-      { diLocation = diLocation di
-      , diType = T.pack $ show $ diType di
-      , diSeverity = diSeverity di
-      , diDescription = diDescription di
+      { diLocation = debtIndicatorLocation di
+      , diType = T.pack $ show $ debtIndicatorType di
+      , diSeverity = debtIndicatorSeverity di
+      , diDescription = debtIndicatorDescription di
       }
 
 -- | Estimate debt principal (total hours to fix all debt)
@@ -102,10 +102,10 @@ estimateDebtPrincipal config analysis =
     duplicationDebt = fromIntegral (cadDuplicateBlocks analysis) * dcHoursPerDuplication config
 
     -- Code smell debt
-    smellDebt = sum $ map diEffort $ cadCodeSmells analysis
+    smellDebt = sum $ map debtIndicatorEffort $ cadCodeSmells analysis
 
     -- Security debt
-    securityDebt = sum $ map diEffort $ cadSecurityIssues analysis
+    securityDebt = sum $ map debtIndicatorEffort $ cadSecurityIssues analysis
 
     -- Test debt (assume 2 hours per missing test)
     testDebt = fromIntegral (length $ cadMissingTests analysis) * 2.0
@@ -131,10 +131,10 @@ calculateDebtRatio _config analysis principal
 -- | Categorize debt by severity
 categorizeDebt :: [DebtIndicator] -> [(Text, [DebtIndicator])]
 categorizeDebt items =
-  [ ("Critical (>8)", filter (\i -> diSeverity i > 8) items)
-  , ("High (6-8)", filter (\i -> diSeverity i > 6 && diSeverity i <= 8) items)
-  , ("Medium (4-6)", filter (\i -> diSeverity i > 4 && diSeverity i <= 6) items)
-  , ("Low (<=4)", filter (\i -> diSeverity i <= 4) items)
+  [ ("Critical (>8)", filter (\i -> debtIndicatorSeverity i > 8) items)
+  , ("High (6-8)", filter (\i -> debtIndicatorSeverity i > 6 && debtIndicatorSeverity i <= 8) items)
+  , ("Medium (4-6)", filter (\i -> debtIndicatorSeverity i > 4 && debtIndicatorSeverity i <= 6) items)
+  , ("Low (<=4)", filter (\i -> debtIndicatorSeverity i <= 4) items)
   ]
 
 -- | Suggest debt remediation priorities
@@ -152,16 +152,16 @@ suggestDebtRemediation config analysis = concat
 
     -- High ROI items (high severity, low effort)
     highRoiItems = filter isHighRoi (cadCodeSmells analysis)
-    isHighRoi di = diSeverity di > 6 && diEffort di < 2
+    isHighRoi di = debtIndicatorSeverity di > 6 && debtIndicatorEffort di < 2
 
     highRoi =
-      [ T.concat ["High ROI fix: ", diDescription item]
+      [ T.concat ["High ROI fix: ", debtIndicatorDescription item]
       | item <- take 5 highRoiItems
       ]
 
     -- Quick wins (< 1 hour)
-    quickWinItems = filter (\di -> diEffort di < 1) (cadCodeSmells analysis)
+    quickWinItems = filter (\di -> debtIndicatorEffort di < 1) (cadCodeSmells analysis)
     quickWins =
-      [ T.concat ["Quick win: ", diDescription item]
+      [ T.concat ["Quick win: ", debtIndicatorDescription item]
       | item <- take 3 quickWinItems
       ]

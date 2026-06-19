@@ -6,6 +6,7 @@ module Eco.Carbon
   ( analyzeCarbonIntensity
   , estimateOperationalCarbon
   , estimateEmbodiedCarbon
+  , CodeAnalysisInput(..)
   , CarbonConfig(..)
   , defaultCarbonConfig
   ) where

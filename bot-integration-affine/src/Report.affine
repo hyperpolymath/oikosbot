@@ -3,7 +3,7 @@
 //
 // Report.affine — render analysis output as Markdown.
 //
-// Ports `oikos/bot-integration/src/Report.res`. Output goes through
+// Ports the retired ReScript `bot-integration/src/Report.res`. Output goes through
 // `Externs.post_pr_comment` which forwards to `libhpm_github_api.so`.
 // JSON-escaping of comment-body content is handled inside the C ABI
 // (`hpm_json_escape_string` from libhpm_json), so the Markdown here
