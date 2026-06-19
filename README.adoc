@@ -18,6 +18,7 @@ image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,lin
 This repository is only OikosBot. The Oikos stock-flow consistent economics DSL
 now lives in
 https://github.com/hyperpolymath/oikos-economics-accounting-dsl[`hyperpolymath/oikos-economics-accounting-dsl`].
+Canonical home for OikosBot is this repo: `https://github.com/hyperpolymath/oikosbot`.
 ====
 
 toc::[]
