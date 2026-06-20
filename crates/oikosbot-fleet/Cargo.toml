@@ -11,9 +11,9 @@
 #
 #     cargo build --manifest-path crates/oikosbot-fleet/Cargo.toml
 #
-# It currently publishes findings under the fleet's existing `BotId::Sustainabot`
-# slot; a dedicated `BotId::Oikosbot` upstream in gitbot-shared-context is the
-# follow-up. See README.md in this directory and DISAMBIGUATION.adoc.
+# It publishes findings under its own `BotId::Oikosbot` identity (NOT the
+# reserved `Sustainabot` slot), so it requires a gitbot-fleet that provides that
+# variant. See README.md in this directory and DISAMBIGUATION.adoc.
 
 # NB: concrete package metadata (not `*.workspace = true`) because this crate is
 # EXCLUDED from the root workspace and must resolve standalone.

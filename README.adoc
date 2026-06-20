@@ -65,7 +65,6 @@ oikosbot/
 |-- policies/                # Eclexia (.ecl) policy definitions
 |-- config/                  # Bot configuration
 |-- prompts/                 # Generated assistant prompt templates
-|-- containers/              # Container build + compose for deployment
 |-- examples/                # Example CI integration
 |-- fuzz/                    # cargo-fuzz targets (excluded from the workspace)
 |-- database/                # Knowledge-graph schema and query assets

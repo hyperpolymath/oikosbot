@@ -33,10 +33,10 @@ impl Default for EcologicalThresholds {
     }
 }
 
-/// Publish sustainabot analysis findings to the fleet shared context.
+/// Publish oikosbot analysis findings to the fleet shared context.
 ///
 /// This is the primary integration point: converts `AnalysisResult` items
-/// from `sustainabot-metrics` into `Finding` objects for the fleet.
+/// from `oikosbot-metrics` into `Finding` objects for the fleet.
 pub fn publish_findings(
     ctx: &mut Context,
     results: &[AnalysisResult],
@@ -72,8 +72,8 @@ pub fn publish_findings(
     if total_energy_kj > thresholds.total_energy_threshold_kj {
         ctx.add_finding(
             Finding::new(
-                BotId::Sustainabot,
-                "SUSTAIN-HIGH-ENERGY",
+                BotId::Oikosbot,
+                "OIKOS-HIGH-ENERGY",
                 Severity::Warning,
                 &format!(
                     "High total energy consumption: {:.2} kJ (threshold: {:.2} kJ)",
@@ -87,8 +87,8 @@ pub fn publish_findings(
     if total_carbon_g > thresholds.total_carbon_threshold_grams {
         ctx.add_finding(
             Finding::new(
-                BotId::Sustainabot,
-                "SUSTAIN-HIGH-CARBON",
+                BotId::Oikosbot,
+                "OIKOS-HIGH-CARBON",
                 Severity::Warning,
                 &format!(
                     "High carbon footprint: {:.4}g CO2e (threshold: {:.2}g)",
@@ -109,8 +109,8 @@ pub fn publish_findings(
 
         ctx.add_finding(
             Finding::new(
-                BotId::Sustainabot,
-                "SUSTAIN-HIGH-IMPACT-FUNCTIONS",
+                BotId::Oikosbot,
+                "OIKOS-HIGH-IMPACT-FUNCTIONS",
                 Severity::Info,
                 &format!(
                     "{} function(s) exceed per-function energy threshold: {}",
@@ -126,8 +126,8 @@ pub fn publish_findings(
     let rating = calculate_efficiency_rating(results);
     ctx.add_finding(
         Finding::new(
-            BotId::Sustainabot,
-            "SUSTAIN-EFFICIENCY-RATING",
+            BotId::Oikosbot,
+            "OIKOS-EFFICIENCY-RATING",
             Severity::Info,
             &format!("Ecological efficiency rating: {}", rating),
         )
@@ -143,7 +143,7 @@ pub fn publish_findings(
     Ok(())
 }
 
-/// Convert a sustainabot AnalysisResult to a gitbot-fleet Finding
+/// Convert a oikosbot AnalysisResult to a gitbot-fleet Finding
 /// using ALL builder fields for rich integration.
 fn convert_to_finding(result: &AnalysisResult) -> Finding {
     let func_name = result.location.name.as_deref().unwrap_or("<anonymous>");
@@ -167,7 +167,7 @@ fn convert_to_finding(result: &AnalysisResult) -> Finding {
         result.recommendations.join("; "),
     );
 
-    let mut finding = Finding::new(BotId::Sustainabot, &result.rule_id, severity, &message)
+    let mut finding = Finding::new(BotId::Oikosbot, &result.rule_id, severity, &message)
         .with_rule_name(&format!("Sustainability: {}", result.rule_id))
         .with_category("sustainability")
         .with_file(PathBuf::from(&result.location.file))
@@ -196,19 +196,19 @@ fn convert_to_finding(result: &AnalysisResult) -> Finding {
     finding
 }
 
-/// Run sustainabot as a fleet member with directive awareness.
+/// Run oikosbot as a fleet member with directive awareness.
 ///
-/// Reads `.machine_readable/bot_directives/sustainabot.scm` (legacy fallback
+/// Reads `.machine_readable/bot_directives/oikosbot.scm` (legacy fallback
 /// supported) to determine allowed scopes,
 /// then runs analysis respecting the directive.
 pub fn run_fleet_analysis(repo_path: &Path, context_path: Option<&Path>) -> Result<()> {
-    // Check for sustainabot directive
-    let directive = directives::check_directive(repo_path, "sustainabot");
+    // Check for oikosbot directive
+    let directive = directives::check_directive(repo_path, "oikosbot");
 
     if let Some(ref d) = directive {
         if !d.allow {
             eprintln!(
-                "Sustainabot denied by .machine_readable/bot_directives/sustainabot.scm: {}",
+                "Oikosbot denied by .machine_readable/bot_directives/oikosbot.scm: {}",
                 d.notes.as_deref().unwrap_or("no reason given")
             );
             return Ok(());
@@ -238,9 +238,9 @@ pub fn run_fleet_analysis(repo_path: &Path, context_path: Option<&Path>) -> Resu
         let content = std::fs::read_to_string(ctx_path)?;
         let mut ctx: Context = serde_json::from_str(&content)?;
 
-        ctx.start_bot(BotId::Sustainabot)?;
+        ctx.start_bot(BotId::Oikosbot)?;
         publish_findings(&mut ctx, &results, &thresholds)?;
-        ctx.complete_bot(BotId::Sustainabot, results.len(), 0, 0)?;
+        ctx.complete_bot(BotId::Oikosbot, results.len(), 0, 0)?;
 
         let output = serde_json::to_string_pretty(&ctx)?;
         std::fs::write(ctx_path, output)?;
@@ -249,7 +249,7 @@ pub fn run_fleet_analysis(repo_path: &Path, context_path: Option<&Path>) -> Resu
         let thresholds = EcologicalThresholds::default();
         let rating = calculate_efficiency_rating(&results);
 
-        eprintln!("Sustainabot fleet analysis: {} functions", results.len());
+        eprintln!("Oikosbot fleet analysis: {} functions", results.len());
         eprintln!("Efficiency rating: {}", rating);
 
         let below: Vec<_> = results
@@ -379,7 +379,7 @@ mod tests {
             },
             health: HealthIndex::compute(EcoScore::new(80.0), EconScore::new(70.0), 75.0),
             recommendations: vec!["Code looks efficient".to_string()],
-            rule_id: "sustainabot/general".to_string(),
+            rule_id: "oikosbot/general".to_string(),
             suggestion: None,
             end_location: Some((10, 2)),
             confidence: Confidence::Estimated,
@@ -398,8 +398,8 @@ mod tests {
         let result = sample_result(5.0);
         let finding = convert_to_finding(&result);
 
-        assert_eq!(finding.source, BotId::Sustainabot);
-        assert_eq!(finding.rule_id, "sustainabot/general");
+        assert_eq!(finding.source, BotId::Oikosbot);
+        assert_eq!(finding.rule_id, "oikosbot/general");
         assert_eq!(finding.category, "sustainability");
         assert!(finding.file.is_some());
         assert!(finding.line.is_some());
@@ -409,7 +409,7 @@ mod tests {
     fn test_convert_finding_with_suggestion() {
         let mut result = sample_result(5.0);
         result.suggestion = Some("Use hash map for O(1) lookup".to_string());
-        result.rule_id = "sustainabot/nested-loops".to_string();
+        result.rule_id = "oikosbot/nested-loops".to_string();
 
         let finding = convert_to_finding(&result);
         assert!(finding.fixable);
