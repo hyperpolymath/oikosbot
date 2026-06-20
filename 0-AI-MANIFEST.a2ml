@@ -1,16 +1,23 @@
 # SPDX-License-Identifier: MPL-2.0
-# 0-AI-MANIFEST.a2ml — AI Agent Entry Point
-# Repository: oikos
-# Owner: hyperpolymath
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#
+# 0-AI-MANIFEST.a2ml — AI agent entry point for hyperpolymath/oikosbot.
+# Read this first, then .claude/CLAUDE.md and .machine_readable/6a2/STATE.a2ml.
+[ai-manifest]
+version = "1.1"
+repository = "oikosbot"
+owner = "hyperpolymath"
+project = "OikosBot — an ecological & economic code-analysis GitHub/GitLab App"
 
-(ai-manifest
-  (version "1.0")
-  (repository "oikos")
-  (owner "hyperpolymath")
-  (entry-points
-    (primary "README.adoc")
-    (machine-readable ".machine_readable/"))
-  (invariants
-    (scm-files-location ".machine_readable/ ONLY — never root")
-    (license "MPL-2.0")
-    (github-is-source-of-truth #t)))
+[entry-points]
+primary = "README.adoc"
+ai-instructions = ".claude/CLAUDE.md"
+machine-readable = ".machine_readable/6a2/"
+disambiguation = "DISAMBIGUATION.adoc"
+
+[invariants]
+license = "MPL-2.0"
+machine-readable-location = ".machine_readable/6a2/*.a2ml (six core files); no loose state files in repo root or .machine_readable/ top level"
+github-is-source-of-truth = true
+not-the-dsl = "This repo is OikosBot, NOT the `oikos` economics DSL (hyperpolymath/oikos-economics-accounting-dsl) and NOT the `sustainabot` gitbot-fleet slot. See DISAMBIGUATION.adoc."
+datastore = "Single store = VeriSimDB (octad of modal witnesses); runtime client deferred. See META.a2ml ADR-001."

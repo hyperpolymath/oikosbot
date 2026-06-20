@@ -123,12 +123,13 @@
     (source #f)
     (build-system gnu-build-system)
     (inputs
+     ;; Datastore is VeriSimDB (external; not yet packaged in Guix). The legacy
+     ;; ArangoDB + Virtuoso inputs were removed with the single-store migration;
+     ;; the runtime client is deferred (see ROADMAP.adoc).
      (list oikos-analyzer-haskell
            oikos-analyzer-ocaml
            oikos-policy-engine
-           deno
-           arangodb
-           virtuoso-ose))
+           deno))
     (arguments
      '(#:phases
        (modify-phases %standard-phases

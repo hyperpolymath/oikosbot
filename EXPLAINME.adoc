@@ -1,140 +1,197 @@
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= Oikos — EXPLAINME
+= OikosBot — EXPLAINME
 :toc: preamble
 :icons: font
 
 This file maps README.adoc claims to their implementation evidence for
-sceptical developers.
+sceptical developers. OikosBot is a code-analysis GitHub/GitLab App — it is
+**not** the `oikos` economics DSL (separate repo
+https://github.com/hyperpolymath/oikos-economics-accounting-dsl[`oikos-economics-accounting-dsl`])
+nor the `sustainabot` fleet slot. See link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`].
 
-== "A typed DSL for stock-flow consistent macroeconomic modelling"
-
-[quote, README.adoc]
-____
-Oikos provides a surface language for stock-flow consistent (SFC)
-macroeconomic models in the tradition of Godley & Lavoie (2007).
-It desugars into Ephapax, inheriting its linear types, Tofte–Talpin regions,
-and typestate.
-____
-
-How this is implemented::
-The Cargo workspace at link:Cargo.toml[`Cargo.toml`] defines four crates:
-link:oikos-syntax/[`oikos-syntax/`] (the AST), link:oikos-parser/[`oikos-parser/`]
-(Logos lexer + Chumsky parser), link:oikos-desugar/[`oikos-desugar/`]
-(desugaring to Ephapax IR — blocked), and link:oikos-check/[`oikos-check/`]
-(type checker — blocked). The AST in `oikos-syntax/src/lib.rs` defines Rust
-types for `Stock`, `Flow`, `Sector`, `GodleyMatrix`, and `Instrument`.
-
-Caveat::
-`oikos-desugar` and `oikos-check` are blocked on the Ephapax surface-language
-parser milestone. They have stub implementations but cannot produce correct
-output until Ephapax's parser is complete.
-
-== "A model that violates any accounting identity does not compile"
+== "A code-analysis App that adds an ecological & economic review lens to PRs"
 
 [quote, README.adoc]
 ____
-The core guarantee: A model that violates any accounting identity does not
-compile.
+A code-analysis GitHub/GitLab App that adds ecological and economic review to
+pull requests.
 ____
 
 How this is implemented::
-The Godley matrix invariant checker in `oikos-check/src/lib.rs` enforces that
-column sums in the Godley matrix balance at compile time (pre-desugar phase).
-The phantom type scheme in `oikos-syntax/src/lib.rs` uses `Stock<Currency>` and
-`Flow<Currency>` as distinct phantom types — the type checker rejects addition
-of a `Stock` and a `Flow` without an explicit integration step.
+The analysis core is the Rust workspace under link:crates/[`crates/`]:
+`oikosbot-cli` (the `oikosbot` binary), `oikosbot-analysis` (the analysis
+engine + eco/econ heuristics), `oikosbot-metrics` (shared metric/result types),
+`oikosbot-sarif` (SARIF report generation), and `oikosbot-eclexia` (Eclexia
+`.ecl` policy evaluation). This workspace builds and tests cleanly and is the
+most complete surface; it was extracted from the former
+`gitbot-fleet/bots/sustainabot/` and renamed `sustainabot-*` → `oikosbot-*`.
 
 Caveat::
-"At compile time" here means *at Oikos compiler invocation time*, not at Rust
-compilation time. The Oikos compiler is a Rust binary that type-checks Oikos
-source — it does not generate type errors via the Rust type system directly.
-Currency phantom types ensure `GBP + USD` is rejected, but this requires the
-Oikos parser to be complete.
+The default `cargo` workspace excludes `crates/oikosbot-fleet` (the optional
+gitbot-fleet bridge) so OikosBot builds standalone with no dependency on
+gitbot-fleet.
 
-== "Stock ≠ Flow via distinct phantom types"
+== "AffineScript webhook receiver with HMAC verification"
 
 [quote, README.adoc]
 ____
-Stock ≠ Flow: Distinct phantom types; adding them without integration is a
-type error.
+The AffineScript webhook receiver is in flight.
 ____
 
 How this is implemented::
-`oikos-syntax/src/lib.rs` defines:
-
-[source,rust]
-----
-pub struct Stock<C: Currency>(Money<C>, PhantomData<()>);
-pub struct Flow<C: Currency>(Money<C>, PhantomData<()>);
-----
-
-The type checker rejects any expression that attempts to add a `Stock` and a
-`Flow` directly — the only valid operation is a `transfer` statement which
-consumes a `Flow` to update a `Stock`, consuming the `Flow` linearly.
+The receiver lives in link:bot-integration-affine/src/[`bot-integration-affine/src/`].
+HMAC-SHA256 webhook signature verification is real:
+`bot-integration-affine/src/Webhook.affine` strips the GitHub `sha256=` prefix
+and calls `hmac_sha256_verify`, which is implemented constant-time by the
+`hpm-crypto` RSR (`hpm_crypto_hmac_sha256_verify`) reached through AffineScript's
+`extern fn` mechanism (`src/Externs.affine`). The orchestration entry points are
+present in `src/Main.affine` (config load, HTTP listener extern, router dispatch),
+`src/Router.affine` (path dispatch for `/health`, `/webhooks/github`,
+`/webhooks/gitlab`, `/metrics`), `src/Oikos.affine` (webhook → analyse → comment),
+`src/Analysis.affine`, and `src/Report.affine` (Markdown PR-comment formatting).
+A smoke test lives at `bot-integration-affine/test/Smoke.affine`
+(driver: `bot-integration-affine/check.sh`).
 
 Caveat::
-This is implemented in the pre-desugar type checking phase. Full linear
-consumption (preventing double-counting) depends on Ephapax's linear type
-system in `oikos-check` — currently blocked.
+This is a scaffold. The two upstream AffineScript standard-library prerequisites
+have landed (`json` RSR rewire, affinescript#421; `Http` server RSR rewire,
+affinescript#425), but the in-repo wiring is incomplete: `Main.affine` notes the
+listener wire-up is pending, and the webhook handlers currently log and return
+`202 ACCEPTED` *without* invoking analysis ("orchestration not yet wired"). HMAC
+verification can be bypassed only via the dev-only `OIKOS_ALLOW_UNVERIFIED_WEBHOOKS`
+escape hatch, which must never be set in production.
 
-== "FX requires an explicit dated rate"
+== "Haskell eco/econ/quality analysis engine"
 
 [quote, README.adoc]
 ____
-GBP ≠ USD: Currency as a phantom type parameter; FX requires an explicit
-dated rate.
+The Haskell analyzer scaffold builds independently.
 ____
 
 How this is implemented::
-The `Currency` trait in `oikos-syntax` is parameterised. `GBP` and `USD` are
-separate zero-size type markers. An FX conversion requires a `RateOf<From, To>`
-value carrying a date and a rate — this is checked by the Oikos type checker,
-not inferred. The link:spec/SPEC.adoc[`spec/SPEC.adoc`] documents the full BNF
-grammar including the `fx_expr` production.
+link:analyzers/code-haskell/[`analyzers/code-haskell/`] is a Cabal project
+(`oikos-analyzer.cabal`) with the ecological modules `Eco.Carbon`, `Eco.Energy`,
+`Eco.Pareto`, `Eco.Resource`, `Eco.Analysis`; the quality modules
+`Quality.Complexity`, `Quality.Coupling`, `Quality.Coverage`, `Quality.Debt`;
+and shared types in `Types.Metrics` / `Types.Report`. Entry point is `app/Main.hs`;
+tests are in `test/Main.hs`.
 
 Caveat::
-The FX type check is implemented as a pre-desugar check. The full constraint
-that FX rates must be "dated" (i.e. reference a specific historical date)
-is enforced syntactically — semantic checks against real FX data are out of
-scope.
+The analyzer is *heuristic*, not ontology-driven — it estimates carbon/energy/
+complexity from code-shape signals, it does not perform formal semantic analysis
+against an ontology. The RDF/OWL ontology at `databases/ontology/eco.ttl` is seed
+data for VeriSimDB's semantic witness (see below), not an input the Haskell
+analyzer consumes today. The analyzer service is not yet wired to the AffineScript
+receiver.
 
-== Dogfooded Across The Account
+== "Policy engine: Datalog + DeepProbLog, plus Eclexia policies"
+
+[quote, README.adoc]
+____
+policy-engine/ — Datalog and DeepProbLog policy rules; policies/ — Eclexia
+(.ecl) policy definitions.
+____
+
+How this is implemented::
+`policy-engine/datalog/eco_rules.dl` holds the deterministic rules and
+`policy-engine/deepproblog/eco_problog.pl` the probabilistic (learned) rules.
+The Eclexia resource policies in link:policies/[`policies/`]
+(`carbon_budget.ecl`, `energy_threshold.ecl`, `memory_efficiency.ecl`,
+`security_sustainability.ecl`) are evaluated by the `oikosbot-eclexia` crate.
+
+Caveat::
+The DeepProbLog rules and the praxis (learning) loop are design-stage: the
+probabilistic predicates and neural-predicate declarations exist as logic, but
+there is no trained model or live feedback ingestion wired in. The knowledge-graph
+bindings in `eco_problog.pl` were retargeted from SPARQL-over-Virtuoso to
+VCL-over-VeriSimDB at the comment/binding level only (no rule logic changed).
+
+== "Single data layer: VeriSimDB"
+
+[quote, README.adoc]
+____
+OikosBot persists analysis results … in a single identity-consonance store,
+VeriSimDB.
+____
+
+How this is implemented::
+link:config/oikos.yaml[`config/oikos.yaml`] declares a single `verisimdb:`
+datastore block (REST endpoint + octad witness map), replacing the previous
+`arangodb:` + `virtuoso:` pair. The eco/econ ontology seed for the semantic
+witness lives at link:databases/ontology/eco.ttl[`databases/ontology/eco.ttl`].
+The integration descriptor is
+link:.machine_readable/integrations/verisimdb.a2ml[`.machine_readable/integrations/verisimdb.a2ml`].
+VeriSimDB maps cleanly onto OikosBot's needs: the **graph + document** witnesses
+subsume ArangoDB; the **semantic** witness subsumes Virtuoso/RDF.
+
+Caveat::
+This is *design + configuration only*. VeriSimDB is `v0.1.0` and OikosBot's
+runtime client is **deferred/gated** — no live persistence happens yet. The
+client (a Zig-FFI connector mirroring the `hpm-*` pattern, or a REST client from
+the AffineScript transport) is tracked on the link:ROADMAP.adoc[roadmap] and is
+gated on VeriSimDB maturing and on the AffineScript transport (affinescript
+#421/#425 integration). The legacy ArangoDB + Virtuoso assets were removed
+(recoverable in git history).
+
+== Dogfooded Across The Estate
 
 [cols="1,2,2", options="header"]
 |===
 | Technology / Pattern | Used here | Also used in
 
-| Ephapax IR as compilation target
-| Oikos desugars to Ephapax linear-typed IR
-| link:https://github.com/hyperpolymath/ephapax[ephapax] (direct dependency)
+| AffineScript (affine + dependent types, extensible effects)
+| `bot-integration-affine/` webhook receiver
+| https://github.com/hyperpolymath/affinescript[affinescript] (its home repo)
 
-| Chumsky parser combinators
-| `oikos-parser/src/lib.rs` recursive descent
-| link:https://github.com/hyperpolymath/nextgen-languages[nextgen-languages]
-  (various language parsers)
+| `hpm-*` RSR Zig-FFI libraries
+| `bot-integration-affine` consumes `libhpm_github_api` (composes crypto/http/json)
+| the `hpm-crypto-rsr` / `hpm-http-client-rsr` / `hpm-json-rsr` sibling repos
 
-| Phantom types for domain safety
-| `Stock<GBP>` vs `Flow<GBP>` distinction
-| link:https://github.com/hyperpolymath/ephapax[ephapax]
-  (linear type witnesses)
+| Eclexia `.ecl` resource policies
+| `policies/*.ecl` evaluated by `crates/oikosbot-eclexia`
+| the Eclexia policy language
 
-| Logos lexer
-| Fast tokenisation of Oikos source
-| link:https://github.com/hyperpolymath/nextgen-languages[nextgen-languages]
+| VeriSimDB identity-consonance store
+| `config/oikos.yaml` `verisimdb:` block + `databases/ontology/eco.ttl`
+| https://github.com/hyperpolymath/verisimdb[verisimdb]
 
-| EUPL-1.2 licence
-| This repo
-| Unique licence in the estate — other repos use MPL-2.0
+| A2ML machine-readable estate spec
+| `.machine_readable/6a2/*.a2ml` + `.machine_readable/contractiles/`
+| estate-wide (the `a2ml` standard)
+
+| SARIF code-scanning output
+| `crates/oikosbot-sarif`
+| GitHub code scanning (shared with CodeQL-style tooling)
 |===
 
 == Known Gaps
 
-The `oikos-desugar` and `oikos-check` crates are blocked on the Ephapax
-surface-language parser. Pre-desugar checks (Godley invariant, instrument
-typestate reachability) are runnable today; full type checking requires
-Ephapax to land its parser milestone.
+[CAUTION]
+====
+*OikosBot is not deployed in production.* The pieces below are honest gaps, not
+finished features.
+====
 
-The integrations with Betlang, Eclexia, and Julia the Viper described in
-the README are design-stage only — nothing is wired yet.
+[CAUTION]
+====
+*Webhook orchestration is not wired.* `bot-integration-affine` verifies HMAC and
+routes, but the `/webhooks/*` handlers accept and return `202` without running
+analysis or posting comments. The HTTP listener wire-up in `Main.affine` is
+pending.
+====
+
+[CAUTION]
+====
+*The analyzer is heuristic, not semantic.* Carbon/energy/complexity scores are
+code-shape estimates; there is no formal ontology-driven analysis, and the
+Haskell analyzer is not yet connected to the receiver.
+====
+
+[CAUTION]
+====
+*The VeriSimDB data layer is design-only.* No runtime persistence happens yet;
+the client is deferred and gated on VeriSimDB maturity and the AffineScript
+transport. See the link:ROADMAP.adoc[roadmap].
+====

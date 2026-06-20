@@ -95,3 +95,42 @@ Both are FOSS with independent governance (no Big Tech).
 - SHA-pinned dependencies
 - SPDX license headers on all files
 
+## Sustainable-Development Guidance
+
+Folded from the former `prompts/claude-code-instructions.md`. OikosBot's whole
+purpose is an ecological & economic review lens; apply the same lens when writing
+or refactoring code here — these are also the principles OikosBot evaluates in the
+repositories it monitors.
+
+### 1. Carbon Awareness (weight 40%)
+
+- Prefer lower algorithmic complexity (O(n) over O(n²), O(log n) over O(n)).
+- Minimise allocations and CPU cycles; batch I/O; cache strategically.
+- Sleep efficiently — event-driven, not busy-wait/polling.
+- Ask: "Will this run millions of times in production?"
+
+### 2. Economic Efficiency (weight 30%)
+
+- Pareto optimality: don't improve one axis at another's expense without saying so.
+- Allocative efficiency: put effort where it creates the most value.
+- Track and minimise technical debt; weigh opportunity cost.
+- Ask: "Does this abstraction justify its complexity?"
+
+### 3. Quality (weight 30%)
+
+- Keep cyclomatic complexity reasonable (< ~10 per function).
+- Minimise coupling; cover critical paths with tests.
+- Document non-obvious trade-offs.
+
+### Trade-off documentation
+
+When making a significant trade-off, record: the competing objectives, the
+decision taken, why it is Pareto-optimal for this context, and the rough metric
+impact (carbon / performance / complexity).
+
+### Anti-patterns to avoid
+
+Busy-waiting, N+1 queries, unbounded caches (use LRU + size limits), polling
+where webhooks/SSE/event-driven would do, and premature optimisation (profile
+first, then optimise hotspots).
+

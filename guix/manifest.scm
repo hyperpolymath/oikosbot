@@ -41,14 +41,12 @@
    "rust-analyzer"
 
    ;; ========================================
-   ;; Databases
+   ;; Datastore
    ;; ========================================
 
-   ;; ArangoDB client tools
-   "arangodb"
-
-   ;; Virtuoso (SPARQL)
-   "virtuoso-ose"
+   ;; Single store is VeriSimDB (external; not yet packaged in Guix). The legacy
+   ;; ArangoDB + Virtuoso dev tools were removed with the single-store migration;
+   ;; runtime client wiring is deferred (see ROADMAP.adoc).
 
    ;; ========================================
    ;; Logic Programming

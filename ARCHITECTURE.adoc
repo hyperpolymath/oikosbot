@@ -1,35 +1,36 @@
-<!--
-SPDX-License-Identifier: MPL-2.0
-Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
--->
-// SPDX-License-Identifier: MPL-2.0-or-later
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 
-# Oikos Bot: Ecological & Economic Code Analysis Platform
+= Oikos Bot: Ecological & Economic Code Analysis Platform
 
-> **Note — which product is this?**
-> This document describes **OikosBot**, the code-analysis GitHub/GitLab App.
-> Its Rust analysis workspace is `crates/oikosbot-*`; its AffineScript port lives
-> in [`bot-integration-affine/`](bot-integration-affine/) (in-flight; the
-> previous ReScript codebase at `bot-integration/` was retired on
-> 2026-05-28 — see git history for the prior implementation).
-> Two similarly-named-but-**separate** projects are easy to confuse with this one
-> (full breakdown in [`DISAMBIGUATION.adoc`](DISAMBIGUATION.adoc)):
-> the **oikos** DSL (a typed compiler for stock-flow consistent macroeconomic
-> models) now lives in
-> [`hyperpolymath/oikos-economics-accounting-dsl`](https://github.com/hyperpolymath/oikos-economics-accounting-dsl);
-> and **sustainabot** is a reserved member slot of
-> [`hyperpolymath/gitbot-fleet`](https://github.com/hyperpolymath/gitbot-fleet)
-> (`bots/sustainabot/`), not OikosBot. They share the οἶκος root but are
-> otherwise unrelated.
+[NOTE]
+====
+*Note — which product is this?*
+This document describes *OikosBot*, the code-analysis GitHub/GitLab App.
+Its Rust analysis workspace is `crates/oikosbot-*`; its AffineScript port lives
+in link:bot-integration-affine/[`bot-integration-affine/`] (in-flight; the
+previous ReScript codebase at `bot-integration/` was retired on
+2026-05-28 — see git history for the prior implementation).
+Two similarly-named-but-*separate* projects are easy to confuse with this one
+(full breakdown in link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`]):
+the *oikos* DSL (a typed compiler for stock-flow consistent macroeconomic
+models) now lives in
+https://github.com/hyperpolymath/oikos-economics-accounting-dsl[`hyperpolymath/oikos-economics-accounting-dsl`];
+and *sustainabot* is a reserved member slot of
+https://github.com/hyperpolymath/gitbot-fleet[`hyperpolymath/gitbot-fleet`]
+(`bots/sustainabot/`), not OikosBot. They share the οἶκος root but are
+otherwise unrelated.
+This document describes the *target* platform architecture; for current implementation status see link:README.adoc[README.adoc], link:EXPLAINME.adoc[EXPLAINME.adoc] and link:.machine_readable/6a2/STATE.a2ml[STATE.a2ml].
+====
 
-## Vision
+== Vision
 
-Oikos Bot is an intelligent code analysis platform that acts as a **consultant, advisor, regulator, and policy developer** for software repositories. It **complements** existing tools like Dependabot, CodeQL, and Copilot by adding a dedicated **ecological and economic lens** to code analysis.
+Oikos Bot is an intelligent code analysis platform that acts as a *consultant, advisor, regulator, and policy developer* for software repositories. It *complements* existing tools like Dependabot, CodeQL, and Copilot by adding a dedicated *ecological and economic lens* to code analysis.
 
-### Complementary, Not Competing
+=== Complementary, Not Competing
 
-```
+----
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    EXISTING ECOSYSTEM (Collaborate With)                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
@@ -58,40 +59,41 @@ Oikos Bot is an intelligent code analysis platform that acts as a **consultant, 
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
-```
+----
 
-**Key Integration Principles:**
-1. **Additive Value**: Oikos Bot adds eco/econ analysis; doesn't duplicate security/dependency work
-2. **Shared Prompts**: Provide prompt templates that Copilot/AI tools can use for eco-aware suggestions
-3. **Data Exchange**: Consume and produce data in formats other tools understand
-4. **Non-Blocking**: Advisory by default; teams opt-in to enforcement
-5. **First-Class Thinking**: Make ecological/economic reasoning as natural as security/testing
+*Key Integration Principles:*
 
-## Core Philosophy
+. *Additive Value*: Oikos Bot adds eco/econ analysis; doesn't duplicate security/dependency work
+. *Shared Prompts*: Provide prompt templates that Copilot/AI tools can use for eco-aware suggestions
+. *Data Exchange*: Consume and produce data in formats other tools understand
+. *Non-Blocking*: Advisory by default; teams opt-in to enforcement
+. *First-Class Thinking*: Make ecological/economic reasoning as natural as security/testing
 
-### Normative Framework
+== Core Philosophy
 
-1. **Ecological Criteria**
-   - Carbon intensity of code execution (SCI - Software Carbon Intensity)
-   - Energy efficiency patterns
-   - Resource utilization optimization
-   - Sustainable computing practices
+=== Normative Framework
 
-2. **Economic Criteria**
-   - **Pareto Optimality**: No change can make one aspect better without making another worse
-   - **Allocative Efficiency**: Resources allocated to maximize total value
-   - Technical debt as economic liability
-   - Opportunity cost of architectural decisions
+. *Ecological Criteria*
+* Carbon intensity of code execution (SCI - Software Carbon Intensity)
+* Energy efficiency patterns
+* Resource utilization optimization
+* Sustainable computing practices
 
-3. **Quality Metrics**
-   - Cyclomatic complexity
-   - Coupling/cohesion analysis
-   - Test coverage economics
-   - Documentation completeness
+. *Economic Criteria*
+* *Pareto Optimality*: No change can make one aspect better without making another worse
+* *Allocative Efficiency*: Resources allocated to maximize total value
+* Technical debt as economic liability
+* Opportunity cost of architectural decisions
 
-## Architecture Overview
+. *Quality Metrics*
+* Cyclomatic complexity
+* Coupling/cohesion analysis
+* Test coverage economics
+* Documentation completeness
 
-```
+== Architecture Overview
+
+----
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           OIKOS BOT PLATFORM                                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
@@ -131,16 +133,13 @@ Oikos Bot is an intelligent code analysis platform that acts as a **consultant, 
 │  │  - Probabilistic reasoning                                            │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                              │                                              │
-│          ┌───────────────────┴───────────────────┐                          │
-│          ▼                                       ▼                          │
-│  ┌────────────────────────┐      ┌────────────────────────┐                │
-│  │      ARANGODB          │      │      VIRTUOSO          │                │
-│  │   (Graph + Document)   │◄────►│   (RDF + SPARQL)       │                │
-│  │                        │      │                        │                │
-│  │ - Code relationships   │      │ - Semantic knowledge   │                │
-│  │ - Analysis history     │      │ - Ontologies           │                │
-│  │ - Project metadata     │      │ - Linked data          │                │
-│  └────────────────────────┘      └────────────────────────┘                │
+│                              ▼                                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │              VERISIMDB (identity-consonance octad)                    │  │
+│  │  - Graph + Document witnesses (code relationships, history, metadata) │  │
+│  │  - Semantic witness (RDF/ontology, proof blobs)                       │  │
+│  │  - + vector / temporal / provenance witnesses                         │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
 │                              │                                              │
 │                              ▼                                              │
 │  ┌──────────────────────────────────────────────────────────────────────┐  │
@@ -152,20 +151,23 @@ Oikos Bot is an intelligent code analysis platform that acts as a **consultant, 
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
-```
+----
 
-## Component Details
+== Component Details
 
-### 1. Haskell Code Analysis Engine (`/analyzers/code-haskell/`)
+=== 1. Haskell Code Analysis Engine (`/analyzers/code-haskell/`)
 
-**Why Haskell?**
-- Strong type system for reliable analysis
-- Pure functions = predictable behavior
-- Excellent for AST manipulation
-- Pattern matching for code pattern detection
+*Why Haskell?*
 
-**Capabilities:**
-```haskell
+* Strong type system for reliable analysis
+* Pure functions = predictable behavior
+* Excellent for AST manipulation
+* Pattern matching for code pattern detection
+
+*Capabilities:*
+
+[source,haskell]
+----
 -- Core analysis types
 data EcoAnalysis = EcoAnalysis
   { carbonIntensity    :: CarbonScore      -- Estimated CO2/execution
@@ -180,26 +182,30 @@ data QualityAnalysis = QualityAnalysis
   , technicalDebt     :: DebtEstimate
   , testCoverage      :: CoverageAnalysis
   }
-```
+----
 
-**Analysis Modules:**
-- `Eco.Carbon` - Carbon intensity estimation
-- `Eco.Energy` - Energy pattern detection
-- `Eco.Pareto` - Multi-objective optimization analysis
-- `Quality.Complexity` - Cyclomatic/cognitive complexity
-- `Quality.Coupling` - Dependency analysis
-- `Quality.Debt` - Technical debt quantification
+*Analysis Modules:*
 
-### 2. OCaml Documentation Analyzer (`/analyzers/docs-ocaml/`)
+* `Eco.Carbon` - Carbon intensity estimation
+* `Eco.Energy` - Energy pattern detection
+* `Eco.Pareto` - Multi-objective optimization analysis
+* `Quality.Complexity` - Cyclomatic/cognitive complexity
+* `Quality.Coupling` - Dependency analysis
+* `Quality.Debt` - Technical debt quantification
 
-**Why OCaml?**
-- Excellent for parsing and language processing
-- Strong module system for separation of concerns
-- Efficient compilation
-- Good interop with formal methods tools
+=== 2. OCaml Documentation Analyzer (`/analyzers/docs-ocaml/`)
 
-**Capabilities:**
-```ocaml
+*Why OCaml?*
+
+* Excellent for parsing and language processing
+* Strong module system for separation of concerns
+* Efficient compilation
+* Good interop with formal methods tools
+
+*Capabilities:*
+
+[source,ocaml]
+----
 (* Documentation analysis pipeline *)
 type doc_analysis = {
   completeness: float;                    (* 0.0 - 1.0 *)
@@ -215,12 +221,13 @@ module DocNLP : sig
   val check_consistency : document list -> inconsistency list
   val assess_completeness : document -> api_surface -> float
 end
-```
+----
 
-### 3. Policy Engine (Datalog + DeepProbLog)
+=== 3. Policy Engine (Datalog + DeepProbLog)
 
-**Architecture:**
-```
+*Architecture:*
+
+----
 ┌─────────────────────────────────────────────────────────────┐
 │                     POLICY ENGINE                            │
 ├─────────────────────────────────────────────────────────────┤
@@ -244,10 +251,12 @@ end
 │  └─────────────────────────────────────────────────────────┘│
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
-```
+----
 
-**Example Policies:**
-```prolog
+*Example Policies:*
+
+[source,prolog]
+----
 % Datalog: Deterministic rules
 pareto_dominated(X, Y) :-
     all_metrics(X, MetricsX),
@@ -266,66 +275,67 @@ nn(carbon_estimator, [CodeFeatures], CarbonScore) ::
 0.8 :: eco_friendly(Code) :-
     low_carbon(Code),
     efficient_memory(Code).
-```
+----
 
-### 4. Twin Database Architecture
+=== 4. Unified Datastore: VeriSimDB (Octad)
 
-**ArangoDB (Graph + Document Store):**
-- Code dependency graphs
-- Analysis history and trends
-- Project metadata
-- Change tracking
+VeriSimDB (Veridical Simulacrum Database) is a single identity-consonance engine
+in which one identity is an *octad* of eight modal witnesses — graph, vector,
+tensor, semantic, document, temporal, provenance, spatial. It subsumes the
+previously-planned pair of stores. The *graph + document* witnesses replace
+ArangoDB (code-dependency graphs, analysis history and trends, project
+metadata, change tracking), and the *semantic* witness replaces Virtuoso
+(RDF/ontology knowledge — e.g. SEON/CodeOntology — linked open data, and proof
+blobs). The eco/econ ontology seed for the semantic witness lives at
+link:databases/ontology/eco.ttl[`databases/ontology/eco.ttl`].
 
-**Virtuoso (RDF Triple Store):**
-- Semantic knowledge base
-- Software ontologies (e.g., SEON, CodeOntology)
-- Linked open data integration
-- SPARQL queries for complex reasoning
+Interaction is via *VCL (VeriSim Consonance Language*, legacy name VQL), with
+REST (`connectors/shared/openapi/verisim-api-v1.yaml`, base path `/api/v1`),
+gRPC federation (`connectors/shared/proto/verisim_federation.proto`), and a Zig
+FFI (`ffi/zig/`) client surface.
 
-**Synchronization:**
-```
-ArangoDB                          Virtuoso
-─────────                         ────────
-{                                 <project:123>
-  "_key": "123",          ──►       a :SoftwareProject ;
-  "type": "project",                :hasName "oikos-bot" ;
-  "metrics": {...}                  :hasCarbonScore "0.3"^^xsd:float .
-}
-```
+VeriSimDB is v0.1.0 and OikosBot's runtime client is *deferred/gated* — the data
+layer is retargeted in design and config now; runtime wiring lands later (it
+depends on VeriSimDB maturing and on the AffineScript transport).
 
-### 5. Echidna Integration
+=== 5. Echidna Integration
 
 Integration with `gitlab.com/hyperpolymath/echidna` for:
-- Formal verification of Pareto optimality claims
-- Mathematical proofs for efficiency bounds
-- Constraint solving for resource allocation
-- Economic model validation
 
-## Bot Roles & Behaviors
+* Formal verification of Pareto optimality claims
+* Mathematical proofs for efficiency bounds
+* Constraint solving for resource allocation
+* Economic model validation
 
-### 1. Consultant Mode
-- Answers questions about code efficiency
-- Provides alternative implementations
-- Explains trade-offs
+== Bot Roles & Behaviors
 
-### 2. Advisor Mode
-- Proactive suggestions on PRs/commits
-- Best practice recommendations
-- Learning resource suggestions
+=== 1. Consultant Mode
 
-### 3. Regulator Mode
-- Enforces policy compliance
-- Blocks PRs that violate eco-standards
-- Generates compliance reports
+* Answers questions about code efficiency
+* Provides alternative implementations
+* Explains trade-offs
 
-### 4. Policy Developer Mode
-- Learns from codebase patterns
-- Generates new policies from practice
-- Evolves rules based on outcomes
+=== 2. Advisor Mode
 
-## Analysis Pipeline
+* Proactive suggestions on PRs/commits
+* Best practice recommendations
+* Learning resource suggestions
 
-```
+=== 3. Regulator Mode
+
+* Enforces policy compliance
+* Blocks PRs that violate eco-standards
+* Generates compliance reports
+
+=== 4. Policy Developer Mode
+
+* Learns from codebase patterns
+* Generates new policies from practice
+* Evolves rules based on outcomes
+
+== Analysis Pipeline
+
+----
 1. TRIGGER
    └─► PR opened / Push / Schedule / Manual
 
@@ -351,8 +361,7 @@ Integration with `gitlab.com/hyperpolymath/echidna` for:
    └─► Echidna: Formal verification of claims
 
 7. STORE
-   ├─► ArangoDB: Store results & relationships
-   └─► Virtuoso: Update semantic knowledge
+   └─► VeriSimDB octad: store results into the graph/document/semantic/temporal/provenance witnesses
 
 8. REPORT
    ├─► Generate findings report
@@ -362,63 +371,71 @@ Integration with `gitlab.com/hyperpolymath/echidna` for:
 
 9. LEARN
    └─► Feed outcomes back to policy engine
-```
+----
 
-## Metrics & Scoring
+== Metrics & Scoring
 
-### Ecological Score (0-100)
-```
+=== Ecological Score (0-100)
+
+----
 EcoScore = w1*CarbonScore + w2*EnergyScore + w3*ResourceScore
 
 Where:
 - CarbonScore: Based on SCI specification (ISO/IEC 21031:2024)
 - EnergyScore: Energy efficiency patterns
 - ResourceScore: Memory/CPU utilization efficiency
-```
+----
 
-### Economic Score (0-100)
-```
+=== Economic Score (0-100)
+
+----
 EconScore = w1*ParetoScore + w2*AllocationScore + w3*DebtScore
 
 Where:
 - ParetoScore: Distance from Pareto frontier
 - AllocationScore: Allocative efficiency measure
 - DebtScore: Inverse of technical debt burden
-```
+----
 
-### Quality Score (0-100)
-```
+=== Quality Score (0-100)
+
+----
 QualityScore = w1*ComplexityScore + w2*CouplingScore + w3*CoverageScore
-```
+----
 
-### Composite Health Index
-```
+=== Composite Health Index
+
+----
 HealthIndex = α*EcoScore + β*EconScore + γ*QualityScore
 
 Default weights: α=0.4, β=0.3, γ=0.3
 (Customizable per organization)
-```
+----
 
-## Technology Stack Summary
+== Technology Stack Summary
 
-| Component | Language | Purpose |
-|-----------|----------|---------|
-| Orchestrator | Rust | High-performance coordination |
-| Code Analyzer | Haskell | AST analysis, type checking |
-| Doc Analyzer | OCaml | NLP, semantic extraction |
-| Policy Engine | Python + Datalog | Rule inference, ML |
-| DeepProbLog | Python | Probabilistic logic learning |
-| Bot Interface | ReScript + Deno | GitHub/GitLab integration |
-| Graph DB | ArangoDB | Relationships, history |
-| Triple Store | Virtuoso | Semantic knowledge |
-| Math Proofs | Echidna (external) | Formal verification |
+[cols="1,1,1",options="header"]
+|===
+| Component | Language | Purpose
 
-## Ecosystem Integrations
+| Orchestrator | Rust | High-performance coordination
+| Code Analyzer | Haskell | AST analysis, type checking
+| Doc Analyzer | OCaml | NLP, semantic extraction
+| Policy Engine | Python + Datalog | Rule inference, ML
+| DeepProbLog | Python | Probabilistic logic learning
+| Bot Interface | AffineScript | GitHub/GitLab webhook receiver (bot-integration-affine/)
+| Datastore | VeriSimDB | Identity-consonance octad (graph/vector/tensor/semantic/document/temporal/provenance/spatial)
+| Math Proofs | Echidna (external) | Formal verification
+|===
 
-### GitHub/GitLab Native Integration
+== Ecosystem Integrations
 
-**GitHub Actions/Apps Integration:**
-```yaml
+=== GitHub/GitLab Native Integration
+
+*GitHub Actions/Apps Integration:*
+
+[source,yaml]
+----
 # .github/workflows/oikos.yml
 name: Oikos Analysis
 on: [pull_request, push]
@@ -438,20 +455,22 @@ jobs:
         with:
           name: eco-analysis
           path: .oikos-bot/results.json
-```
+----
 
-**Integration Points:**
-- Dependabot: Oikos Bot can add eco-scores to dependency update PRs
-- CodeQL: Share SARIF format results for unified security+eco view
-- Copilot: Provide context via `.github/copilot-instructions.md`
+*Integration Points:*
 
-### Copilot/AI Assistant Integration
+* Dependabot: Oikos Bot can add eco-scores to dependency update PRs
+* CodeQL: Share SARIF format results for unified security+eco view
+* Copilot: Provide context via `.github/copilot-instructions.md`
 
-**Shared Prompt Templates** (`/prompts/`):
+=== Copilot/AI Assistant Integration
+
+*Shared Prompt Templates* (the Copilot template now lives at link:.github/copilot-instructions.md[`.github/copilot-instructions.md`]; the `prompts/` directory was removed):
 
 Oikos Bot provides prompt templates that AI coding assistants can use:
 
-```markdown
+[source,markdown]
+----
 <!-- .github/copilot-instructions.md (auto-generated by oikos-bot) -->
 ## Ecological Code Guidelines
 
@@ -464,12 +483,14 @@ When writing or reviewing code in this repository, consider:
 
 Current repo eco-score: 72/100
 Areas needing attention: Memory allocation in /src/processing/*
-```
+----
 
-### Data Exchange Formats
+=== Data Exchange Formats
 
-**SARIF Extension for Eco-Metrics:**
-```json
+*SARIF Extension for Eco-Metrics:*
+
+[source,json]
+----
 {
   "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
   "runs": [{
@@ -492,19 +513,20 @@ Areas needing attention: Memory allocation in /src/processing/*
     }]
   }]
 }
-```
+----
 
-**OpenTelemetry Integration:**
-```
+*OpenTelemetry Integration:*
+
+----
 oikos_bot_analysis_score{type="ecological",repo="myrepo"} 72
 oikos_bot_analysis_score{type="economic",repo="myrepo"} 68
 oikos_bot_carbon_intensity{repo="myrepo"} 0.34
 oikos_bot_pareto_distance{repo="myrepo"} 0.12
-```
+----
 
-### Cross-Tool Workflows
+=== Cross-Tool Workflows
 
-```
+----
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    INTEGRATED ANALYSIS WORKFLOW                          │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -531,11 +553,11 @@ oikos_bot_pareto_distance{repo="myrepo"} 0.12
 │                                                  └─────────────────┘     │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
-```
+----
 
-### Praxis Loop: Theory ↔ Practice
+=== Praxis Loop: Theory ↔ Practice
 
-```
+----
                     ┌─────────────────────────────────────┐
                     │         PRAXIS FEEDBACK LOOP         │
                     └─────────────────────────────────────┘
@@ -559,35 +581,40 @@ oikos_bot_pareto_distance{repo="myrepo"} 0.12
                              │ Log learns│
                              │ new rules │
                              └───────────┘
-```
+----
 
-**Knowledge Sync Between Databases:**
-```
-ArangoDB (Operational)          Virtuoso (Semantic)
-─────────────────────          ──────────────────────
+*Consonance, Not Cross-Database Sync:*
 
-Project metrics      ───────►  RDF triples for
-Change history       ◄───────  reasoning
-Analysis results               SPARQL queries
-                               Ontology updates
+There is no longer any cross-database synchronization to maintain. VeriSimDB
+keeps the eight witnesses of one identity in *consonance* internally, with
+built-in *drift detection* and *self-normalization* — so the old
+ArangoDB↔Virtuoso two-store synchronization problem disappears entirely.
 
-         │                              │
-         └──────────┬───────────────────┘
-                    ▼
-            ┌───────────────┐
-            │   ECHIDNA     │
-            │  (Proofs)     │
-            │               │
-            │ Verify claims │
-            │ Solve optim.  │
-            └───────────────┘
-```
+----
+              VERISIMDB (one identity, eight witnesses)
+              ─────────────────────────────────────────
+              graph · document · semantic · temporal ·
+              vector · tensor · provenance · spatial
 
-## References
+                 internal consonance maintenance
+                 (drift detection + self-normalize)
 
-- [Green Software Foundation](https://greensoftware.foundation/)
-- [Software Carbon Intensity Spec](https://sci.greensoftware.foundation/)
-- [DeepProbLog](https://github.com/ML-KULeuven/deepproblog)
-- [Pareto Efficiency in Software](https://patrickkarsh.medium.com/pareto-efficiency-a-guide-for-software-engineers-3de566e58b75)
-- [SARIF Specification](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)
-- [Green Software Foundation Awesome List](https://github.com/Green-Software-Foundation/awesome-green-software)
+                              │
+                              ▼
+                      ┌───────────────┐
+                      │   ECHIDNA     │
+                      │  (Proofs)     │
+                      │               │
+                      │ Verify claims │
+                      │ Solve optim.  │
+                      └───────────────┘
+----
+
+== References
+
+* https://greensoftware.foundation/[Green Software Foundation]
+* https://sci.greensoftware.foundation/[Software Carbon Intensity Spec]
+* https://github.com/ML-KULeuven/deepproblog[DeepProbLog]
+* https://patrickkarsh.medium.com/pareto-efficiency-a-guide-for-software-engineers-3de566e58b75[Pareto Efficiency in Software]
+* https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html[SARIF Specification]
+* https://github.com/Green-Software-Foundation/awesome-green-software[Green Software Foundation Awesome List]

@@ -33,19 +33,23 @@ toc::[]
 
 == Status
 
-`0.1.0-dev`.
+`0.1.0-dev`. OikosBot is not currently deployed in production.
 
-The Rust analysis workspace (`crates/oikosbot-*`: CLI, analysis engine,
-metrics, SARIF output, and Eclexia policy evaluation) builds and tests cleanly
-and is the most complete surface — it was extracted from the former
+The Rust analysis workspace (`crates/oikosbot-*`: CLI, analysis engine, metrics,
+SARIF output, and Eclexia policy evaluation) builds and tests cleanly and is the
+most complete surface — it was extracted from the former
 `gitbot-fleet/bots/sustainabot/` and renamed.
 
-The AffineScript webhook receiver is in flight. Cross-module type-checking,
-JSON payload extraction, and the HTTP server accept loop are still gated on
-upstream AffineScript standard-library work. The Haskell analyzer scaffold is
-present and builds independently.
+The AffineScript webhook receiver (`bot-integration-affine/`) is a scaffold.
+HMAC-SHA256 webhook signature verification is implemented in
+`bot-integration-affine/src/Webhook.affine` (constant-time, via the `hpm-crypto`
+RSR FFI), and the upstream AffineScript standard-library prerequisites have
+landed (`json` RSR rewire, affinescript#421; `Http` server RSR rewire,
+affinescript#425). What remains is the in-repo wiring: binding the HTTP listener
+and connecting the webhook → analyse → comment orchestration (today the handlers
+accept and return `202` without dispatching).
 
-OikosBot is not currently deployed in production.
+The Haskell analyzer scaffold (`analyzers/code-haskell/`) builds independently.
 
 == Repository Layout
 
@@ -59,22 +63,40 @@ oikosbot/
 |   |-- oikosbot-sarif/      #   SARIF report generation
 |   |-- oikosbot-eclexia/    #   Eclexia (.ecl) policy evaluation
 |   `-- oikosbot-fleet/      #   OPTIONAL gitbot-fleet bridge (excluded by default)
-|-- bot-integration-affine/  # AffineScript webhook receiver
+|-- bot-integration-affine/  # AffineScript webhook receiver (in flight)
 |-- analyzers/code-haskell/  # Haskell eco/econ/quality analysis engine
 |-- policy-engine/           # Datalog and DeepProbLog policy rules
 |-- policies/                # Eclexia (.ecl) policy definitions
-|-- config/                  # Bot configuration
-|-- prompts/                 # Generated assistant prompt templates
+|-- config/oikos.yaml        # Bot configuration
+|-- databases/ontology/      # eco.ttl — VeriSimDB semantic-witness ontology seed
 |-- examples/                # Example CI integration
 |-- fuzz/                    # cargo-fuzz targets (excluded from the workspace)
-|-- database/                # Knowledge-graph schema and query assets
-|-- databases/               # Legacy database assets retained for migration
-|-- docs/GITHUB_APP_SETUP.md # GitHub App registration notes
-|-- ARCHITECTURE.md          # Platform architecture
+|-- docs/                    # GITHUB_APP_SETUP.adoc, tech-debt audit
+|-- ARCHITECTURE.adoc        # Platform architecture (target design)
 |-- DISAMBIGUATION.adoc      # oikos vs OikosBot vs sustainabot
 |-- QUICKSTART.md            # CLI quickstart
-`-- DEPLOY.md                # Deployment status and runbook notes
+`-- DEPLOY.adoc              # Deployment status and runbook notes
 ----
+
+== Data Layer
+
+OikosBot persists analysis results, code-relationship graphs, and the eco/econ
+knowledge base in a single identity-consonance store,
+https://github.com/hyperpolymath/verisimdb[VeriSimDB]. In VeriSimDB one identity
+is an *octad* of modal witnesses — graph, vector, tensor, semantic, document,
+temporal, provenance, spatial. The **graph + document** witnesses take over the
+role once planned for ArangoDB (code-dependency graphs, analysis history, project
+metadata), and the **semantic** witness takes over the role once planned for
+Virtuoso/RDF (ontology knowledge, proof blobs). The eco/econ ontology seed for
+the semantic witness lives at
+link:databases/ontology/eco.ttl[`databases/ontology/eco.ttl`].
+
+VeriSimDB is `v0.1.0` and OikosBot's runtime client is *deferred*: the data layer
+is retargeted in design and configuration now (see
+link:config/oikos.yaml[`config/oikos.yaml`] and
+link:ARCHITECTURE.adoc[`ARCHITECTURE.adoc`]), with runtime wiring tracked on the
+link:ROADMAP.adoc[roadmap]. The legacy ArangoDB + Virtuoso assets were retired
+(recoverable in git history).
 
 == Local Checks
 
@@ -97,7 +119,7 @@ with `AS_BIN=/path/to/main.exe` when needed.
 == GitHub App
 
 The app manifest lives at link:.github/app.yml[`.github/app.yml`]. The setup
-guide is link:docs/GITHUB_APP_SETUP.md[`docs/GITHUB_APP_SETUP.md`].
+guide is link:docs/GITHUB_APP_SETUP.adoc[`docs/GITHUB_APP_SETUP.adoc`].
 
 == Licence
 
