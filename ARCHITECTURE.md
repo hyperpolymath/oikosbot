@@ -9,14 +9,19 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 
 > **Note — which product is this?**
 > This document describes **OikosBot**, the code-analysis GitHub/GitLab App.
-> Its AffineScript port lives in
-> [`bot-integration-affine/`](bot-integration-affine/) (in-flight; the
+> Its Rust analysis workspace is `crates/oikosbot-*`; its AffineScript port lives
+> in [`bot-integration-affine/`](bot-integration-affine/) (in-flight; the
 > previous ReScript codebase at `bot-integration/` was retired on
 > 2026-05-28 — see git history for the prior implementation).
-> The DSL of the same root name (a typed compiler for stock-flow consistent
-> macroeconomic models) now lives in
-> [`hyperpolymath/oikos-economics-accounting-dsl`](https://github.com/hyperpolymath/oikos-economics-accounting-dsl).
-> They share the οἶκος root but are otherwise unrelated.
+> Two similarly-named-but-**separate** projects are easy to confuse with this one
+> (full breakdown in [`DISAMBIGUATION.adoc`](DISAMBIGUATION.adoc)):
+> the **oikos** DSL (a typed compiler for stock-flow consistent macroeconomic
+> models) now lives in
+> [`hyperpolymath/oikos-economics-accounting-dsl`](https://github.com/hyperpolymath/oikos-economics-accounting-dsl);
+> and **sustainabot** is a reserved member slot of
+> [`hyperpolymath/gitbot-fleet`](https://github.com/hyperpolymath/gitbot-fleet)
+> (`bots/sustainabot/`), not OikosBot. They share the οἶκος root but are
+> otherwise unrelated.
 
 ## Vision
 

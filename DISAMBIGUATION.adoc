@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Disambiguation: oikos vs OikosBot vs sustainabot
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+:toc: macro
+:icons: font
+
+Three similarly-named things in the hyperpolymath estate are routinely confused.
+They are **three separate projects** living in **three separate places**. This
+page is the canonical reference; link here whenever the distinction matters.
+
+toc::[]
+
+== TL;DR
+
+[cols="1,2,3,2",options="header"]
+|===
+| Name | What it is | Where it lives | Language
+
+| **oikos**
+| A DSL — a typed compiler for stock-flow consistent (SFC) macroeconomic /
+  accounting models.
+| Its own top-level repo: `hyperpolymath/oikos-economics-accounting-dsl`.
+| Rust (compiler crates `oikos-syntax`, `oikos-parser`, `oikos-desugar`,
+  `oikos-check`).
+
+| **OikosBot** (this repo)
+| A code-analysis GitHub/GitLab App that adds an *ecological & economic* review
+  lens to pull requests.
+| Its own top-level repo: `hyperpolymath/oikosbot`.
+| Rust workspace (`crates/oikosbot-*`) + Haskell analyzer + AffineScript bot.
+
+| **sustainabot**
+| A *reserved* member slot of the gitbot fleet — a future, lightweight quality
+  bot, kept for later prototyping. **Currently empty.**
+| A directory inside another repo: `hyperpolymath/gitbot-fleet` →
+  `bots/sustainabot/`.
+| TBD (not yet built).
+|===
+
+They share the Greek root _οἶκος_ ("household / habitat") but are otherwise
+unrelated.
+
+== The three projects in detail
+
+=== oikos — the DSL (NOT this repo)
+
+`oikos` is a programming language / compiler for stock-flow consistent economic
+models. It is **not a bot** and has **nothing to do** with code analysis. It
+lives in its own repository, `hyperpolymath/oikos-economics-accounting-dsl`, and
+its crates are namespaced `oikos-*` (e.g. `oikos-parser`).
+
+=== OikosBot — this repository
+
+`OikosBot` is the eco/econ code-analysis App. Its Rust crates are namespaced
+`oikosbot-*` (`oikosbot-cli`, `oikosbot-analysis`, `oikosbot-metrics`,
+`oikosbot-sarif`, `oikosbot-eclexia`, and the optional `oikosbot-fleet` bridge).
+
+[IMPORTANT]
+====
+OikosBot crates use the `oikosbot-` prefix, **never** `oikos-` (that namespace
+belongs to the DSL) and **never** `sustainabot-` (that belongs to the fleet
+slot). Do not reintroduce either prefix here.
+====
+
+=== sustainabot — a gitbot-fleet member (NOT this repo)
+
+`sustainabot` is one of the bots coordinated by `hyperpolymath/gitbot-fleet`. It
+is a **reserved slot**, intended to be prototyped later as a lightweight quality
+helper. It is a *peer* of the other fleet bots (rhodibot, echidnabot, …), not a
+home for full standalone products.
+
+== What went wrong (and how this was fixed)
+
+A full incarnation of **OikosBot** was once committed *inside* gitbot-fleet at
+`bots/sustainabot/` — a Rust workspace named `sustainabot-*`, a Haskell
+analyzer, an AffineScript bot, containers, policies, and fuzz targets. That was
+a misfiling: a whole standalone product had been vendored into one fleet bot's
+slot, and it had even grown a hard `path` dependency back into
+`gitbot-fleet/shared-context`.
+
+The fix:
+
+. The implementation was **moved here** (`hyperpolymath/oikosbot`) and renamed
+  `sustainabot-*` → `oikosbot-*`.
+. The fleet coupling was severed: the default OikosBot workspace builds with
+  **no** dependency on gitbot-fleet. The only bridge,
+  link:crates/oikosbot-fleet/README.md[`oikosbot-fleet`], is *excluded* from the
+  default workspace and built only on demand.
+. `gitbot-fleet/bots/sustainabot/` was emptied back to a **placeholder** that
+  reserves the slot and points here.
+
+== Guardrails — how to avoid this happening again
+
+* **Naming:** keep the prefixes distinct — `oikos-*` (DSL),
+  `oikosbot-*` (this App), `sustainabot-*` (the fleet slot, if/when built). A CI
+  language-policy/antipattern check can assert no `sustainabot` strings appear
+  in this repo outside the legacy `oikosbot-fleet` bridge.
+* **No vendoring of standalone products into `gitbot-fleet/bots/<name>/`.** A
+  fleet bot directory is a *thin adapter*, not a home for an entire project. See
+  `gitbot-fleet/bots/sustainabot/README.md`.
+* **No path dependencies escaping the repository.** OikosBot must build from a
+  clean checkout with no sibling repos present (the `oikosbot-fleet` bridge is
+  the sole, explicitly-excluded exception).
+* When in doubt about which "oikos" thing is meant, **link to this file**.

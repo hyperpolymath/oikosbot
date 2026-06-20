@@ -15,16 +15,30 @@ image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,lin
 
 [NOTE]
 ====
-This repository is only OikosBot. The Oikos stock-flow consistent economics DSL
-now lives in
-https://github.com/hyperpolymath/oikos-economics-accounting-dsl[`hyperpolymath/oikos-economics-accounting-dsl`].
+This repository is only **OikosBot**, and it is easy to confuse with two
+similarly-named-but-separate things:
+
+* **oikos** — the stock-flow consistent economics *DSL*, now in
+  https://github.com/hyperpolymath/oikos-economics-accounting-dsl[`hyperpolymath/oikos-economics-accounting-dsl`].
+* **sustainabot** — a *reserved member slot* of
+  https://github.com/hyperpolymath/gitbot-fleet[`hyperpolymath/gitbot-fleet`]
+  (`bots/sustainabot/`), to be prototyped later. OikosBot is **not** sustainabot;
+  the implementation that briefly lived there was a misfiled copy of OikosBot and
+  has been moved into this repo.
+
+See link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`] for the full breakdown.
 ====
 
 toc::[]
 
 == Status
 
-`0.1.0-dev` - scaffold only.
+`0.1.0-dev`.
+
+The Rust analysis workspace (`crates/oikosbot-*`: CLI, analysis engine,
+metrics, SARIF output, and Eclexia policy evaluation) builds and tests cleanly
+and is the most complete surface — it was extracted from the former
+`gitbot-fleet/bots/sustainabot/` and renamed.
 
 The AffineScript webhook receiver is in flight. Cross-module type-checking,
 JSON payload extraction, and the HTTP server accept loop are still gated on
@@ -38,15 +52,28 @@ OikosBot is not currently deployed in production.
 [source,text]
 ----
 oikosbot/
+|-- crates/                  # Rust workspace (oikosbot-* analysis engine + CLI)
+|   |-- oikosbot-cli/        #   `oikosbot` binary (analyze / check / report)
+|   |-- oikosbot-analysis/   #   tree-sitter analysis + eco/econ heuristics
+|   |-- oikosbot-metrics/    #   shared metric/result types
+|   |-- oikosbot-sarif/      #   SARIF report generation
+|   |-- oikosbot-eclexia/    #   Eclexia (.ecl) policy evaluation
+|   `-- oikosbot-fleet/      #   OPTIONAL gitbot-fleet bridge (excluded by default)
 |-- bot-integration-affine/  # AffineScript webhook receiver
 |-- analyzers/code-haskell/  # Haskell eco/econ/quality analysis engine
 |-- policy-engine/           # Datalog and DeepProbLog policy rules
+|-- policies/                # Eclexia (.ecl) policy definitions
 |-- config/                  # Bot configuration
 |-- prompts/                 # Generated assistant prompt templates
+|-- containers/              # Container build + compose for deployment
+|-- examples/                # Example CI integration
+|-- fuzz/                    # cargo-fuzz targets (excluded from the workspace)
 |-- database/                # Knowledge-graph schema and query assets
 |-- databases/               # Legacy database assets retained for migration
 |-- docs/GITHUB_APP_SETUP.md # GitHub App registration notes
 |-- ARCHITECTURE.md          # Platform architecture
+|-- DISAMBIGUATION.adoc      # oikos vs OikosBot vs sustainabot
+|-- QUICKSTART.md            # CLI quickstart
 `-- DEPLOY.md                # Deployment status and runbook notes
 ----
 
@@ -54,10 +81,16 @@ oikosbot/
 
 [source,shell]
 ----
+cargo build --workspace      # or: just rust-build
+cargo test  --workspace      # or: just rust-test
 just haskell-build
 just haskell-test
 just affine-check
 ----
+
+The default `cargo` workspace deliberately excludes `crates/oikosbot-fleet`
+(the optional gitbot-fleet bridge) so OikosBot builds standalone. See
+link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`].
 
 `just affine-check` expects an AffineScript compiler. Override the compiler path
 with `AS_BIN=/path/to/main.exe` when needed.

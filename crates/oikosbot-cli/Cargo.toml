@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+
+[package]
+name = "oikosbot-cli"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "oikosbot"
+path = "src/main.rs"
+
+[features]
+default = []
+security = ["oikosbot-analysis/panic-attack"]
+
+[dependencies]
+oikosbot-analysis = { path = "../oikosbot-analysis" }
+oikosbot-metrics = { path = "../oikosbot-metrics" }
+oikosbot-sarif = { path = "../oikosbot-sarif" }
+oikosbot-eclexia = { path = "../oikosbot-eclexia" }
+# NB: `oikosbot-fleet` (the gitbot-fleet bridge) is deliberately NOT a dependency
+# here. It is excluded from the default workspace so OikosBot stays standalone.
+# The `fleet` subcommand prints how to run the bridge; see crates/oikosbot-fleet.
+clap.workspace = true
+anyhow.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+walkdir = "2"

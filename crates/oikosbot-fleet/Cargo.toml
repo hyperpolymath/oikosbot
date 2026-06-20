@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+
+# OPTIONAL gitbot-fleet bridge — excluded from the default OikosBot workspace.
+#
+# This crate is the ONLY part of OikosBot that depends on
+# `hyperpolymath/gitbot-fleet`. It is intentionally kept out of the default
+# workspace (see ../../Cargo.toml `exclude`) so that OikosBot builds with no
+# coupling to the fleet. Build it explicitly, with gitbot-fleet checked out as
+# a sibling of this repository:
+#
+#     cargo build --manifest-path crates/oikosbot-fleet/Cargo.toml
+#
+# It currently publishes findings under the fleet's existing `BotId::Sustainabot`
+# slot; a dedicated `BotId::Oikosbot` upstream in gitbot-shared-context is the
+# follow-up. See README.md in this directory and DISAMBIGUATION.adoc.
+
+# NB: concrete package metadata (not `*.workspace = true`) because this crate is
+# EXCLUDED from the root workspace and must resolve standalone.
+[package]
+name = "oikosbot-fleet"
+version = "0.1.0"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+edition = "2021"
+license = "MPL-2.0"
+repository = "https://github.com/hyperpolymath/oikosbot"
+
+[dependencies]
+gitbot-shared-context = { path = "../../../gitbot-fleet/shared-context" }
+oikosbot-analysis = { path = "../oikosbot-analysis" }
+oikosbot-metrics = { path = "../oikosbot-metrics" }
+anyhow = "1"
+serde_json = "1"

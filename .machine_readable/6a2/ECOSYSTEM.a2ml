@@ -1,20 +1,28 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# ECOSYSTEM.a2ml — Oikos ecosystem position
+# ECOSYSTEM.a2ml — OikosBot ecosystem position
 [metadata]
-version = "1.0"
-last-updated = "2026-04-11"
+version = "1.1"
+last-updated = "2026-06-19"
 
 [project]
-name = "Oikos"
-purpose = ""
-role = ""
+name = "OikosBot"
+purpose = "An ecological & economic code-analysis GitHub/GitLab App that adds an eco/econ review lens to pull requests, complementing (not replacing) Dependabot/CodeQL/linters."
+role = "Standalone analysis product. Optionally plugs into the gitbot fleet via the excluded crates/oikosbot-fleet bridge."
 
 [position-in-ecosystem]
-category = ""
+category = "code-analysis-app"
+
+# Disambiguation — three similarly-named, SEPARATE projects. See DISAMBIGUATION.adoc.
+[disambiguation]
+this-project = "OikosBot (this repo, hyperpolymath/oikosbot) — crates oikosbot-*"
+not-the-dsl = "oikos — the stock-flow-consistent economics DSL — lives in hyperpolymath/oikos-economics-accounting-dsl (crates oikos-*). NOT here."
+not-the-fleet-slot = "sustainabot — a reserved member slot of hyperpolymath/gitbot-fleet (bots/sustainabot/), to be prototyped later. NOT here. A misfiled copy of OikosBot once lived there and was moved into this repo."
 
 [related-projects]
 projects = [
-  # No related projects recorded
+  { name = "oikos-economics-accounting-dsl", repo = "hyperpolymath/oikos-economics-accounting-dsl", relation = "name-sibling", note = "Separate DSL; shares the οἶκος root only." },
+  { name = "gitbot-fleet", repo = "hyperpolymath/gitbot-fleet", relation = "optional-consumer", note = "OikosBot can run as a fleet member via the excluded crates/oikosbot-fleet bridge; the bots/sustainabot/ slot is reserved and separate." },
+  { name = "affinescript", repo = "hyperpolymath/affinescript", relation = "upstream-toolchain", note = "Provides the AffineScript compiler/stdlib for bot-integration-affine/." }
 ]

@@ -41,6 +41,35 @@ jobs:
       - name: Test Haskell analyzer
         working-directory: analyzers/code-haskell
         run: cabal test all
+  rust:
+    name: Rust Workspace
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Cache cargo
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      # Uses the runner's preinstalled stable toolchain (no third-party action).
+      # NB: the default workspace deliberately EXCLUDES crates/oikosbot-fleet so
+      # OikosBot builds with no dependency on hyperpolymath/gitbot-fleet.
+      - name: Format check
+        run: cargo fmt --check
+      - name: Build (standalone workspace)
+        run: cargo build --workspace --locked
+      - name: Test (standalone workspace)
+        run: cargo test --workspace --locked
+      - name: Clippy (informational)
+        run: cargo clippy --workspace
+        continue-on-error: true
   affine:
     name: AffineScript Scaffold
     runs-on: ubuntu-latest

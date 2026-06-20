@@ -7,7 +7,18 @@ haskell_dir := "analyzers/code-haskell"
 
 all: check
 
-check: haskell-build haskell-test
+check: rust-build rust-test haskell-build haskell-test
+
+# Rust analysis workspace. The default workspace excludes crates/oikosbot-fleet
+# (the optional gitbot-fleet bridge) so OikosBot builds standalone.
+rust-build:
+    cargo build --workspace
+
+rust-test:
+    cargo test --workspace
+
+rust-fmt-check:
+    cargo fmt --check
 
 haskell-build:
     cd {{ haskell_dir }} && cabal build all
@@ -22,4 +33,5 @@ shell-check:
     bash -n bot-integration-affine/check.sh
 
 clean:
+    cargo clean
     cd {{ haskell_dir }} && cabal clean

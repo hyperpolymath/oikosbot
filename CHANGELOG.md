@@ -19,6 +19,10 @@ this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- feat(crates): extract the Rust analysis workspace from `gitbot-fleet/bots/sustainabot/` into this repo, renamed `sustainabot-*` → `oikosbot-*` (`oikosbot-cli`/`-analysis`/`-metrics`/`-sarif`/`-eclexia`, plus the optional `oikosbot-fleet` bridge). Adds `policies/`, `fuzz/`, `examples/`, `containers/`, and `QUICKSTART.md`. Builds and tests green (35 tests).
+- docs: `DISAMBIGUATION.adoc` — canonical breakdown of **oikos** (the DSL) vs **OikosBot** (this App) vs **sustainabot** (a reserved gitbot-fleet slot), with guardrails to prevent the misfiling recurring.
+- ci(rust): add a `rust` job (fmt-check + build + test, informational clippy) to `ci.yml` and a `cargo` dependabot ecosystem. New `just rust-build` / `rust-test` targets.
+- feat(bot): missing AffineScript modules `GitHubAPI`, `GitHubApp`, and the TEA runtime (`tea/Cmd`, `tea/Runtime`, `tea/Sub`) added to `bot-integration-affine/src/` from the former sustainabot tree.
 - feat(bot): `bot-integration-affine/` Phase 5 AffineScript scaffold (#35) — initial AS port of OikosBot; cross-module type-check, JSON payload extraction, and HTTP-server accept loop are gated on upstream `affinescript` stdlib work (Json v0.3 RSR rewire `affinescript#421` + Http server FFI `affinescript#425`).
 - feat: Oikos Bot v0.1.0-beta - TEA architecture with typed HTTP routing
 - feat: add GitHub App manifest for developer programme registration
@@ -39,6 +43,7 @@ this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- chore(decouple): sever OikosBot's dependency on `gitbot-fleet`. The default `cargo` workspace **excludes** `crates/oikosbot-fleet` (the only fleet-aware crate), and the optional `panic-attacker` / `eclexia` path dependencies that escaped the repo were neutralised to no-op feature seams — OikosBot now builds from a clean checkout with no sibling repos present.
 - chore(repo): split OikosBot into its own repository separate from the Oikos economics accounting DSL.
 - chore(bot-integration): clean shutoff of the legacy ReScript `bot-integration/` (#41) — 208 files / -33,061 lines: removes `bot-integration/`, `containers/`, `.github/workflows/oikos.yml`, the `rescript:` job from `ci.yml`, the npm/bot-integration dependabot entry, and `.gitmodules`. README / ARCHITECTURE / ROADMAP / DEPLOY / disambiguation docs repointed at `bot-integration-affine/`. No production blast radius (`.github/app.yml` URLs were `*.example.com` placeholders).
 - chore(license): align stale SPDX headers + `Cargo.toml` manifest with `MPL-2.0` (#36) — completes the 2026-05-22 EUPL → MPL migration that had left 45 file headers + the manifest at `EUPL-1.2`.

@@ -19,13 +19,17 @@ The following files in `.machine_readable/6a2/` contain structured project metad
 
 ## Language Policy (Hyperpolymath Standard)
 
-> **Policy refresh 2026-05-28**: This repo has two products. (1) The **Oikos DSL** at the repo root is **Rust** (compiler crates `oikos-syntax`, `oikos-parser`, `oikos-desugar`, `oikos-check`); (2) **OikosBot** at `bot-integration-affine/` is **AffineScript** as of the 2026-05-28 legacy-shutoff (oikos#41) — the previous ReScript implementation at `bot-integration/` was removed in the same PR. Write no new ReScript or TypeScript here. MPL-1.0 / MPL-1.0-or-later are banned; rewrite to MPL-2.0 wherever encountered (DR-010 supersedes DR-002).
+> **Disambiguation (READ FIRST — see [`DISAMBIGUATION.adoc`](../DISAMBIGUATION.adoc)):** this repo is **OikosBot** and **only** OikosBot. Do not conflate it with two separate, similarly-named projects:
+> - **oikos** — the stock-flow-consistent economics *DSL* (crates `oikos-syntax`/`oikos-parser`/`oikos-desugar`/`oikos-check`). It lives in its **own** repo `hyperpolymath/oikos-economics-accounting-dsl`, **not here**. Do **not** add `oikos-*` DSL crates to this repo.
+> - **sustainabot** — a *reserved member slot* of `hyperpolymath/gitbot-fleet` (`bots/sustainabot/`). **Not here.** A misfiled copy of OikosBot once lived there; it was moved into this repo and renamed `sustainabot-*` → `oikosbot-*`. Do **not** reintroduce the `sustainabot` name here (the sole exception is the legacy `crates/oikosbot-fleet` bridge, which still targets the fleet's `BotId::Sustainabot`).
+>
+> **Policy refresh 2026-06-19**: This repo has two surfaces, both OikosBot. (1) The **Rust analysis workspace** at the repo root — crates `oikosbot-*` (`oikosbot-cli`/`-analysis`/`-metrics`/`-sarif`/`-eclexia`, plus the optional, workspace-excluded `oikosbot-fleet` bridge). The default `cargo` workspace builds **standalone** with no dependency on gitbot-fleet. (2) **OikosBot's webhook bot** at `bot-integration-affine/` is **AffineScript** as of the 2026-05-28 legacy-shutoff (oikos#41) — the previous ReScript implementation at `bot-integration/` was removed in the same PR. Write no new ReScript or TypeScript here. MPL-1.0 / MPL-1.0-or-later are banned; rewrite to MPL-2.0 wherever encountered (DR-010 supersedes DR-002).
 
 ### ALLOWED Languages & Tools
 
 | Language/Tool | Use Case | Notes |
 |---------------|----------|-------|
-| **Rust** | Oikos DSL compiler crates | Repo root; performance-critical |
+| **Rust** | OikosBot analysis workspace (`crates/oikosbot-*`) | Repo root; performance-critical. NOT the `oikos-*` DSL (separate repo). |
 | **AffineScript** (`.affine`) | OikosBot (`bot-integration-affine/`) | Affine types, dependent types, row polymorphism, extensible effects |
 | **Haskell** | OikosBot analyser backend (`analyzers/`) | Existing surface; pure analysis |
 | **Deno** | Runtime & package management | Replaces Node/npm/bun |

@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/oikosbot-cli",
+    "crates/oikosbot-analysis",
+    "crates/oikosbot-metrics",
+    "crates/oikosbot-sarif",
+    "crates/oikosbot-eclexia",
+]
+# `oikosbot-fleet` is the OPTIONAL gitbot-fleet bridge. It is intentionally
+# excluded from the default workspace so OikosBot builds standalone with no
+# dependency on `hyperpolymath/gitbot-fleet`. Build it explicitly (with the
+# fleet checked out as a sibling) only when wiring OikosBot into the fleet.
+# See crates/oikosbot-fleet/README.md and DISAMBIGUATION.adoc.
+exclude = [
+    "crates/oikosbot-fleet",
+    "fuzz",
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+edition = "2021"
+license = "MPL-2.0"
+repository = "https://github.com/hyperpolymath/oikosbot"
+
+[workspace.dependencies]
+# AST parsing
+tree-sitter = "0.23.2"
+tree-sitter-rust = "0.23.3"
+tree-sitter-javascript = "0.23.1"
+tree-sitter-python = "0.23.6"
+
+# CLI
+clap = { version = "4.5.55", features = ["derive", "cargo"] }
+anyhow = "1.0.100"
+thiserror = "2.0.18"
+
+# Serialization
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+toml = "0.8.23"
+
+# Logging
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+
+# Process execution (for Eclexia interpreter)
+tokio = { version = "1.49.0", features = ["full"] }
+
+# Carbon APIs
+reqwest = { version = "0.12.28", features = ["json"] }
+
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
