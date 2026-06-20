@@ -38,9 +38,10 @@ cargo build --manifest-path crates/oikosbot-fleet/Cargo.toml
 cargo run   --manifest-path crates/oikosbot-fleet/Cargo.toml -- <repo-path> [--context ctx.json]
 ```
 
-## Known follow-up
+## Fleet identity
 
-The bridge currently publishes under the fleet's existing `BotId::Sustainabot`
-slot. A dedicated `BotId::Oikosbot` in `gitbot-shared-context` is the intended
-follow-up so the fleet can distinguish OikosBot from the (separate, reserved)
-`sustainabot` slot.
+The bridge publishes under its own **`BotId::Oikosbot`** identity, so the fleet
+distinguishes OikosBot from the separate, reserved `sustainabot` slot. This
+requires a `gitbot-shared-context` that provides the `Oikosbot` variant (added in
+gitbot-fleet alongside this change); build with a sibling gitbot-fleet that has
+it.
