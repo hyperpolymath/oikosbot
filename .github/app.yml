@@ -13,7 +13,7 @@ description: |
   Provides carbon intensity analysis, Pareto optimization insights,
   and sustainability scoring for your codebase.
 
-# Public page URL
+# Public page URL. Canonical home for this app.
 url: https://github.com/hyperpolymath/oikosbot
 
 # Setup/callback URLs (update with your deployment domain)

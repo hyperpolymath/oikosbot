@@ -7,6 +7,8 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 # GitHub App Setup Guide
 
 This guide explains how to create and configure a GitHub App for Oikos Bot.
+Canonical home: `https://github.com/hyperpolymath/oikosbot`.
+If you found an older `gitbot-fleet` blob link, treat it as stale and use this repo instead.
 
 ## Prerequisites
 
