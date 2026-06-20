@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+
+[package]
+name = "oikosbot-sarif"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "SARIF 2.1.0 output for oikosbot analysis results"
+
+[dependencies]
+oikosbot-metrics = { path = "../oikosbot-metrics" }
+serde.workspace = true
+serde_json.workspace = true

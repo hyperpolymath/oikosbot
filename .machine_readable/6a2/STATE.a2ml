@@ -3,16 +3,16 @@
 #
 # STATE.a2ml — Oikos project state
 [metadata]
-project = "oikos"
+project = "oikosbot"
 version = "0.1.0-dev"
-last-updated = "2026-05-28"
+last-updated = "2026-06-19"
 status = "active"
-session = "2026-05-28 Phase 5 scaffold + legacy shutoff; upstream RSR rewires landed in affinescript"
+session = "2026-06-19 extract Rust analysis workspace from gitbot-fleet/bots/sustainabot → crates/oikosbot-* (renamed, decoupled, standalone, 35 tests green); add DISAMBIGUATION.adoc"
 
 [project-context]
-name = "Oikos"
-purpose = "Two products: (1) the Oikos DSL — typed compiler for stock-flow-consistent macroeconomic models; (2) OikosBot — code-analysis GitHub App. See docs/disambiguation/oikos-dsl-vs-oikosbot.adoc."
-completion-percentage = 30
+name = "OikosBot"
+purpose = "OikosBot — an ecological & economic code-analysis GitHub/GitLab App. NB: the similarly-named 'oikos' DSL (separate repo hyperpolymath/oikos-economics-accounting-dsl) and the 'sustainabot' gitbot-fleet slot are SEPARATE projects — see DISAMBIGUATION.adoc."
+completion-percentage = 40
 
 [position]
 phase = "implementation"   # design | implementation | testing | maintenance | archived
@@ -22,6 +22,7 @@ maturity = "alpha"  # experimental | alpha | beta | production | lts
 milestones = [
   { id = "phase-5-scaffold", status = "landed", pr = 35, summary = "OikosBot AffineScript scaffold at bot-integration-affine/" },
   { id = "legacy-shutoff", status = "landed", pr = 41, summary = "Clean shutoff of ReScript bot-integration/ (-33,061 lines)" },
+  { id = "crates-extraction", status = "landed", summary = "Extract Rust analysis workspace from gitbot-fleet/bots/sustainabot; rename sustainabot-* → oikosbot-*; decouple from fleet (oikosbot-fleet bridge excluded from default workspace); 35 tests green" },
   { id = "stdlib-json-v03", status = "landed-upstream", repo = "affinescript", pr = 421, summary = "stdlib/json.affine RSR rewire to hpm-json-rsr Zig FFI — unblocks OikosBot webhook payload extraction" },
   { id = "stdlib-http-server", status = "landed-upstream", repo = "affinescript", pr = 425, summary = "stdlib/Http.affine RSR rewire — surfaces hpm-http-rsr Zig FFI server externs — unblocks OikosBot accept loop" },
   { id = "bot-affine-implementation", status = "pending", summary = "Implement webhook handler + HMAC verification + dispatch in bot-integration-affine/ now that both stdlib gates are closed" },

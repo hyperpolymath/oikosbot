@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
+
+[package]
+name = "oikosbot-eclexia"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Eclexia policy engine integration for oikosbot"
+
+[features]
+default = []
+# Native Eclexia compiler integration. The upstream `eclexia` compiler crates
+# (a separate hyperpolymath repo) were decoupled when OikosBot was extracted
+# from gitbot-fleet so this crate builds standalone; the feature is retained as
+# a no-op seam to be re-wired (path or git dep) when native evaluation is added.
+# Until then the crate ships its lightweight built-in `.ecl` policy evaluator.
+eclexia-native = []
+
+[dependencies]
+oikosbot-metrics = { path = "../oikosbot-metrics" }
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
