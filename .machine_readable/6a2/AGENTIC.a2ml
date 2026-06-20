@@ -3,8 +3,8 @@
 #
 # AGENTIC.a2ml — AI agent constraints and capabilities
 [metadata]
-version = "0.1.0"
-last-updated = "2026-04-11"
+version = "0.2.0"
+last-updated = "2026-06-20"
 
 [agent-permissions]
 can-edit-source = true
@@ -20,6 +20,8 @@ can-create-files = true
 # - Never use banned languages (TypeScript, Python, Go, etc.)
 # - Never place state files in repository root (must be in .machine_readable/)
 # - Never use AGPL license (use MPL-2.0)
+# - Never reintroduce ArangoDB or Virtuoso; the single datastore is VeriSimDB (META.a2ml ADR-001)
+# - Never conflate this repo with the `oikos` DSL or `sustainabot` slot (DISAMBIGUATION.adoc)
 
 [maintenance-integrity]
 fail-closed = true

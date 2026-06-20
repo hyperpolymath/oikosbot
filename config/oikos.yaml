@@ -79,17 +79,36 @@ analysis:
     cognitive_warning: 15
     cognitive_critical: 30
 
-# Database connections
+# Datastore — single identity-consonance store (VeriSimDB).
+# Replaces the retired ArangoDB (graph/document) + Virtuoso (RDF/semantic) pair:
+# VeriSimDB represents one identity as an octad of modal witnesses, so its
+# graph + document witnesses subsume ArangoDB and its semantic witness subsumes
+# Virtuoso/RDF. See ARCHITECTURE.adoc and
+# .machine_readable/integrations/verisimdb.a2ml.
+#
+# DEFERRED/GATED: VeriSimDB is v0.1.0 and the OikosBot runtime client is not yet
+# wired (gated on VeriSimDB maturity + the AffineScript transport). Design/config
+# only — see ROADMAP.adoc.
 databases:
-  arangodb:
-    url: "http://localhost:8529"
-    database: "oikos"
-    username: "${ARANGO_USER}"
-    password: "${ARANGO_PASSWORD}"
-
-  virtuoso:
-    sparql_endpoint: "http://localhost:8890/sparql"
-    graph_uri: "https://oikos-bot.dev/knowledge"
+  verisimdb:
+    # REST surface per connectors/shared/openapi/verisim-api-v1.yaml.
+    # Provide the full base URL via env (use HTTPS for any shared/remote deploy).
+    endpoint: "${VERISIMDB_ENDPOINT}"
+    api_base: "/api/v1"
+    query_language: vcl   # VeriSim Consonance Language (legacy name: VQL)
+    drift_detection: true
+    # Octad modal witnesses OikosBot reads/writes:
+    octad:
+      graph: true        # code-dependency edges, relationships (was ArangoDB)
+      document: true     # analysis records, project metadata (was ArangoDB)
+      semantic: true     # eco/econ ontology + proof blobs (was Virtuoso/RDF)
+      vector: true       # embeddings for similarity search
+      temporal: true     # analysis history / trends
+      provenance: true   # scan/build origin + lineage
+      tensor: false      # unused by OikosBot
+      spatial: false     # unused by OikosBot
+    # Semantic-witness ontology seed (relocated from databases/virtuoso/ontology.ttl):
+    semantic_seed: "databases/ontology/eco.ttl"
 
 # External integrations
 integrations:

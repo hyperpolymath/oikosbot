@@ -3,8 +3,8 @@
 #
 # ECOSYSTEM.a2ml — OikosBot ecosystem position
 [metadata]
-version = "1.1"
-last-updated = "2026-06-19"
+version = "1.2"
+last-updated = "2026-06-20"
 
 [project]
 name = "OikosBot"
@@ -24,5 +24,7 @@ not-the-fleet-slot = "sustainabot — a reserved member slot of hyperpolymath/gi
 projects = [
   { name = "oikos-economics-accounting-dsl", repo = "hyperpolymath/oikos-economics-accounting-dsl", relation = "name-sibling", note = "Separate DSL; shares the οἶκος root only." },
   { name = "gitbot-fleet", repo = "hyperpolymath/gitbot-fleet", relation = "optional-consumer", note = "OikosBot can run as a fleet member via the excluded crates/oikosbot-fleet bridge; the bots/sustainabot/ slot is reserved and separate." },
-  { name = "affinescript", repo = "hyperpolymath/affinescript", relation = "upstream-toolchain", note = "Provides the AffineScript compiler/stdlib for bot-integration-affine/." }
+  { name = "affinescript", repo = "hyperpolymath/affinescript", relation = "upstream-toolchain", note = "Provides the AffineScript compiler/stdlib for bot-integration-affine/." },
+  { name = "verisimdb", repo = "hyperpolymath/verisimdb", relation = "datastore-dependency", note = "Single identity-consonance store (octad of modal witnesses). Its graph + document witnesses subsume the retired ArangoDB, and its semantic witness subsumes the retired Virtuoso/RDF. Runtime client deferred/gated (VeriSimDB v0.1.0). Seed: databases/ontology/eco.ttl." },
+  { name = "hpm-*-rsr", repo = "hyperpolymath/hpm-crypto-rsr, hpm-http-client-rsr, hpm-json-rsr, hpm-github-api-rsr", relation = "ffi-dependency", note = "Zig-FFI RSR libraries consumed by bot-integration-affine via the composite libhpm_github_api (crypto/http/json) through AffineScript extern fn." }
 ]

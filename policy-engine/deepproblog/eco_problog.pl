@@ -134,10 +134,18 @@ adaptive_threshold(eco_minimum, carbon, 50) :- \+ project_baseline(carbon, _).
 adaptive_threshold(eco_minimum, energy, 50) :- \+ project_baseline(energy, _).
 
 %% =============================================================================
-%% KNOWLEDGE GRAPH INTEGRATION
+%% KNOWLEDGE GRAPH INTEGRATION (VeriSimDB)
+%% -----------------------------------------------------------------------------
+%% Retargeted from the retired ArangoDB + Virtuoso pair to a single VeriSimDB
+%% identity-consonance store. The live path is VCL (VeriSim Consonance Language)
+%% over VeriSimDB's *semantic* witness (was Virtuoso/RDF/SPARQL) and *graph*
+%% witness (was ArangoDB/AQL). The SPARQL/AQL strings below are retained verbatim
+%% as legacy bindings / porting reference ONLY — they are facts (data), not rules,
+%% so no rule logic changes here. They are re-expressed as VCL at wire-up time
+%% (deferred; see ROADMAP.adoc).
 %% =============================================================================
 
-%% Query patterns for Virtuoso (RDF) integration
+%% Legacy binding — semantic witness (was Virtuoso/RDF). Port to VCL at wire-up.
 sparql_query(eco_best_practices, "
     PREFIX eco: <http://oikos-bot.dev/ontology#>
     PREFIX sw: <http://schema.org/SoftwareSourceCode>
@@ -152,7 +160,7 @@ sparql_query(eco_best_practices, "
     ORDER BY DESC(?impact)
 ").
 
-%% Query patterns for ArangoDB (graph) integration
+%% Legacy binding — graph witness (was ArangoDB/AQL). Port to VCL at wire-up.
 aql_query(dependency_impact, "
     FOR v, e, p IN 1..3 OUTBOUND @startNode GRAPH 'code_dependencies'
         LET impact = SUM(p.vertices[*].carbon_score)

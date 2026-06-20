@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#
+# verisimdb.a2ml — OikosBot <-> VeriSimDB integration descriptor
+[metadata]
+version = "0.1.0"
+last-updated = "2026-06-20"
+status = "deferred"   # design + config complete; runtime client not yet wired
+
+[target]
+name = "VeriSimDB"
+repo = "hyperpolymath/verisimdb"
+version = "0.1.0"
+kind = "identity-consonance datastore (single store)"
+replaces = "ArangoDB (graph/document) + Virtuoso (RDF/SPARQL semantic)"
+
+[feed]
+# What OikosBot writes into VeriSimDB
+inputs = [
+  "scan-results — eco/econ/quality analysis records per PR / commit / repo",
+  "build-metrics — analyzer run metrics (carbon/energy/complexity scores, SARIF)",
+  "code-graph — code-dependency relationships",
+  "ontology-seed — databases/ontology/eco.ttl (semantic witness)"
+]
+
+[octad-mapping]
+# OikosBot data mapped onto VeriSimDB's eight modal witnesses
+graph = "code-dependency edges / relationships (was ArangoDB)"
+document = "analysis records, project metadata (was ArangoDB)"
+semantic = "eco/econ ontology + proof blobs (was Virtuoso/RDF); seed databases/ontology/eco.ttl"
+vector = "embeddings for similarity search across analyses"
+temporal = "analysis history / score trends"
+provenance = "scan/build origin + lineage"
+tensor = "unused"
+spatial = "unused"
+
+[clients]
+rest = "connectors/shared/openapi/verisim-api-v1.yaml (base path /api/v1; octad CRUD + search + drift)"
+grpc = "connectors/shared/proto/verisim_federation.proto (federation)"
+ffi = "ffi/zig/ (Zig FFI; same shape as the hpm-* libs)"
+query-language = "VCL — VeriSim Consonance Language (legacy name: VQL)"
+
+[config]
+file = "config/oikos.yaml"
+block = "databases.verisimdb"
+endpoint-env = "VERISIMDB_ENDPOINT"
+
+[gating]
+# Why runtime wiring is deferred
+blocked-on = [
+  "VeriSimDB maturity (currently v0.1.0; verify endpoint coverage at wire-up time)",
+  "AffineScript transport (affinescript #421 json + #425 Http stdlib integration)"
+]
+plan = "Build a Zig-FFI connector mirroring the hpm-* pattern, or a REST client from the AffineScript transport. Tracked in ROADMAP.adoc + STATE.a2ml (verisimdb-client)."

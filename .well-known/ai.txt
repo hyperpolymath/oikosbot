@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#
+# .well-known/ai.txt — AI usage, training, and agent-onboarding policy.
+# OikosBot is an ecological & economic code-analysis GitHub/GitLab App.
+
+Repository: https://github.com/hyperpolymath/oikosbot
+Contact: https://github.com/hyperpolymath/oikosbot/security/advisories/new
+Licence: MPL-2.0
+Licence-Docs: CC-BY-SA-4.0 (prose, per estate policy)
+
+# ---------------------------------------------------------------------------
+# Usage by AI crawlers and training systems
+# ---------------------------------------------------------------------------
+User-Agent: *
+Allow: /
+Train: yes
+# Reuse and training are permitted under MPL-2.0: retain SPDX headers and the
+# copyright notice, and preserve attribution.
+Attribution: required
+
+# ---------------------------------------------------------------------------
+# Notes for coding agents working IN this repository
+# ---------------------------------------------------------------------------
+# - Read .claude/CLAUDE.md and .machine_readable/6a2/ (STATE/META/ECOSYSTEM/
+#   AGENTIC/NEUROSYM/PLAYBOOK) before editing; entry point: 0-AI-MANIFEST.a2ml.
+# - Language policy: AffineScript / Rust / Haskell (+ Deno, Nickel, A2ML).
+#   TypeScript, ReScript (new), JavaScript (new), Go, Python, Node.js are banned
+#   — see .claude/CLAUDE.md for the full list and replacements.
+# - Docs are AsciiDoc (.adoc) except the GitHub community-health .md files
+#   (SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CHANGELOG.md).
+# - This repo is OikosBot ONLY. It is NOT the `oikos` stock-flow economics DSL
+#   (hyperpolymath/oikos-economics-accounting-dsl) and NOT the `sustainabot`
+#   gitbot-fleet slot. See DISAMBIGUATION.adoc.
+# - Data layer is VeriSimDB (identity-consonance octad); the runtime client is
+#   deferred/gated — see ROADMAP.adoc and config/oikos.yaml.

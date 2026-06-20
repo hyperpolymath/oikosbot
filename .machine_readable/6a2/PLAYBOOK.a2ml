@@ -1,26 +1,51 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
-# PLAYBOOK.a2ml — Operational playbook
+# PLAYBOOK.a2ml — Operational runbook
 [metadata]
-version = "0.1.0"
-last-updated = "2026-04-11"
+version = "0.2.0"
+last-updated = "2026-06-20"
+
+[overview]
+summary = "OikosBot is an ecological & economic code-analysis GitHub/GitLab App. The Rust analysis workspace (crates/oikosbot-*) is the operational surface today; the AffineScript receiver (bot-integration-affine/) is a scaffold; there is no production deployment yet. The data layer is VeriSimDB with a deferred/gated runtime client."
+
+[local-dev]
+steps = [
+  "Build + test the Rust workspace: `cargo build --workspace && cargo test --workspace` (or `just rust-build` / `just rust-test`).",
+  "Build + test the Haskell analyzer: `just haskell-build && just haskell-test` (cd analyzers/code-haskell && cabal build all / cabal test all).",
+  "Type-check the AffineScript receiver: `just affine-check` (override compiler with AS_BIN=/path/to/main.exe). Smoke: bot-integration-affine/check.sh.",
+  "Full gate: `just check` (rust-build + rust-test + haskell-build + haskell-test)."
+]
 
 [deployment]
-# method = "gitops"  # gitops | manual | ci-triggered
-# target = "container"  # container | binary | library | wasm
+method = "not-yet-deployed"
+target = "container (planned)"
+notes = "OikosBot is NOT running in production. The GitHub App manifest at .github/app.yml describes the intended permissions + webhook events and is valid for re-registration once the AffineScript port reaches operational parity. See DEPLOY.adoc and docs/GITHUB_APP_SETUP.adoc."
+
+[datastore]
+store = "VeriSimDB — single identity-consonance store (octad of modal witnesses)"
+status = "deferred/gated — no live persistence yet (VeriSimDB v0.1.0 + AffineScript transport gated)"
+config = "config/oikos.yaml (databases.verisimdb)"
+seed = "databases/ontology/eco.ttl (semantic-witness ontology)"
+integration = ".machine_readable/integrations/verisimdb.a2ml"
 
 [incident-response]
-# 1. Check .machine_readable/STATE.a2ml for current status
-# 2. Review recent commits and CI results
-# 3. Run `just validate` to check compliance
-# 4. Run `just security` to audit for vulnerabilities
+steps = [
+  "Check .machine_readable/6a2/STATE.a2ml for current status, blockers, and critical-next-actions.",
+  "Review recent commits and CI results (.github/workflows/: ci, governance, hypatia-scan, language-policy, codeql, scorecard).",
+  "Run `just validate` / `just security` where available to check compliance + audit for vulnerabilities.",
+  "For webhook-security concerns, confirm GITHUB_WEBHOOK_SECRET is set and OIKOS_ALLOW_UNVERIFIED_WEBHOOKS is NOT set (it is a dev-only HMAC bypass)."
+]
 
 [release-process]
-# 1. Update version in STATE.a2ml, META.a2ml
-# 2. Run `just release-preflight` (validate + quality + security + maint-hard-pass)
-# 3. Tag and push
+steps = [
+  "Bump version + last-updated in STATE.a2ml and META.a2ml.",
+  "Run the full gate (`just check`) and the release preflight (`just release-preflight`: validate + quality + security + maint-hard-pass) where available.",
+  "Update CHANGELOG.md and ROADMAP.adoc.",
+  "Tag and push (signed commits, per the Mustfile physical-state contract)."
+]
 
 [maintenance-operations]
-# Baseline audit: just maint-audit
-# Hard release gate: just maint-hard-pass
+baseline-audit = "just maint-audit"
+hard-release-gate = "just maint-hard-pass"
+contractiles = ".machine_readable/contractiles/ (Mustfile/Trustfile/Intentfile/Adjustfile + bust/dust). `must check` enforces physical-state invariants (LICENSE, README.adoc, SECURITY.md, 0-AI-MANIFEST.a2ml, GOVERNANCE.adoc, MAINTAINERS.adoc, the 6a2 set, contractiles)."
