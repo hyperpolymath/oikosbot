@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot Policies (Eclexia)
+
+OikosBot's policies are written in *Eclexia* (`.ecl`) — a resource-bounded
+policy DSL whose evaluator has provable energy/carbon budgets, so the analyser
+is cheaper to run than the code it analyses. They are evaluated by
+link:../crates/oikosbot-eclexia[`crates/oikosbot-eclexia`].
+
+== Sustainability thresholds
+
+[cols="1,3"]
+|===
+| `energy_threshold.ecl`        | Warn when a function's estimated energy exceeds budget.
+| `carbon_budget.ecl`           | Per-function and per-project carbon (gCO2e) budgets.
+| `memory_efficiency.ecl`       | Memory-pressure thresholds.
+| `security_sustainability.ecl` | Security checks weighted by resource impact.
+|===
+
+== Finding taxonomy (meta-policy)
+
+`finding_taxonomy.ecl` is not a sustainability threshold; it classifies *every*
+finding on three orthogonal axes, layered intent -> action -> outcome. The
+canonical, machine-readable definition is
+link:../.machine_readable/6a2/NEUROSYM.a2ml[`NEUROSYM.a2ml` `[finding-taxonomy]`].
+
+[cols="1,2,4"]
+|===
+| Axis | Values | Meaning
+
+| `intent`
+| `must` / `intend` / `wish`
+| Deontic force, *derived from confidence*. Identical to the gitbot-fleet
+  Safety Triangle: `must` ≡ eliminate (≥ 0.95, auto-fix), `intend` ≡ substitute
+  (≥ 0.85, review), `wish` ≡ control (< 0.85, human). **This axis is executable.**
+
+| `maintenance`
+| `corrective` / `adaptive` / `perfective` / `preventive`
+| Why the change is made (Swanson 1976 / ISO 14764). Tagged per rule.
+
+| `locus`
+| `systems` / `compliance` / `externalities`
+| What the finding bears on. `externalities` is the eco/econ sense
+  (energy / carbon / resource impact) realised by the sustainability policies
+  above.
+|===
+
+Because only `intent` is numerically derivable, only it is executable in
+Eclexia; `maintenance` and `locus` are categorical tags set when a rule is
+authored. A natural next step is to carry all three tags on the Rust `Finding`
+types (`crates/oikosbot-metrics`) so emitted SARIF/reports are tagged end to end.

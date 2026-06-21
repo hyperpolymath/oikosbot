@@ -3,8 +3,8 @@
 #
 # NEUROSYM.a2ml — Neurosymbolic integration metadata
 [metadata]
-version = "0.1.1"
-last-updated = "2026-06-20"
+version = "0.1.2"
+last-updated = "2026-06-21"
 
 [hypatia-config]
 scan-enabled = true
@@ -19,3 +19,27 @@ report-format = "logtalk"
 # Neural pattern detection settings
 # confidence-threshold = 0.85
 # model = "hypatia-v2"
+
+[finding-taxonomy]
+# Every OikosBot finding is classified on three orthogonal axes, layered
+# intent -> action -> outcome. The intent axis is executable Eclexia
+# (policies/finding_taxonomy.ecl); see policies/README.adoc for the prose.
+axes = ["intent", "maintenance", "locus"]
+
+[finding-taxonomy.intent]
+# Deontic force. DERIVED from the finding's confidence score (not hand-tagged),
+# and identical to the gitbot-fleet Safety Triangle and its thresholds.
+values = ["must", "intend", "wish"]
+must = { triangle = "eliminate", confidence = ">=0.95", disposition = "auto-fix" }
+intend = { triangle = "substitute", confidence = ">=0.85", disposition = "review" }
+wish = { triangle = "control", confidence = "<0.85", disposition = "human" }
+
+[finding-taxonomy.maintenance]
+# Why the change is made (Swanson 1976 / ISO/IEC 14764). Hand-tagged per rule.
+values = ["corrective", "adaptive", "perfective", "preventive"]
+
+[finding-taxonomy.locus]
+# What the finding bears on. "externalities" is the oikos eco/econ sense
+# (energy / carbon / resource impact) realised by the sustainability policies.
+values = ["systems", "compliance", "externalities"]
+externalities-policies = ["energy_threshold", "carbon_budget", "memory_efficiency"]

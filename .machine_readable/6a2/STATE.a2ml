@@ -7,7 +7,7 @@ project = "oikosbot"
 version = "0.1.0-dev"
 last-updated = "2026-06-21"
 status = "active"
-session = "2026-06-21 follow-ups to #7: finish SPDX/licence drift cleanup (MPL-2.0-or-later → MPL-2.0 estate-wide; guix agpl3+ fix + dead-component prune; QUICKSTART → .adoc); scaffold the deferred VeriSimDB client (docs/verisimdb-client.adoc + VeriSimClient.affine); wire bot-integration-affine webhook→analyse→comment orchestration (Payload.affine + Main handler) — listener binding still gated on stdlib Http::Server; AS unverified (no toolchain)"
+session = "2026-06-21 post-extraction follow-ups: oikosbot-fleet bridge now publishes as BotId::Oikosbot + stale ReScript-era containers/ removed (oikosbot#5, merged); add the OikosBot finding taxonomy — intent/maintenance/locus axes defined canonically in NEUROSYM.a2ml [finding-taxonomy], with the confidence-derived intent axis executable in policies/finding_taxonomy.ecl (≡ gitbot-fleet Safety Triangle 0.95/0.85 thresholds), plus policies/README.adoc"
 
 [project-context]
 name = "OikosBot"

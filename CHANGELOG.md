@@ -19,6 +19,7 @@ this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- feat(policies): add the OikosBot **finding taxonomy** — three orthogonal axes (`intent` / `maintenance` / `locus`) defined canonically in `NEUROSYM.a2ml [finding-taxonomy]`. The confidence-derived `intent` axis (≡ the gitbot-fleet Safety Triangle's 0.95 / 0.85 thresholds) is made executable in `policies/finding_taxonomy.ecl`; `locus=externalities` is the eco/econ sense realised by the sustainability policies. Adds `policies/README.adoc`.
 - feat(crates): extract the Rust analysis workspace from `gitbot-fleet/bots/sustainabot/` into this repo, renamed `sustainabot-*` → `oikosbot-*` (`oikosbot-cli`/`-analysis`/`-metrics`/`-sarif`/`-eclexia`, plus the optional `oikosbot-fleet` bridge). Adds `policies/`, `fuzz/`, `examples/`, and `QUICKSTART.md`. Builds and tests green (35 tests).
 - docs: `DISAMBIGUATION.adoc` — canonical breakdown of **oikos** (the DSL) vs **OikosBot** (this App) vs **sustainabot** (a reserved gitbot-fleet slot), with guardrails to prevent the misfiling recurring.
 - ci(rust): add a `rust` job (fmt-check + build + test, informational clippy) to `ci.yml` and a `cargo` dependabot ecosystem. New `just rust-build` / `rust-test` targets.
