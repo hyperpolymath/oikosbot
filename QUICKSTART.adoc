@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot Quickstart
+:icons: font
+:source-highlighter: rouge
+
+== Build
+
+[source,bash]
+----
+cargo build --release
+----
+
+== Usage
+
+=== Analyze a file
+
+[source,bash]
+----
+./target/release/oikosbot analyze path/to/file.rs
+----
+
+Supports: Rust (`.rs`), JavaScript (`.js`, `.mjs`), TypeScript (`.ts`).
+
+=== Analyze oikosbot itself (dogfooding!)
+
+[source,bash]
+----
+./target/release/oikosbot self-analyze
+----
+
+This proves we practice what we preach — the analyzer itself is efficient.
+
+=== JSON output
+
+[source,bash]
+----
+./target/release/oikosbot analyze file.rs --format json
+----
+
+== What It Does
+
+OikosBot analyzes code for:
+
+* *Energy consumption* (Joules)
+* *Carbon footprint* (gCO2e)
+* *Execution time* (milliseconds)
+* *Memory usage* (bytes)
+
+And provides:
+
+* *Eco score* (0-100) — environmental impact
+* *Econ score* (0-100) — algorithmic efficiency
+* *Quality score* (0-100) — code quality
+* *Overall health* (weighted combination)
+
+== Example Output
+
+[source,text]
+----
+📍 Function: nested_loops_function
+   Resources:
+     Energy:   7.10 J
+     Carbon:   0.0009 gCO2e
+     Time:     35.50 ms
+
+   Health Index:
+     Eco:      80.4/100
+     Overall:  75.1/100
+
+   Recommendations:
+     • Consider algorithm optimization to reduce nested iterations
+----
+
+== The Eclexia Connection
+
+* *Phase 1* (DONE): Analyzer built with Eclexia principles (explicit resource types)
+* *Phase 2* (Next): Policy engine runs Eclexia code from `policies/*.ecl`
+* *Phase 3+*: Migrate core to Eclexia as the language matures
+
+== Philosophy
+
+[quote]
+____
+"The best ecological code analyzer is one that's ecological itself."
+____
+
+OikosBot demonstrates that efficient, resource-aware code is not just theory —
+it works in practice.

@@ -74,7 +74,7 @@ oikosbot/
 |-- docs/                    # GITHUB_APP_SETUP.adoc, tech-debt audit
 |-- ARCHITECTURE.adoc        # Platform architecture (target design)
 |-- DISAMBIGUATION.adoc      # oikos vs OikosBot vs sustainabot
-|-- QUICKSTART.md            # CLI quickstart
+|-- QUICKSTART.adoc          # CLI quickstart
 `-- DEPLOY.adoc              # Deployment status and runbook notes
 ----
 
