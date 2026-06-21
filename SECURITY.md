@@ -18,15 +18,7 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 
 ## Reporting a Vulnerability
 **Do not report vulnerabilities publicly** (e.g., GitHub/GitLab Issues).
-Instead, use one of these **private channels**:
-
-1. **GitHub Security Advisories**:
-   [Report a vulnerability](https://github.com/hyperpolymath/oikosbot/security/advisories/new)
-   *(Preferred for traceability and RSR compliance.)*
-
-2. **Email**:
-   `security@hyperpolymath.org` (PGP: `0xYOUR_ED448_KEY`)
-   *(For urgent or sensitive disclosures.)*
+Instead, report privately by email to **j.d.a.jewell@open.ac.uk**.
 
 ---
 
@@ -68,11 +60,6 @@ OikosBot processes:
 **Guiding Principles**:
 - **Minimal Retention**: Data deleted post-audit unless **explicitly logged for reversibility**.
 - **Hashing**: All logs use **SHAKE256/Ed448** (see `logs/README.md`).
-- **BOINC Distributed Audits**:
-  - Nodes **never store raw repo data**; only **hashed waste metrics** are shared.
-- **Cloud Backups**:
-  - Metadata backed up to **Dropbox/OneDrive/Syncthing/iDrive**.
-  - Full backups stored on **RAID 10 + Acronis**.
 
 ### Integration Security
 - **Environment Variables**:
