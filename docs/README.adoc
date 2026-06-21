@@ -1,0 +1,57 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot Documentation Map
+:toc: macro
+
+The single entry point to OikosBot's documentation, grouped by audience.
+OikosBot is an ecological & economic code-review GitHub/GitLab App (alpha,
+`0.1.0-dev`). It is **OikosBot** — not the `oikos` DSL, nor the `sustainabot`
+fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
+
+== Start here (everyone)
+
+* link:../README.adoc[README] — what OikosBot is, and the repo layout.
+* link:../EXPLAINME.adoc[EXPLAINME] — what is *actually built* vs in-flight. Read this to calibrate expectations.
+* link:../ARCHITECTURE.adoc[ARCHITECTURE] — the target platform design, scoring model, and tech stack.
+
+== For developers
+
+* link:../QUICKSTART.adoc[QUICKSTART] — build and run the CLI.
+* link:../ARCHITECTURE.adoc[ARCHITECTURE] — components, analyzers, policy engine, data layer.
+* link:../policies/README.adoc[policies/README] — Eclexia (`.ecl`) policies and the finding taxonomy.
+* link:../bot-integration-affine/README.adoc[bot-integration-affine] — the AffineScript webhook receiver (scaffold).
+* link:../CONTRIBUTING.md[CONTRIBUTING] — fork / branch / PR flow.
+* _Planned (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): per-crate READMEs, the Haskell analyzer guide, an end-to-end build walkthrough._
+
+== For maintainers
+
+* link:../GOVERNANCE.adoc[GOVERNANCE] + link:../MAINTAINERS.adoc[MAINTAINERS] — governance model and roles.
+* link:../ROADMAP.adoc[ROADMAP] — phases and milestones.
+* link:../.machine_readable/6a2/README.adoc[.machine_readable/6a2] — the machine-readable state/runbook (see below).
+* _Planned (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): CI/workflow runbook, `just`-target reference, pre-release checklist._
+
+== For end users
+
+* link:GITHUB_APP_SETUP.adoc[GitHub App setup] — install and configure the App.
+* link:../SECURITY.md[SECURITY] — vulnerability reporting and data handling.
+* _Planned (link:https://github.com/hyperpolymath/oikosbot/issues/17[#17]): interpreting findings/SARIF, `BOT_MODE`, policy customization, troubleshooting, and a production deploy runbook (today link:../DEPLOY.adoc[DEPLOY] is a stub)._
+
+== Machine-readable docs (A2ML)
+
+The canonical project state and decisions live in `.machine_readable/6a2/`:
+
+* `STATE.a2ml` — current status, milestones, blockers, next actions.
+* `META.a2ml` — architecture decisions (ADRs).
+* `NEUROSYM.a2ml` — neurosymbolic config + the **canonical finding taxonomy**.
+* `PLAYBOOK.a2ml` — operational runbook.
+* `AGENTIC.a2ml` / `ECOSYSTEM.a2ml` — AI-agent gating and ecosystem position.
+
+== Concepts (to engage fully, beyond setup)
+
+* **Eco/econ review lens** (carbon 40 / economic 30 / quality 30) — link:../ARCHITECTURE.adoc[ARCHITECTURE], Scoring Model.
+* **Finding taxonomy** (intent / maintenance / locus) — link:../policies/README.adoc[policies/README] + `NEUROSYM.a2ml [finding-taxonomy]`.
+* **Eclexia policies** (resource-bounded, dogfooded) — link:../policies/README.adoc[policies/README].
+* **VeriSimDB** octad data layer (deferred) — link:verisimdb-client.adoc[verisimdb-client] + `META.a2ml` ADR-001.
+* **Provenance & the PMPL license** — link:../PALIMPSEST.adoc[PALIMPSEST].
+
+_Audience-depth gaps are tracked in link:https://github.com/hyperpolymath/oikosbot/issues/16[#16] (dev/maintainer) and link:https://github.com/hyperpolymath/oikosbot/issues/17[#17] (end-user); the README→`docs/` split is also in #16._
