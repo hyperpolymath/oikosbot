@@ -1,0 +1,107 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot ↔ VeriSimDB Client (design)
+:toc: macro
+:icons: font
+:source-highlighter: rouge
+
+Design for the *deferred* VeriSimDB client. It is the contract the runtime
+wiring will implement; the wiring itself is gated (VeriSimDB is `v0.1.0` and the
+AffineScript transport is gated — see link:../ROADMAP.adoc[ROADMAP.adoc] and
+link:../.machine_readable/integrations/verisimdb.a2ml[`integrations/verisimdb.a2ml`]).
+
+toc::[]
+
+== Scope
+
+OikosBot persists analysis results, code-relationship graphs, and the eco/econ
+knowledge base into a single VeriSimDB identity-consonance store. One identity is
+an *octad* of modal witnesses; OikosBot uses graph, document, semantic, vector,
+temporal, and provenance (not tensor or spatial). The client is the seam between
+the AffineScript bot (`bot-integration-affine/`) and VeriSimDB's API.
+
+== Transport options
+
+Two implementations satisfy the same client surface; the choice is deferred to
+wire-up:
+
+[cols="1,3,2",options="header"]
+|===
+| Option | How | Trade-off
+
+| *Zig-FFI* (preferred)
+| A `libverisim_client.so` Zig adapter exposing a C ABI, consumed from
+  AffineScript via `extern fn` — mirroring the `hpm-*` RSR pattern and the
+  estate directive "Zig for all APIs and FFIs, Idris2 for ABIs"
+  (see `bot-integration-affine/src/Externs.affine`).
+| Matches existing bot FFI; reuses `libhpm_http_client`; no new runtime. Needs
+  a new Zig adapter + Idris2 ABI contract.
+
+| *REST from the AS transport*
+| Direct HTTPS calls to the VeriSimDB REST API from AffineScript, once the
+  AS `Http` client surface (affinescript#425) is wired for outbound requests.
+| No Zig adapter; depends on the AS outbound-HTTP surface maturing.
+|===
+
+Source of truth for the wire format: `connectors/shared/openapi/verisim-api-v1.yaml`
+(base path `/api/v1`) in `hyperpolymath/verisimdb`; the gRPC federation surface is
+`connectors/shared/proto/verisim_federation.proto`; the reference Zig FFI shape is
+`ffi/zig/` in that repo.
+
+== Operation map (OpenAPI → client)
+
+OikosBot-relevant operations only (spatial + normalizer omitted unless noted):
+
+[cols="2,2,3",options="header"]
+|===
+| VeriSimDB operation | REST | OikosBot use
+
+| `healthCheck` | `GET /health` | readiness probe before a run
+| `createOctad` | `POST /octads` | write a new analysis record (octad)
+| `getOctad` | `GET /octads/{id}` | read an analysis record
+| `updateOctad` | `PUT /octads/{id}` | update on re-analysis
+| `listOctads` | `GET /octads` | enumerate records (paged)
+| `searchText` | `GET /search/text` | document-witness full-text lookup
+| `searchVector` | `POST /search/vector` | vector-witness similarity search
+| `searchRelated` | `GET /search/related/{id}` | graph-witness neighbours
+| `getDriftScore` | `GET /drift/entity/{id}` | per-entity drift
+| `getDriftStatus` | `GET /drift/status` | global drift snapshot
+| `recordProvenanceEvent` | `POST /provenance/{id}/record` | scan/build lineage
+| `verifyProvenanceChain` | `GET /provenance/{id}/verify` | hash-chain integrity
+| `executeVcl` | `POST /vcl/execute` | VCL propositions / epistemic requests
+|===
+
+== Octad mapping
+
+OikosBot data → VeriSimDB witnesses (see `integrations/verisimdb.a2ml`):
+
+* *graph* — code-dependency edges / relationships (was ArangoDB)
+* *document* — analysis records, project metadata (was ArangoDB)
+* *semantic* — eco/econ ontology + proof blobs (was Virtuoso/RDF); seed
+  `databases/ontology/eco.ttl`
+* *vector* — embeddings for similarity search across analyses
+* *temporal* — analysis history / score trends
+* *provenance* — scan/build origin + lineage
+
+== AffineScript surface
+
+The stub lives at `bot-integration-affine/src/VeriSimClient.affine`. It declares
+the intended `extern fn verisimdb_*` symbols (the deferred Zig-FFI contract) plus
+canonical `pub fn` wrappers, mirroring `Externs.affine`. It is a *scaffold*: no
+`libverisim_client.so` exists yet, so the externs are unresolved until the
+adapter lands. The bot does not call it on the live path.
+
+Opaque handles: `VeriSimHandle` (a connection bound to an endpoint) and
+`VeriSimResponse` (status + body, freed via `*_free`), exactly as `Externs.affine`
+models `GitHubToken` / `GitHubResponse`.
+
+== Wire-up checklist (deferred)
+
+. Choose transport (Zig-FFI vs REST) and confirm VeriSimDB endpoint coverage
+  against `verisim-api-v1.yaml` at the pinned version.
+. Build `libverisim_client` (Zig) + the Idris2 ABI contract, or wire AS outbound
+  HTTP.
+. Map `oikosbot-metrics` result types → octad input JSON (octad-input schema).
+. Replace the stub externs with the real symbols; add a smoke test.
+. Read the endpoint from `config/oikos.yaml` (`databases.verisimdb`, env
+  `VERISIMDB_ENDPOINT`).

@@ -45,9 +45,12 @@ HMAC-SHA256 webhook signature verification is implemented in
 `bot-integration-affine/src/Webhook.affine` (constant-time, via the `hpm-crypto`
 RSR FFI), and the upstream AffineScript standard-library prerequisites have
 landed (`json` RSR rewire, affinescript#421; `Http` server RSR rewire,
-affinescript#425). What remains is the in-repo wiring: binding the HTTP listener
-and connecting the webhook → analyse → comment orchestration (today the handlers
-accept and return `202` without dispatching).
+affinescript#425). The webhook → analyse → comment orchestration is now wired in
+source (`src/Payload.affine` extracts the PR fields and `handle_github_webhook`
+runs `Oikos.handle_pr_event`); what remains is binding the HTTP listener
+(`Sub.http_server`), which is gated on the stdlib `Http::Server` host type. (The
+AffineScript changes are unverified — there is no AS toolchain in this
+environment.)
 
 The Haskell analyzer scaffold (`analyzers/code-haskell/`) builds independently.
 
@@ -74,7 +77,7 @@ oikosbot/
 |-- docs/                    # GITHUB_APP_SETUP.adoc, tech-debt audit
 |-- ARCHITECTURE.adoc        # Platform architecture (target design)
 |-- DISAMBIGUATION.adoc      # oikos vs OikosBot vs sustainabot
-|-- QUICKSTART.md            # CLI quickstart
+|-- QUICKSTART.adoc          # CLI quickstart
 `-- DEPLOY.adoc              # Deployment status and runbook notes
 ----
 

@@ -55,13 +55,18 @@ A smoke test lives at `bot-integration-affine/test/Smoke.affine`
 (driver: `bot-integration-affine/check.sh`).
 
 Caveat::
-This is a scaffold. The two upstream AffineScript standard-library prerequisites
-have landed (`json` RSR rewire, affinescript#421; `Http` server RSR rewire,
-affinescript#425), but the in-repo wiring is incomplete: `Main.affine` notes the
-listener wire-up is pending, and the webhook handlers currently log and return
-`202 ACCEPTED` *without* invoking analysis ("orchestration not yet wired"). HMAC
-verification can be bypassed only via the dev-only `OIKOS_ALLOW_UNVERIFIED_WEBHOOKS`
-escape hatch, which must never be set in production.
+The two upstream AffineScript standard-library prerequisites have landed (`json`
+RSR rewire, affinescript#421; `Http` server RSR rewire, affinescript#425). The
+webhook → analyse → comment orchestration is now wired in source:
+`src/Payload.affine` extracts the PR fields (stdlib `json` lazy descent) and
+`handle_github_webhook` runs `Oikos.handle_pr_event` (auth → analyse → comment),
+returning `200`/`500`/`202` by outcome. What remains is *binding the HTTP
+listener* (`Sub.http_server`), which is gated on the stdlib `Http::Server` host
+type (see `tea/Runtime.affine`), so nothing runs end-to-end yet. These
+AffineScript changes are *unverified* — no AS toolchain was available to compile
+them. HMAC verification can be bypassed only via the dev-only
+`OIKOS_ALLOW_UNVERIFIED_WEBHOOKS` escape hatch, which must never be set in
+production.
 
 == "Haskell eco/econ/quality analysis engine"
 
@@ -176,10 +181,11 @@ finished features.
 
 [CAUTION]
 ====
-*Webhook orchestration is not wired.* `bot-integration-affine` verifies HMAC and
-routes, but the `/webhooks/*` handlers accept and return `202` without running
-analysis or posting comments. The HTTP listener wire-up in `Main.affine` is
-pending.
+*The HTTP listener is not bound.* The webhook → analyse → comment orchestration
+is wired in source (`src/Payload.affine` + `handle_github_webhook` →
+`Oikos.handle_pr_event`), but binding the listener that feeds request bodies to
+the handlers is gated on the stdlib `Http::Server` host type, so nothing runs
+end-to-end yet. The AffineScript changes are unverified (no AS toolchain here).
 ====
 
 [CAUTION]

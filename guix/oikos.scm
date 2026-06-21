@@ -1,4 +1,4 @@
-;;; SPDX-License-Identifier: MPL-2.0-or-later
+;;; SPDX-License-Identifier: MPL-2.0
 ;;; SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 ;;;
 ;;; Oikos Bot Guix Package Definition
@@ -10,16 +10,9 @@
   #:use-module (guix git-download)
   #:use-module (guix build-system gnu)
   #:use-module (guix build-system haskell)
-  #:use-module (guix build-system dune)
-  #:use-module (guix build-system python)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (gnu packages haskell)
-  #:use-module (gnu packages haskell-xyz)
-  #:use-module (gnu packages ocaml)
-  #:use-module (gnu packages python)
-  #:use-module (gnu packages python-xyz)
-  #:use-module (gnu packages databases)
-  #:use-module (gnu packages logic))
+  #:use-module (gnu packages haskell-xyz))
 
 ;; Haskell Code Analyzer
 (define-public oikos-analyzer-haskell
@@ -51,69 +44,12 @@
      "Analyzes code for carbon intensity, energy efficiency,
       Pareto optimality, and software quality metrics.")
     (home-page "https://github.com/hyperpolymath/oikosbot")
-    (license license:agpl3+)))
+    (license license:mpl2.0)))
 
-;; OCaml Documentation Analyzer
-(define-public oikos-analyzer-ocaml
-  (package
-    (name "oikos-analyzer-ocaml")
-    (version "0.1.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/hyperpolymath/oikosbot")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "0000000000000000000000000000000000000000000000000000"))))
-    (build-system dune-build-system)
-    (inputs
-     (list ocaml-yojson
-           ocaml-ppx-deriving
-           ocaml-re
-           ocaml-omd
-           ocaml-cmdliner))
-    (arguments
-     '(#:source-subdir "analyzers/docs-ocaml"))
-    (synopsis "OCaml documentation analyzer for Oikos Bot")
-    (description
-     "Analyzes documentation for completeness, consistency,
-      and alignment with ecological/economic principles.")
-    (home-page "https://github.com/hyperpolymath/oikosbot")
-    (license license:agpl3+)))
-
-;; Python Policy Engine
-(define-public oikos-policy-engine
-  (package
-    (name "oikos-policy-engine")
-    (version "0.1.0")
-    (source
-     (origin
-       (method git-fetch)
-       (uri (git-reference
-             (url "https://github.com/hyperpolymath/oikosbot")
-             (commit (string-append "v" version))))
-       (file-name (git-file-name name version))
-       (sha256
-        (base32 "0000000000000000000000000000000000000000000000000000"))))
-    (build-system python-build-system)
-    (inputs
-     (list python-numpy
-           python-torch
-           souffle
-           swi-prolog))
-    (arguments
-     '(#:phases
-       (modify-phases %standard-phases
-         (add-after 'unpack 'chdir
-           (lambda _ (chdir "policy-engine/python"))))))
-    (synopsis "Policy engine for Oikos Bot")
-    (description
-     "Hybrid Datalog + DeepProbLog policy engine for
-      deterministic and probabilistic reasoning.")
-    (home-page "https://github.com/hyperpolymath/oikosbot")
-    (license license:agpl3+)))
+;; NOTE: The OCaml "docs" analyzer package was removed — analyzers/docs-ocaml
+;; does not exist in this repo. The policy engine is interpreted Datalog +
+;; DeepProbLog rules (policy-engine/datalog, policy-engine/deepproblog), not a
+;; built package; its interpreters (souffle, swi-prolog) live in manifest.scm.
 
 ;; Combined oikos-bot package
 (define-public oikos-bot
@@ -127,8 +63,6 @@
      ;; ArangoDB + Virtuoso inputs were removed with the single-store migration;
      ;; the runtime client is deferred (see ROADMAP.adoc).
      (list oikos-analyzer-haskell
-           oikos-analyzer-ocaml
-           oikos-policy-engine
            deno))
     (arguments
      '(#:phases
@@ -147,4 +81,4 @@
       efficiency using Pareto optimality and allocative efficiency
       as normative criteria.")
     (home-page "https://github.com/hyperpolymath/oikosbot")
-    (license license:agpl3+)))
+    (license license:mpl2.0)))

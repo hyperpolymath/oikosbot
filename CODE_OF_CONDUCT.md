@@ -2,7 +2,7 @@
 SPDX-License-Identifier: MPL-2.0
 Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 -->
-// SPDX-License-Identifier: MPL-2.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 
 # Code of Conduct
