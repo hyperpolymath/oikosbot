@@ -33,10 +33,4 @@
  (channel
   (name 'guix-hpc)
   (url "https://gitlab.inria.fr/guix-hpc/guix-hpc.git")
-  (branch "master"))
-
- ;; Oikos Bot custom channel
- (channel
-  (name 'oikos-bot)
-  (url "https://github.com/hyperpolymath/oikos-bot-guix")
-  (branch "main")))
+  (branch "master")))

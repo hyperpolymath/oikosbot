@@ -61,9 +61,9 @@
     (inputs
      ;; Datastore is VeriSimDB (external; not yet packaged in Guix). The legacy
      ;; ArangoDB + Virtuoso inputs were removed with the single-store migration;
-     ;; the runtime client is deferred (see ROADMAP.adoc).
-     (list oikos-analyzer-haskell
-           deno))
+     ;; the runtime client is deferred (see ROADMAP.adoc). Deno is a dev/runtime
+     ;; tool (guix/manifest.scm), not a package build input.
+     (list oikos-analyzer-haskell))
     (arguments
      '(#:phases
        (modify-phases %standard-phases
