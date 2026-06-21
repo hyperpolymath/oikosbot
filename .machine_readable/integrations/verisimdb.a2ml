@@ -5,7 +5,7 @@
 [metadata]
 version = "0.1.0"
 last-updated = "2026-06-20"
-status = "deferred"   # design + config complete; runtime client not yet wired
+status = "deferred"   # design doc + AS stub landed; runtime client not yet wired
 
 [target]
 name = "VeriSimDB"
@@ -52,3 +52,8 @@ blocked-on = [
   "AffineScript transport (affinescript #421 json + #425 Http stdlib integration)"
 ]
 plan = "Build a Zig-FFI connector mirroring the hpm-* pattern, or a REST client from the AffineScript transport. Tracked in ROADMAP.adoc + STATE.a2ml (verisimdb-client)."
+
+[scaffold]
+# Landed (design + stub); runtime still deferred/gated.
+design-doc = "docs/verisimdb-client.adoc"
+as-stub = "bot-integration-affine/src/VeriSimClient.affine — extern fn contract + wrappers; not called on the live path"

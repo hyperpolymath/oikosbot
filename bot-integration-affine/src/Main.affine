@@ -18,6 +18,8 @@ use Types::{Config};
 use Config::{load, mode_to_string};
 use Router::{classify, health_response, metrics_response, not_found_response, Route, Health, GitHubWebhook, GitLabWebhook, Metrics, NotFound, HttpResponse};
 use Webhook::{verify_github_signature, verify_gitlab_token};
+use Oikos::{handle_pr_event};
+use Payload::{extract_pr_event};
 
 // ── Logging ─────────────────────────────────────────────────────────
 //
@@ -48,12 +50,11 @@ pub fn dispatch_simple(route: Route, config: Config) -> Option<HttpResponse> {
 // ── GitHub webhook handler ──────────────────────────────────────────
 //
 // Verifies HMAC if a secret is configured (or the dev-only escape
-// hatch `OIKOS_ALLOW_UNVERIFIED_WEBHOOKS=true` is set), then hands the
-// raw body off to Oikos.handle_pr_event. The webhook-payload field
-// extractors (installation.id, pull_request.number, etc.) are
-// expected to be added via small helpers as the bot ingests real
-// payloads; the initial port returns 202 ACCEPTED without invoking
-// the orchestrator unless the necessary fields are surfaced.
+// hatch `OIKOS_ALLOW_UNVERIFIED_WEBHOOKS=true` is set), then extracts
+// the PR fields via `Payload.extract_pr_event` and runs
+// `Oikos.handle_pr_event` (auth → analyse → comment). A body that is not
+// a parseable PR event (e.g. a ping or a non-PR event) yields 202
+// ACCEPTED; a failed orchestration yields 500.
 
 pub fn handle_github_webhook(config: Config,
                               signature_header: Option<String>,
@@ -68,8 +69,24 @@ pub fn handle_github_webhook(config: Config,
     log_error("github webhook: signature verification failed");
     #{ status: 401, content_type: "application/json", body: "{\"error\":\"invalid signature\"}" }
   } else {
-    log_info("github webhook accepted (orchestration not yet wired)");
-    #{ status: 202, content_type: "application/json", body: "{\"status\":\"accepted\"}" }
+    match extract_pr_event(body) {
+      Some(ev) => {
+        match handle_pr_event(config, ev.installation_id, ev.owner, ev.repo_name, ev.repo_url, ev.pr_number, ev.base_sha, ev.head_sha) {
+          Ok(_status) => {
+            log_info("github webhook: PR analysed, comment posted");
+            #{ status: 200, content_type: "application/json", body: "{\"status\":\"ok\"}" }
+          },
+          Err(msg) => {
+            log_error("github webhook orchestration failed: " ++ msg);
+            #{ status: 500, content_type: "application/json", body: "{\"error\":\"orchestration failed\"}" }
+          }
+        }
+      },
+      None => {
+        log_info("github webhook accepted (non-PR event or unparseable payload)");
+        #{ status: 202, content_type: "application/json", body: "{\"status\":\"accepted\"}" }
+      }
+    }
   }
 }
 
@@ -93,11 +110,15 @@ pub fn handle_gitlab_webhook(config: Config,
 
 // ── Entry point ─────────────────────────────────────────────────────
 //
-// Imports for the actual `serve` mechanism land once the AS Net effect
-// surfaces `http_server_listen` via the http-capability-gateway FFI.
+// The request handlers (handle_github_webhook → Payload → Oikos) are
+// wired. What remains is BINDING the listener — feeding request bodies to
+// the handlers via Sub.http_server. That is gated on the stdlib host type
+// `Http::Server` (see tea/Runtime.affine: "not yet in stdlib; modelled as
+// Option<Int>") plus the http-capability-gateway `http_server_listen` FFI.
+// Until that lands, main() loads config and logs readiness.
 
 pub fn main() -> () / IO {
   let config = load();
   log_info("oikos-bot starting (mode=" ++ mode_to_string(config.mode) ++ ", port=" ++ int_to_string(config.port) ++ ")");
-  log_info("oikos-bot ready (listener wire-up pending)")
+  log_info("oikos-bot ready (handlers wired; listener binding gated on stdlib Http::Server)")
 }

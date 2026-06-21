@@ -54,10 +54,11 @@ link:.machine_readable/6a2/META.a2ml[META.a2ml] ADR-001).
 * [x] Retarget the policy-engine knowledge-graph bindings (SPARQL/Virtuoso → VCL/VeriSimDB; comments only)
 * [x] Integration descriptor `.machine_readable/integrations/verisimdb.a2ml`
 * [x] ADR-001 recorded in `META.a2ml`
+* [x] Client design + AS stub scaffold (`docs/verisimdb-client.adoc`, `bot-integration-affine/src/VeriSimClient.affine`)
 
 === Remaining (deferred / gated)
 
-* [ ] Build the VeriSimDB client — a Zig-FFI connector (mirror the `hpm-*` pattern) or a REST client from the AffineScript transport, per `connectors/shared/openapi/verisim-api-v1.yaml`
+* [ ] Implement the client — replace the stub externs (`VeriSimClient.affine`) with a real Zig-FFI adapter (mirror `hpm-*`) or a REST impl, per `connectors/shared/openapi/verisim-api-v1.yaml`
 * [ ] Verify endpoint coverage (octad CRUD + search + drift) at wire-up time
 * [ ] Persist analysis results + code-graph + build metrics into the octad witnesses
 * [ ] Gated on: VeriSimDB maturity (v0.1.0) and the AffineScript transport (affinescript #421/#425 integration)
