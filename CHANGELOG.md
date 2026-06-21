@@ -34,6 +34,7 @@ this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- fix(docs): purge stale post-extraction identity references — `SECURITY.md` carried two dead project names (`SustainaBot` ×3 and a `scarcity-bot` GitLab vuln-reporting URL, plus `SCARCITY_API_KEY`), a Ruby example path, and leaked `Memory #N` artifacts; and the `crates/oikosbot-fleet` bridge-identity note in `.claude/CLAUDE.md` + `META.a2ml` ADR-002 still said `BotId::Sustainabot` after the bridge moved to its own `BotId::Oikosbot` identity. (Deeper `SECURITY.md` security-substance — reporting channel, PGP placeholder — flagged for a separate review.)
 - fix(lexer): opt in to logos 0.16 `allow_greedy` for line-comment skip (#37) — `#[logos(skip("--[^\n]*", allow_greedy = true))]` replaces the unbounded greedy attribute that logos 0.16's new lint rejects.
 - fix(codeql): switch language matrix to 'actions' (no JS/TS in repo) (#23)
 - fix(codeql): switch language matrix to 'actions' (no JS/TS in repo) (#22)
