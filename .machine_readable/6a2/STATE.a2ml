@@ -7,7 +7,7 @@ project = "oikosbot"
 version = "0.1.0-dev"
 last-updated = "2026-06-21"
 status = "active"
-session = "2026-06-21 post-extraction follow-ups: oikosbot-fleet bridge now publishes as BotId::Oikosbot + stale ReScript-era containers/ removed (oikosbot#5, merged); add the OikosBot finding taxonomy — intent/maintenance/locus axes defined canonically in NEUROSYM.a2ml [finding-taxonomy], with the confidence-derived intent axis executable in policies/finding_taxonomy.ecl (≡ gitbot-fleet Safety Triangle 0.95/0.85 thresholds), plus policies/README.adoc"
+session = "2026-06-21 close-out of the post-extraction work: fleet bridge → BotId::Oikosbot + ReScript-era containers removed (#5); finding taxonomy in NEUROSYM.a2ml [finding-taxonomy] + policies/finding_taxonomy.ecl (#9); robot-repo-automaton build fix + Rust build/test/clippy CI gate (gitbot-fleet); stale-identity sweep across SECURITY/CLAUDE/META (#11); standards reusable-workflow pin refresh (#13); LICENSE dual-SPDX MPL-2.0 + CC-BY-SA-4.0, SECURITY.md finalized (reporting → j.d.a.jewell@open.ac.uk), redundant trufflehog job dropped (#14); added docs/README.adoc documentation map. Open follow-ups: #12 (taxonomy vocab reconciliation), #16 (developer+maintainer docs + README split), #17 (end-user docs), #18 (taxonomy tags through Finding types)."
 
 [project-context]
 name = "OikosBot"

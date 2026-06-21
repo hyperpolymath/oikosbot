@@ -31,6 +31,11 @@ See link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`] for the full breakdown.
 
 toc::[]
 
+== Documentation
+
+For a map of all documentation — grouped by audience (developer / maintainer /
+end-user) and by concept — see link:docs/README.adoc[`docs/README.adoc`].
+
 == Status
 
 `0.1.0-dev`. OikosBot is not currently deployed in production.
