@@ -15,18 +15,19 @@
    "ghc"
    "cabal-install"
    "hlint"
-   "haskell-language-server"
+   "haskell-language-server"   ; not in guix 1.4.0 — verify in current guix
 
    ;; Rust (crates/oikosbot-* analysis workspace + CLI)
    "rust"
    "rust-analyzer"
 
-   ;; Deno — default backend + runtime for the AffineScript bot.
-   ;; NOTE: the AffineScript compiler is external (built in the
-   ;; hyperpolymath/affinescript repo); point AS_BIN at it. ReScript was
-   ;; retired (oikos#41) and Python is not used here — the policy engine is
-   ;; interpreted Datalog/DeepProbLog (souffle + swi-prolog, below).
-   "deno"
+   ;; Deno — the AffineScript bot's default backend + runtime. NOTE: Deno is
+   ;; NOT packaged in Guix, so it cannot be a manifest spec; install it
+   ;; separately (https://deno.land) or via a custom channel. The AffineScript
+   ;; compiler is likewise external (built in hyperpolymath/affinescript; point
+   ;; AS_BIN at it). ReScript was retired (oikos#41) and Python is not used —
+   ;; the policy engine is interpreted Datalog/DeepProbLog (souffle + swi-prolog).
+   ;; "deno"   ; unpackaged in Guix — left commented so `guix shell -m` works
 
    ;; ========================================
    ;; Datastore
@@ -41,7 +42,7 @@
    ;; ========================================
 
    ;; Datalog (Souffle)
-   "souffle"
+   "souffle"   ; not in guix 1.4.0 — verify in current guix
 
    ;; Prolog (for DeepProbLog base)
    "swi-prolog"
@@ -62,7 +63,7 @@
    ;; ========================================
 
    "podman"
-   "buildah"
+   "buildah"   ; not in guix 1.4.0 — verify in current guix
    "skopeo"
    "cni-plugins"
 
