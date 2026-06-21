@@ -79,6 +79,11 @@ toc::[]
 `src/Oikos.affine`::
   Top-level orchestration: webhook → analyse → comment.
 
+`src/Payload.affine`::
+  GitHub webhook payload field extraction (installation / repository /
+  pull_request) via the stdlib `json` lazy-descent pattern; produces the
+  `PrEvent` record consumed by `Oikos.handle_pr_event`.
+
 `src/Main.affine`::
   Process entry point. Loads config, binds the HTTP server, dispatches
   to Router.

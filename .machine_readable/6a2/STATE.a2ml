@@ -5,9 +5,9 @@
 [metadata]
 project = "oikosbot"
 version = "0.1.0-dev"
-last-updated = "2026-06-20"
+last-updated = "2026-06-21"
 status = "active"
-session = "2026-06-20 compliance/cleanup + single-DB→VeriSimDB migration (design/config): README + EXPLAINME rewrite; .md→.adoc doc conversions (ARCHITECTURE/DEPLOY/GITHUB_APP_SETUP/tech-debt); dedup community-health docs; dismantle prompts/; refresh 6a2 a2ml; retire ArangoDB + Virtuoso, keeping the eco ontology as the VeriSimDB semantic-witness seed at databases/ontology/eco.ttl"
+session = "2026-06-21 follow-ups to #7: finish SPDX/licence drift cleanup (MPL-2.0-or-later → MPL-2.0 estate-wide; guix agpl3+ fix + dead-component prune; QUICKSTART → .adoc); scaffold the deferred VeriSimDB client (docs/verisimdb-client.adoc + VeriSimClient.affine); wire bot-integration-affine webhook→analyse→comment orchestration (Payload.affine + Main handler) — listener binding still gated on stdlib Http::Server; AS unverified (no toolchain)"
 
 [project-context]
 name = "OikosBot"
@@ -25,7 +25,7 @@ milestones = [
   { id = "crates-extraction", status = "landed", summary = "Extract Rust analysis workspace from gitbot-fleet/bots/sustainabot; rename sustainabot-* → oikosbot-*; decouple from fleet (oikosbot-fleet bridge excluded from default workspace); 35 tests green" },
   { id = "stdlib-json-v03", status = "landed-upstream", repo = "affinescript", pr = 421, summary = "stdlib/json.affine RSR rewire to hpm-json-rsr Zig FFI — unblocks OikosBot webhook payload extraction" },
   { id = "stdlib-http-server", status = "landed-upstream", repo = "affinescript", pr = 425, summary = "stdlib/Http.affine RSR rewire — surfaces hpm-http-rsr Zig FFI server externs — unblocks OikosBot accept loop" },
-  { id = "bot-affine-implementation", status = "pending", summary = "Wire the HTTP listener + webhook→analyse→comment orchestration in bot-integration-affine/ (HMAC verification already implemented; stdlib gates #421/#425 landed upstream)" },
+  { id = "bot-affine-implementation", status = "in-progress", summary = "Orchestration handler wired: Payload.affine extracts PR fields (stdlib json lazy descent) and handle_github_webhook calls Oikos.handle_pr_event (HMAC already done). REMAINING: bind the HTTP listener (Sub.http_server), gated on the stdlib Http::Server host type. NOTE: AffineScript unverified — no AS toolchain in env." },
   { id = "db-single-verisimdb", status = "in-progress", summary = "Retarget data layer to a single VeriSimDB store; octad witnesses subsume ArangoDB (graph/document) + Virtuoso (semantic). Design + config done this session; runtime client deferred/gated (VeriSimDB v0.1.0 + AffineScript transport)." }
 ]
 

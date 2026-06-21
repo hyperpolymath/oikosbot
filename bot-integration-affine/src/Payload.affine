@@ -1,0 +1,195 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+//
+// Payload.affine — GitHub webhook payload field extraction.
+//
+// Pulls the fields Oikos.handle_pr_event needs out of a raw GitHub
+// `pull_request` webhook body. Follows the lazy descent pattern the
+// stdlib `json` module recommends for object payloads (module preamble:
+// "prefer the lazy hpm_json_object_get + leaf-extract pattern for object
+// payloads (e.g. GitHub webhook JSON)") — `json::to_json` cannot
+// materialise object roots yet (no Zig key-enumeration export).
+//
+// Every Some(handle) from parse / hpm_json_object_get is paired with a
+// matching hpm_json_free (no-op on the Deno-ESM backend, real arena-free
+// on native), per the json module's ownership contract.
+//
+// NOTE: unverified — the AffineScript toolchain was not available when
+// this was written; it follows stdlib/json.affine + the sibling modules'
+// idioms but has not been compiled.
+
+module Payload;
+
+use prelude::{Option, Some, None};
+use json::{HpmJsonValue, parse, hpm_json_object_get, hpm_json_int, hpm_json_string, hpm_json_free};
+
+// ── Extracted PR event ──────────────────────────────────────────────
+//
+// The argument set of Oikos.handle_pr_event, in one record.
+
+pub type PrEvent = {
+  installation_id: Int,
+  owner: String,
+  repo_name: String,
+  repo_url: String,
+  pr_number: Int,
+  base_sha: String,
+  head_sha: String,
+}
+
+// ── Leaf extractors ─────────────────────────────────────────────────
+//
+// Fetch parent[key] as a String / Int, freeing the leaf handle. None if
+// the key is absent.
+
+fn get_string(parent: HpmJsonValue, key: String) -> Option<String> {
+  match hpm_json_object_get(parent, key) {
+    Some(v) => {
+      let s = hpm_json_string(v);
+      hpm_json_free(v);
+      Some(s)
+    },
+    None => None
+  }
+}
+
+fn get_int(parent: HpmJsonValue, key: String) -> Option<Int> {
+  match hpm_json_object_get(parent, key) {
+    Some(v) => {
+      let n = hpm_json_int(v);
+      hpm_json_free(v);
+      Some(n)
+    },
+    None => None
+  }
+}
+
+// ── Assemble the record from the resolved object handles ─────────────
+//
+// installation.id, repository.{name,clone_url}, repository.owner.login,
+// pull_request.number, pull_request.{base,head}.sha. Returns None if any
+// required field is missing.
+
+fn assemble(installation: HpmJsonValue,
+            repository: HpmJsonValue,
+            pull_request: HpmJsonValue,
+            owner_obj: HpmJsonValue,
+            base_obj: HpmJsonValue,
+            head_obj: HpmJsonValue) -> Option<PrEvent> {
+  match get_int(installation, "id") {
+    None => None,
+    Some(installation_id) =>
+      match get_string(owner_obj, "login") {
+        None => None,
+        Some(owner) =>
+          match get_string(repository, "name") {
+            None => None,
+            Some(repo_name) =>
+              match get_string(repository, "clone_url") {
+                None => None,
+                Some(repo_url) =>
+                  match get_int(pull_request, "number") {
+                    None => None,
+                    Some(pr_number) =>
+                      match get_string(base_obj, "sha") {
+                        None => None,
+                        Some(base_sha) =>
+                          match get_string(head_obj, "sha") {
+                            None => None,
+                            Some(head_sha) => Some(#{
+                              installation_id: installation_id,
+                              owner: owner,
+                              repo_name: repo_name,
+                              repo_url: repo_url,
+                              pr_number: pr_number,
+                              base_sha: base_sha,
+                              head_sha: head_sha
+                            })
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  }
+}
+
+// ── Resolve the nested objects, then assemble ───────────────────────
+//
+// Fetches repository.owner, pull_request.base, pull_request.head and
+// frees them after assemble runs.
+
+fn build_pr_event(installation: HpmJsonValue,
+                  repository: HpmJsonValue,
+                  pull_request: HpmJsonValue) -> Option<PrEvent> {
+  match hpm_json_object_get(repository, "owner") {
+    None => None,
+    Some(owner_obj) => {
+      match hpm_json_object_get(pull_request, "base") {
+        None => {
+          hpm_json_free(owner_obj);
+          None
+        },
+        Some(base_obj) => {
+          match hpm_json_object_get(pull_request, "head") {
+            None => {
+              hpm_json_free(owner_obj);
+              hpm_json_free(base_obj);
+              None
+            },
+            Some(head_obj) => {
+              let result = assemble(installation, repository, pull_request, owner_obj, base_obj, head_obj);
+              hpm_json_free(owner_obj);
+              hpm_json_free(base_obj);
+              hpm_json_free(head_obj);
+              result
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ── Top-level entry ─────────────────────────────────────────────────
+//
+// Parse the body, descend into installation / repository / pull_request,
+// build the PrEvent, and free every handle. None for non-PR events or
+// unparseable bodies (the caller then returns 202 ACCEPTED).
+
+pub fn extract_pr_event(body: String) -> Option<PrEvent> {
+  match parse(body) {
+    None => None,
+    Some(root) => {
+      let result = match hpm_json_object_get(root, "installation") {
+        None => None,
+        Some(installation) => {
+          match hpm_json_object_get(root, "repository") {
+            None => {
+              hpm_json_free(installation);
+              None
+            },
+            Some(repository) => {
+              match hpm_json_object_get(root, "pull_request") {
+                None => {
+                  hpm_json_free(installation);
+                  hpm_json_free(repository);
+                  None
+                },
+                Some(pull_request) => {
+                  let r = build_pr_event(installation, repository, pull_request);
+                  hpm_json_free(installation);
+                  hpm_json_free(repository);
+                  hpm_json_free(pull_request);
+                  r
+                }
+              }
+            }
+          }
+        }
+      };
+      hpm_json_free(root);
+      result
+    }
+  }
+}
