@@ -11,34 +11,22 @@
    ;; Core Languages
    ;; ========================================
 
-   ;; Haskell (for code analyzer)
+   ;; Haskell (analyzers/code-haskell)
    "ghc"
    "cabal-install"
    "hlint"
    "haskell-language-server"
 
-   ;; OCaml (for documentation analyzer)
-   "ocaml"
-   "dune"
-   "opam"
-   "ocaml-merlin"
-   "ocaml-ocp-indent"
-   "ocamlformat"
-
-   ;; ReScript (compiles from source, needs node for build)
-   "node"  ; Only for rescript compiler, not runtime
-
-   ;; Deno runtime
-   "deno"
-
-   ;; Python (for policy engine)
-   "python"
-   "python-pip"
-   "python-virtualenv"
-
-   ;; Rust (for orchestrator)
+   ;; Rust (crates/oikosbot-* analysis workspace + CLI)
    "rust"
    "rust-analyzer"
+
+   ;; Deno — default backend + runtime for the AffineScript bot.
+   ;; NOTE: the AffineScript compiler is external (built in the
+   ;; hyperpolymath/affinescript repo); point AS_BIN at it. ReScript was
+   ;; retired (oikos#41) and Python is not used here — the policy engine is
+   ;; interpreted Datalog/DeepProbLog (souffle + swi-prolog, below).
+   "deno"
 
    ;; ========================================
    ;; Datastore
