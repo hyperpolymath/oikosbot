@@ -1,0 +1,168 @@
+// SPDX-License-Identifier: MPL-2.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+//
+// VeriSimClient.affine — DEFERRED/GATED scaffold for OikosBot's VeriSimDB
+// client. See docs/verisimdb-client.adoc for the design.
+//
+// This is a stub: no `libverisim_client.so` exists yet, so the `extern fn`
+// symbols below are the *intended* Zig-FFI contract (mirroring the hpm-* RSR
+// pattern in Externs.affine — "Zig for all APIs and FFIs, Idris2 for ABIs"),
+// not a live surface. The bot does NOT call these on the runtime path. Wire-up
+// is gated on VeriSimDB maturity (v0.1.0) and the AffineScript transport.
+//
+// Wire format: connectors/shared/openapi/verisim-api-v1.yaml (base /api/v1) in
+// hyperpolymath/verisimdb. Endpoint comes from config/oikos.yaml
+// (databases.verisimdb, env VERISIMDB_ENDPOINT).
+
+module VeriSimClient;
+
+use prelude::{Option, Some, None, Result, Ok, Err};
+
+// ── Opaque handle types ─────────────────────────────────────────────
+//
+// VeriSimHandle: a connection bound to a REST endpoint. VeriSimResponse:
+// a status + body pair. Both heap-managed by libverisim_client; free via
+// the matching `*_free`. Mirrors Externs.affine's GitHubToken/GitHubResponse.
+
+pub extern type VeriSimHandle;
+pub extern type VeriSimResponse;
+
+// ── Connection ──────────────────────────────────────────────────────
+
+pub extern fn verisimdb_connect(endpoint: String) -> VeriSimHandle / Async;
+
+// ── Health ──────────────────────────────────────────────────────────
+
+pub extern fn verisimdb_health(handle: VeriSimHandle) -> VeriSimResponse / Async;
+
+// ── Octad CRUD ──────────────────────────────────────────────────────
+
+pub extern fn verisimdb_octad_create(handle: VeriSimHandle,
+                                      octad_json: String) -> VeriSimResponse / Async;
+
+pub extern fn verisimdb_octad_get(handle: VeriSimHandle,
+                                   id: String) -> VeriSimResponse / Async;
+
+pub extern fn verisimdb_octad_update(handle: VeriSimHandle,
+                                      id: String,
+                                      octad_json: String) -> VeriSimResponse / Async;
+
+pub extern fn verisimdb_octad_list(handle: VeriSimHandle,
+                                    query: String) -> VeriSimResponse / Async;
+
+// ── Search (document / vector / graph witnesses) ────────────────────
+
+pub extern fn verisimdb_search_text(handle: VeriSimHandle,
+                                     query: String) -> VeriSimResponse / Async;
+
+pub extern fn verisimdb_search_vector(handle: VeriSimHandle,
+                                       query_json: String) -> VeriSimResponse / Async;
+
+pub extern fn verisimdb_search_related(handle: VeriSimHandle,
+                                        id: String) -> VeriSimResponse / Async;
+
+// ── Drift ───────────────────────────────────────────────────────────
+
+pub extern fn verisimdb_drift_score(handle: VeriSimHandle,
+                                     id: String) -> VeriSimResponse / Async;
+
+pub extern fn verisimdb_drift_status(handle: VeriSimHandle) -> VeriSimResponse / Async;
+
+// ── Provenance ──────────────────────────────────────────────────────
+
+pub extern fn verisimdb_provenance_record(handle: VeriSimHandle,
+                                           id: String,
+                                           event_json: String) -> VeriSimResponse / Async;
+
+pub extern fn verisimdb_provenance_verify(handle: VeriSimHandle,
+                                           id: String) -> VeriSimResponse / Async;
+
+// ── VCL (propositions + epistemic requests) ─────────────────────────
+
+pub extern fn verisimdb_vcl_execute(handle: VeriSimHandle,
+                                     vcl: String) -> VeriSimResponse / Async;
+
+// ── Accessors + lifecycle ───────────────────────────────────────────
+
+pub extern fn verisimdb_response_status_get(resp: VeriSimResponse) -> Int;
+pub extern fn verisimdb_response_body_get(resp: VeriSimResponse) -> String;
+pub extern fn verisimdb_response_free(resp: VeriSimResponse);
+pub extern fn verisimdb_handle_free(handle: VeriSimHandle);
+
+// ── Canonical AS-named wrappers ─────────────────────────────────────
+//
+// Consumers should use these `pub fn` wrappers, not the raw extern names,
+// keeping the AS surface uniform (snake_case, idiomatic types) and absorbing
+// future C-side ABI changes in one place.
+
+pub fn connect(endpoint: String) -> VeriSimHandle / Async {
+  verisimdb_connect(endpoint)
+}
+
+pub fn health(handle: VeriSimHandle) -> VeriSimResponse / Async {
+  verisimdb_health(handle)
+}
+
+pub fn octad_create(handle: VeriSimHandle, octad_json: String) -> VeriSimResponse / Async {
+  verisimdb_octad_create(handle, octad_json)
+}
+
+pub fn octad_get(handle: VeriSimHandle, id: String) -> VeriSimResponse / Async {
+  verisimdb_octad_get(handle, id)
+}
+
+pub fn octad_update(handle: VeriSimHandle, id: String, octad_json: String) -> VeriSimResponse / Async {
+  verisimdb_octad_update(handle, id, octad_json)
+}
+
+pub fn octad_list(handle: VeriSimHandle, query: String) -> VeriSimResponse / Async {
+  verisimdb_octad_list(handle, query)
+}
+
+pub fn search_text(handle: VeriSimHandle, query: String) -> VeriSimResponse / Async {
+  verisimdb_search_text(handle, query)
+}
+
+pub fn search_vector(handle: VeriSimHandle, query_json: String) -> VeriSimResponse / Async {
+  verisimdb_search_vector(handle, query_json)
+}
+
+pub fn search_related(handle: VeriSimHandle, id: String) -> VeriSimResponse / Async {
+  verisimdb_search_related(handle, id)
+}
+
+pub fn drift_score(handle: VeriSimHandle, id: String) -> VeriSimResponse / Async {
+  verisimdb_drift_score(handle, id)
+}
+
+pub fn drift_status(handle: VeriSimHandle) -> VeriSimResponse / Async {
+  verisimdb_drift_status(handle)
+}
+
+pub fn provenance_record(handle: VeriSimHandle, id: String, event_json: String) -> VeriSimResponse / Async {
+  verisimdb_provenance_record(handle, id, event_json)
+}
+
+pub fn provenance_verify(handle: VeriSimHandle, id: String) -> VeriSimResponse / Async {
+  verisimdb_provenance_verify(handle, id)
+}
+
+pub fn vcl_execute(handle: VeriSimHandle, vcl: String) -> VeriSimResponse / Async {
+  verisimdb_vcl_execute(handle, vcl)
+}
+
+pub fn response_status(resp: VeriSimResponse) -> Int {
+  verisimdb_response_status_get(resp)
+}
+
+pub fn response_body(resp: VeriSimResponse) -> String {
+  verisimdb_response_body_get(resp)
+}
+
+pub fn response_free(resp: VeriSimResponse) {
+  verisimdb_response_free(resp)
+}
+
+pub fn handle_free(handle: VeriSimHandle) {
+  verisimdb_handle_free(handle)
+}

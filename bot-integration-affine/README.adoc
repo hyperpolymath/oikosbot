@@ -48,6 +48,12 @@ toc::[]
   AS `pub extern fn` named after the C ABI symbols. All other
   modules in this package `use Externs` rather than redeclaring.
 
+`src/VeriSimClient.affine`::
+  DEFERRED scaffold for OikosBot's VeriSimDB client: the intended
+  `extern fn verisimdb_*` contract + `pub fn` wrappers, mirroring
+  `Externs.affine`. Not called on the live path; no `libverisim_client`
+  exists yet. See `../docs/verisimdb-client.adoc`.
+
 `src/Types.affine`::
   Record types: `config`, `installation_token`, `webhook_event`,
   `repository_info`, `bot_mode`. Mirrors ReScript `Types.res`.
