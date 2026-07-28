@@ -20,7 +20,28 @@ cargo build --release
 ./target/release/oikosbot analyze path/to/file.rs
 ----
 
-Supports: Rust (`.rs`), JavaScript (`.js`, `.mjs`), TypeScript (`.ts`).
+Supports: Rust (`.rs`), JavaScript (`.js`), Python (`.py`).
+
+=== Pareto verdict on a change (base vs head)
+
+[source,bash]
+----
+./target/release/oikosbot compare path/to/base path/to/head
+----
+
+Classifies the change in objective space (carbon, energy, time, memory,
+maintainability): *pareto-improvement* (better on at least one objective,
+worse on none), *pareto-regression* (worse on at least one, better on none),
+*trade-off* (mixed — document it with a `Pareto-Trade-off:` trailer in the PR
+description), or *neutral*. Advisory by default; `--check --pr-body pr.txt`
+fails the run on an undocumented, measured regression or trade-off.
+
+=== Per-repo configuration
+
+`check`, `report`, and `compare` honor an `.oikos.yml` in the analyzed
+directory (or pass `--config path/to/.oikos.yml`): operating mode
+(advisor/regulator), `thresholds.eco_minimum`, `exclude` globs, and
+`analysis.languages`.
 
 === Analyze oikosbot itself (dogfooding!)
 
