@@ -49,7 +49,12 @@ inputs:
     required: false
     default: ''
   check:
-    description: 'compare mode: fail on an undocumented, measured Pareto regression/trade-off (true/false)'
+    description: >-
+      compare mode: fail on an undocumented, measured Pareto
+      regression/trade-off. NOTE: cannot block today — every resource figure is
+      a heuristic Estimated value and only Measured/Calibrated inputs may
+      fail a run, so this warns loudly and exits 0 until calibration is wired
+      in (see QUICKSTART).
     required: false
     default: 'false'
   image:

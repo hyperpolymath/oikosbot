@@ -36,6 +36,22 @@ worse on none), *pareto-regression* (worse on at least one, better on none),
 description), or *neutral*. Advisory by default; `--check --pr-body pr.txt`
 fails the run on an undocumented, measured regression or trade-off.
 
+[IMPORTANT]
+====
+*`--check` cannot block a merge today, by design.* Only objectives backed by
+`Measured` or `Calibrated` inputs may fail a run, and every resource figure
+OikosBot currently produces is a heuristic `Estimated` value — the calibration
+framework at `crates/oikosbot-analysis/src/calibration.rs` exists but is not
+yet wired into the analyzer, which still uses a naive complexity-derived
+estimate.
+
+So `--check` reports and warns, but always exits 0. It says so *loudly* — a
+`::warning::` annotation naming the confidence level — rather than passing
+silently. A gate that quietly does nothing is indistinguishable from one that
+passed, which is precisely the failure mode OikosBot exists to find.
+Enforcement becomes real when calibration is wired in.
+====
+
 === Per-repo configuration
 
 `check`, `report`, and `compare` honor an `.oikos.yml` in the analyzed
