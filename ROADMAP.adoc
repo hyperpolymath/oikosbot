@@ -36,6 +36,12 @@ Status legend: `done` | `in-progress` | `blocked` | `planned`
 * [x] `.oikos.yml` config support in the CLI (`--config` + auto-discovery):
   mode, thresholds, exclude globs, languages — makes the estate consumer
   configs and the governance workflow's `--config` flag real
+* [x] Composite GitHub Action (`action.yml`, container-based) — OikosBot
+  consumable as `uses: hyperpolymath/oikosbot@<ref>`; Marketplace-shaped
+* [x] Marketplace positioning doc: `docs/COMPARISON-climate-warrior.adoc`
+* [x] publish-image root-caused: GHCR `oikos` package lacked Actions write
+  access for this repo (`permission_denied: write_package`); fixed by owner
+  grant, not by code — the Containerfile was verified sound via local podman
 
 === Remaining
 
