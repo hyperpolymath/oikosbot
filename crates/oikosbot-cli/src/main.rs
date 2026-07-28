@@ -364,8 +364,27 @@ fn main() -> Result<()> {
                 oikosbot_pareto::ParetoVerdict::Regression
                     | oikosbot_pareto::ParetoVerdict::TradeOff
             );
-            if check && needs_documentation && assessment.actionable && documented != Some(true) {
-                std::process::exit(1);
+            if check && needs_documentation && documented != Some(true) {
+                if assessment.actionable {
+                    std::process::exit(1);
+                }
+                // Enforcement was asked for and cannot be delivered: the
+                // driving objectives rest on heuristic estimates, which by
+                // design may not block a merge. Say so unmissably. A gate
+                // that silently no-ops is indistinguishable from one that
+                // passed, which is the failure mode this tool exists to
+                // find — so it must never be silent about its own limits.
+                eprintln!(
+                    "::warning::--check requested but NOT enforced: the objectives driving \
+                     this {} verdict are {:?}, and only Measured or Calibrated inputs may \
+                     block. Reported as advisory. See docs: enforcement is inert while \
+                     resource figures remain heuristic estimates.",
+                    match assessment.verdict {
+                        oikosbot_pareto::ParetoVerdict::Regression => "pareto-regression",
+                        _ => "trade-off",
+                    },
+                    confidence,
+                );
             }
         }
 
