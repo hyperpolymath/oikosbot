@@ -383,6 +383,7 @@ mod tests {
             suggestion: None,
             end_location: Some((10, 2)),
             confidence: Confidence::Estimated,
+            pareto: None,
         }
     }
 

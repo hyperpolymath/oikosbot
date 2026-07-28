@@ -379,7 +379,7 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
         .unwrap_or_default();
 
     // Custom properties with eco/econ scores and resource profile
-    let properties = serde_json::json!({
+    let mut properties = serde_json::json!({
         "eco_score": result.health.eco_score.0,
         "econ_score": result.health.econ_score.0,
         "quality_score": result.health.quality_score,
@@ -390,6 +390,11 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
         "memory_bytes": result.resources.memory.0,
         "confidence": format!("{:?}", result.confidence),
     });
+    if let Some(ref pareto) = result.pareto {
+        properties["pareto_status"] = serde_json::json!(pareto.status);
+        properties["pareto_score"] = serde_json::json!(pareto.score);
+        properties["pareto_dominated_by"] = serde_json::json!(pareto.dominated_by);
+    }
 
     SarifResult {
         rule_id: rule_id.clone(),
@@ -429,6 +434,7 @@ mod tests {
             suggestion: None,
             end_location: Some((25, 2)),
             confidence: Confidence::Estimated,
+            pareto: None,
         }
     }
 
