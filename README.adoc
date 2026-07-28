@@ -124,6 +124,28 @@ link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`].
 `just affine-check` expects an AffineScript compiler. Override the compiler path
 with `AS_BIN=/path/to/main.exe` when needed.
 
+== GitHub Action
+
+OikosBot runs in CI as a composite action wrapping the published container
+(`ghcr.io/hyperpolymath/oikos`):
+
+[source,yaml]
+----
+- uses: hyperpolymath/oikosbot@main   # pin a tag/SHA in production
+  with:
+    mode: report          # report | check | compare
+    path: .
+    output: results.sarif # upload with github/codeql-action/upload-sarif
+----
+
+`compare` mode issues a Pareto verdict against a base checkout (see
+link:QUICKSTART.adoc[QUICKSTART]). A repo-local `.oikos.yml` is honored
+automatically. Full workflow example:
+link:examples/oikosbot-ci.yml[`examples/oikosbot-ci.yml`].
+
+How OikosBot relates to the nearest Marketplace neighbour:
+link:docs/COMPARISON-climate-warrior.adoc[OikosBot vs Climate Warrior].
+
 == GitHub App
 
 The app manifest lives at link:.github/app.yml[`.github/app.yml`]. The setup

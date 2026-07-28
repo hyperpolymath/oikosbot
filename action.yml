@@ -1,0 +1,106 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#
+# OikosBot composite action — ecological & economic code analysis with
+# Pareto verdicts. Runs the published CLI container (ENTRYPOINT oikosbot),
+# so consumers need no Rust toolchain. See examples/oikosbot-ci.yml for a
+# full workflow and docs/ for interpretation guidance.
+name: 'OikosBot Sustainability Analysis'
+description: >-
+  Ecological & economic code analysis: carbon/energy estimates, Pareto
+  verdicts on pull requests (improvement / regression / trade-off), and
+  SARIF output for GitHub code scanning. Honors the repo's .oikos.yml.
+author: 'Jonathan D.A. Jewell'
+branding:
+  icon: 'trending-down'
+  color: 'green'
+
+inputs:
+  mode:
+    description: 'Subcommand: report (SARIF, default), check (threshold gate), compare (Pareto verdict vs base)'
+    required: false
+    default: 'report'
+  path:
+    description: 'Directory to analyze (or head directory for compare)'
+    required: false
+    default: '.'
+  base:
+    description: 'Base directory for compare mode (e.g. a checkout of the target branch)'
+    required: false
+    default: ''
+  format:
+    description: 'Output format: sarif | json | text'
+    required: false
+    default: 'sarif'
+  output:
+    description: 'Output file path (empty = stdout)'
+    required: false
+    default: 'results.sarif'
+  config:
+    description: 'Path to .oikos.yml (empty = auto-discover in path)'
+    required: false
+    default: ''
+  eco-threshold:
+    description: 'Eco-score floor 0-100 (empty = config value, else 50)'
+    required: false
+    default: ''
+  pr-body:
+    description: 'File with the PR description, for the Pareto trade-off documentation check (compare mode)'
+    required: false
+    default: ''
+  check:
+    description: 'compare mode: fail on an undocumented, measured Pareto regression/trade-off (true/false)'
+    required: false
+    default: 'false'
+  image:
+    description: 'Container image to run'
+    required: false
+    default: 'ghcr.io/hyperpolymath/oikos:latest'
+
+outputs:
+  output-file:
+    description: 'Path of the written output file (when output is set)'
+    value: ${{ inputs.output }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run oikosbot
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        TARGET: ${{ inputs.path }}
+        BASE: ${{ inputs.base }}
+        FORMAT: ${{ inputs.format }}
+        OUTFILE: ${{ inputs.output }}
+        CONFIG: ${{ inputs.config }}
+        THRESHOLD: ${{ inputs.eco-threshold }}
+        PR_BODY: ${{ inputs.pr-body }}
+        DO_CHECK: ${{ inputs.check }}
+        IMAGE: ${{ inputs.image }}
+      run: |
+        set -euo pipefail
+        args=("$MODE")
+        case "$MODE" in
+          compare)
+            [ -n "$BASE" ] || { echo "::error::compare mode requires the 'base' input"; exit 1; }
+            args+=("$BASE" "$TARGET")
+            [ "$DO_CHECK" = "true" ] && args+=(--check)
+            [ -n "$PR_BODY" ] && args+=(--pr-body "$PR_BODY")
+            [ "$FORMAT" = "json" ] && args+=(--format json)
+            ;;
+          report|check)
+            args+=("$TARGET" --format "$FORMAT")
+            ;;
+          *)
+            echo "::error::unknown mode '$MODE' (report | check | compare)"; exit 1
+            ;;
+        esac
+        [ -n "$OUTFILE" ] && args+=(--output "$OUTFILE")
+        [ -n "$CONFIG" ] && args+=(--config "$CONFIG")
+        [ -n "$THRESHOLD" ] && args+=(--eco-threshold "$THRESHOLD")
+        docker run --rm \
+          --user "$(id -u):$(id -g)" \
+          -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" \
+          -w "$GITHUB_WORKSPACE" \
+          "$IMAGE" "${args[@]}"
