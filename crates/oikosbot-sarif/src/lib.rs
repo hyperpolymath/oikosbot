@@ -90,8 +90,6 @@ pub struct SarifResult {
     pub level: SarifLevel,
     pub message: Message,
     pub locations: Vec<Location>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub fixes: Vec<Fix>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub properties: Option<serde_json::Value>,
 }
@@ -172,12 +170,13 @@ pub struct LogicalLocation {
     pub kind: Option<String>,
 }
 
-/// Suggested fix
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Fix {
-    pub description: Message,
-}
+// NB: no `Fix` type. SARIF 2.1.0 requires every `fix` object to carry
+// `artifactChanges` (a fix *is* a concrete edit: artifactLocation +
+// replacements). OikosBot's suggestions are advisory prose — "use a hash map
+// for O(1) lookup" — not text replacements, so modelling them as fixes
+// produced schema-invalid output that GitHub's code-scanning upload rejects
+// with `requires property "artifactChanges"`. Suggestions belong in the
+// result message and in `properties.suggestion` instead.
 
 /// Invocation metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -367,16 +366,12 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
         }),
     };
 
-    // Build fixes from suggestion
-    let fixes = result
-        .suggestion
-        .as_ref()
-        .map(|s| {
-            vec![Fix {
-                description: Message { text: s.clone() },
-            }]
-        })
-        .unwrap_or_default();
+    // Suggestions ride in the message and properties, never in a SARIF `fix`
+    // (see the note where `Fix` used to be defined).
+    let message_text = match result.suggestion.as_ref() {
+        Some(s) => format!("{} Suggestion: {}", message_text, s),
+        None => message_text,
+    };
 
     // Custom properties with eco/econ scores and resource profile
     let mut properties = serde_json::json!({
@@ -390,6 +385,9 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
         "memory_bytes": result.resources.memory.0,
         "confidence": format!("{:?}", result.confidence),
     });
+    if let Some(ref s) = result.suggestion {
+        properties["suggestion"] = serde_json::json!(s);
+    }
     if let Some(ref pareto) = result.pareto {
         properties["pareto_status"] = serde_json::json!(pareto.status);
         properties["pareto_score"] = serde_json::json!(pareto.score);
@@ -402,7 +400,6 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
         level,
         message: Message { text: message_text },
         locations: vec![location],
-        fixes,
         properties: Some(properties),
     }
 }
@@ -477,11 +474,51 @@ mod tests {
         let sarif_result = &log.runs[0].results[0];
 
         assert_eq!(sarif_result.rule_id, "oikosbot/nested-loops");
-        assert_eq!(sarif_result.fixes.len(), 1);
+        // The suggestion surfaces in the message and in properties — never as
+        // a SARIF `fix`, which would require `artifactChanges` we cannot
+        // supply for advisory prose.
+        assert!(
+            sarif_result
+                .message
+                .text
+                .contains("Use hash map for O(1) lookup"),
+            "suggestion missing from message: {}",
+            sarif_result.message.text
+        );
         assert_eq!(
-            sarif_result.fixes[0].description.text,
+            sarif_result.properties.as_ref().unwrap()["suggestion"],
             "Use hash map for O(1) lookup"
         );
+    }
+
+    /// Guards the defect that broke GitHub's code-scanning upload: a `fix`
+    /// object without `artifactChanges` is schema-invalid, and the API
+    /// rejects the whole run with `requires property "artifactChanges"`.
+    ///
+    /// Note that `serde_json::from_str` succeeding proves only that the
+    /// output is *parseable JSON* — not that it satisfies the SARIF schema.
+    /// This asserts the structural rule GitHub actually enforces.
+    #[test]
+    fn emitted_sarif_has_no_schema_invalid_fixes() {
+        let mut with_suggestion = sample_result();
+        with_suggestion.suggestion = Some("Use hash map for O(1) lookup".to_string());
+        let results = vec![sample_result(), with_suggestion];
+
+        let json = to_sarif_json(&results, "0.1.0").unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        for run in parsed["runs"].as_array().unwrap() {
+            for result in run["results"].as_array().unwrap() {
+                if let Some(fixes) = result.get("fixes").and_then(|f| f.as_array()) {
+                    for fix in fixes {
+                        assert!(
+                            fix.get("artifactChanges").is_some(),
+                            "SARIF fix without artifactChanges — GitHub will reject this run"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
