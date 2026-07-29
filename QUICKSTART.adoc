@@ -1,0 +1,126 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot Quickstart
+:icons: font
+:source-highlighter: rouge
+
+== Build
+
+[source,bash]
+----
+cargo build --release
+----
+
+== Usage
+
+=== Analyze a file
+
+[source,bash]
+----
+./target/release/oikosbot analyze path/to/file.rs
+----
+
+Supports: Rust (`.rs`), JavaScript (`.js`), Python (`.py`).
+
+=== Pareto verdict on a change (base vs head)
+
+[source,bash]
+----
+./target/release/oikosbot compare path/to/base path/to/head
+----
+
+Classifies the change in objective space (carbon, energy, time, memory,
+maintainability): *pareto-improvement* (better on at least one objective,
+worse on none), *pareto-regression* (worse on at least one, better on none),
+*trade-off* (mixed — document it with a `Pareto-Trade-off:` trailer in the PR
+description), or *neutral*. Advisory by default; `--check --pr-body pr.txt`
+fails the run on an undocumented, measured regression or trade-off.
+
+[IMPORTANT]
+====
+*`--check` cannot block a merge today, by design.* Only objectives backed by
+`Measured` or `Calibrated` inputs may fail a run, and every resource figure
+OikosBot currently produces is a heuristic `Estimated` value — the calibration
+framework at `crates/oikosbot-analysis/src/calibration.rs` exists but is not
+yet wired into the analyzer, which still uses a naive complexity-derived
+estimate.
+
+So `--check` reports and warns, but always exits 0. It says so *loudly* — a
+`::warning::` annotation naming the confidence level — rather than passing
+silently. A gate that quietly does nothing is indistinguishable from one that
+passed, which is precisely the failure mode OikosBot exists to find.
+Enforcement becomes real when calibration is wired in.
+====
+
+=== Per-repo configuration
+
+`check`, `report`, and `compare` honor an `.oikos.yml` in the analyzed
+directory (or pass `--config path/to/.oikos.yml`): operating mode
+(advisor/regulator), `thresholds.eco_minimum`, `exclude` globs, and
+`analysis.languages`.
+
+=== Analyze oikosbot itself (dogfooding!)
+
+[source,bash]
+----
+./target/release/oikosbot self-analyze
+----
+
+This proves we practice what we preach — the analyzer itself is efficient.
+
+=== JSON output
+
+[source,bash]
+----
+./target/release/oikosbot analyze file.rs --format json
+----
+
+== What It Does
+
+OikosBot analyzes code for:
+
+* *Energy consumption* (Joules)
+* *Carbon footprint* (gCO2e)
+* *Execution time* (milliseconds)
+* *Memory usage* (bytes)
+
+And provides:
+
+* *Eco score* (0-100) — environmental impact
+* *Econ score* (0-100) — algorithmic efficiency
+* *Quality score* (0-100) — code quality
+* *Overall health* (weighted combination)
+
+== Example Output
+
+[source,text]
+----
+📍 Function: nested_loops_function
+   Resources:
+     Energy:   7.10 J
+     Carbon:   0.0009 gCO2e
+     Time:     35.50 ms
+
+   Health Index:
+     Eco:      80.4/100
+     Overall:  75.1/100
+
+   Recommendations:
+     • Consider algorithm optimization to reduce nested iterations
+----
+
+== The Eclexia Connection
+
+* *Phase 1* (DONE): Analyzer built with Eclexia principles (explicit resource types)
+* *Phase 2* (Next): Policy engine runs Eclexia code from `policies/*.ecl`
+* *Phase 3+*: Migrate core to Eclexia as the language matures
+
+== Philosophy
+
+[quote]
+____
+"The best ecological code analyzer is one that's ecological itself."
+____
+
+OikosBot demonstrates that efficient, resource-aware code is not just theory —
+it works in practice.

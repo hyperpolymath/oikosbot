@@ -1,4 +1,4 @@
-;;; SPDX-License-Identifier: MPL-2.0-or-later
+;;; SPDX-License-Identifier: MPL-2.0
 ;;; SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 ;;;
 ;;; Oikos Bot Guix Channel Configuration
@@ -33,10 +33,4 @@
  (channel
   (name 'guix-hpc)
   (url "https://gitlab.inria.fr/guix-hpc/guix-hpc.git")
-  (branch "master"))
-
- ;; Oikos Bot custom channel
- (channel
-  (name 'oikos-bot)
-  (url "https://github.com/hyperpolymath/oikos-bot-guix")
-  (branch "main")))
+  (branch "master")))

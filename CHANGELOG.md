@@ -1,5 +1,5 @@
 <!--
-SPDX-License-Identifier: MPL-2.0
+SPDX-License-Identifier: CC-BY-SA-4.0
 Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 -->
 # Changelog
@@ -19,6 +19,7 @@ this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- feat(policies): add the OikosBot **finding taxonomy** — three orthogonal axes (`intent` / `maintenance` / `locus`) defined canonically in `NEUROSYM.a2ml [finding-taxonomy]`. The confidence-derived `intent` axis (≡ the gitbot-fleet Safety Triangle's 0.95 / 0.85 thresholds) is made executable in `policies/finding_taxonomy.ecl`; `locus=externalities` is the eco/econ sense realised by the sustainability policies. Adds `policies/README.adoc`.
 - feat(crates): extract the Rust analysis workspace from `gitbot-fleet/bots/sustainabot/` into this repo, renamed `sustainabot-*` → `oikosbot-*` (`oikosbot-cli`/`-analysis`/`-metrics`/`-sarif`/`-eclexia`, plus the optional `oikosbot-fleet` bridge). Adds `policies/`, `fuzz/`, `examples/`, and `QUICKSTART.md`. Builds and tests green (35 tests).
 - docs: `DISAMBIGUATION.adoc` — canonical breakdown of **oikos** (the DSL) vs **OikosBot** (this App) vs **sustainabot** (a reserved gitbot-fleet slot), with guardrails to prevent the misfiling recurring.
 - ci(rust): add a `rust` job (fmt-check + build + test, informational clippy) to `ci.yml` and a `cargo` dependabot ecosystem. New `just rust-build` / `rust-test` targets.
@@ -33,6 +34,7 @@ this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- fix(docs): purge stale post-extraction identity references — `SECURITY.md` carried two dead project names (`SustainaBot` ×3 and a `scarcity-bot` GitLab vuln-reporting URL, plus `SCARCITY_API_KEY`), a Ruby example path, and leaked `Memory #N` artifacts; and the `crates/oikosbot-fleet` bridge-identity note in `.claude/CLAUDE.md` + `META.a2ml` ADR-002 still said `BotId::Sustainabot` after the bridge moved to its own `BotId::Oikosbot` identity. (Deeper `SECURITY.md` security-substance — reporting channel, PGP placeholder — flagged for a separate review.)
 - fix(lexer): opt in to logos 0.16 `allow_greedy` for line-comment skip (#37) — `#[logos(skip("--[^\n]*", allow_greedy = true))]` replaces the unbounded greedy attribute that logos 0.16's new lint rejects.
 - fix(codeql): switch language matrix to 'actions' (no JS/TS in repo) (#23)
 - fix(codeql): switch language matrix to 'actions' (no JS/TS in repo) (#22)

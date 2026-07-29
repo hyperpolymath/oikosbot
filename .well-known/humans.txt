@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+#
+# humanstxt.org convention — the humans behind OikosBot.
+
+/* TEAM */
+  Lead Maintainer: Jonathan D.A. Jewell
+  GitHub: @hyperpolymath
+  Site: https://github.com/hyperpolymath
+
+/* THANKS */
+  The hyperpolymath estate, and the AffineScript, Eclexia, VeriSimDB, and
+  hpm-* RSR (Rhodium Standard Repository) projects OikosBot builds on.
+
+/* SITE */
+  Project: OikosBot — an ecological & economic code-analysis GitHub/GitLab App
+  Source: https://github.com/hyperpolymath/oikosbot
+  Licence: MPL-2.0 (code); CC-BY-SA-4.0 (prose, per estate policy)
+  Standards: Rhodium Standard Repository (RSR)
+  Components: Rust (crates/oikosbot-*), Haskell (analyzers/code-haskell),
+             AffineScript (bot-integration-affine)
+  Data layer: VeriSimDB (identity-consonance octad; runtime client deferred)
+  Last-updated: 2026-06-20

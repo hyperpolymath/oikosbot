@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = OikosBot Roadmap
 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
@@ -26,6 +26,23 @@ Status legend: `done` | `in-progress` | `blocked` | `planned`
 * [x] Bot configuration, prompt templates, and database schema assets
 * [x] Repository split from the Oikos DSL
 
+=== Done (2026-07-28)
+
+* [x] Pareto engine in the shipping path (`crates/oikosbot-pareto`): ε-tolerant
+  dominance, frontier, normalized weighted ParetoScore, base-vs-head PR
+  verdicts (improvement/regression/trade-off/neutral) with confidence gating,
+  `oikosbot compare`, SARIF `pareto_*` properties, EconScore composition per
+  ARCHITECTURE.adoc
+* [x] `.oikos.yml` config support in the CLI (`--config` + auto-discovery):
+  mode, thresholds, exclude globs, languages — makes the estate consumer
+  configs and the governance workflow's `--config` flag real
+* [x] Composite GitHub Action (`action.yml`, container-based) — OikosBot
+  consumable as `uses: hyperpolymath/oikosbot@<ref>`; Marketplace-shaped
+* [x] Marketplace positioning doc: `docs/COMPARISON-climate-warrior.adoc`
+* [x] publish-image root-caused: GHCR `oikos` package lacked Actions write
+  access for this repo (`permission_denied: write_package`); fixed by owner
+  grant, not by code — the Containerfile was verified sound via local podman
+
 === Remaining
 
 * [ ] Stabilize the analyzer request and response schema
@@ -33,6 +50,38 @@ Status legend: `done` | `in-progress` | `blocked` | `planned`
 * [ ] Replace mock health reports with analyzer-backed reports
 * [ ] Add a repeatable local development runtime
 * [ ] Decide how to package the bot service and policy engine
+* [ ] Port `policy-engine/datalog/eco_rules.dl` to an executable Scallop
+  (Rust) engine; retire the Python DeepProbLog assets (ruled 2026-07-28 —
+  no interim Python)
+
+== Data Layer — Single Store (VeriSimDB)
+
+*Status:* in-progress (design/config done; runtime deferred)
+
+The data layer is retargeted from the twin ArangoDB (graph/document) + Virtuoso
+(RDF/semantic) design to a single
+https://github.com/hyperpolymath/verisimdb[VeriSimDB] identity-consonance store.
+One identity is an octad of modal witnesses; the graph + document witnesses
+subsume ArangoDB and the semantic witness subsumes Virtuoso/RDF (see
+link:ARCHITECTURE.adoc[ARCHITECTURE.adoc] and
+link:.machine_readable/6a2/META.a2ml[META.a2ml] ADR-001).
+
+=== Done
+
+* [x] Retire ArangoDB + Virtuoso assets (recoverable in git)
+* [x] Keep the eco/econ ontology as the semantic-witness seed at `databases/ontology/eco.ttl`
+* [x] Single `databases.verisimdb` block in `config/oikos.yaml` (REST endpoint + octad map)
+* [x] Retarget the policy-engine knowledge-graph bindings (SPARQL/Virtuoso → VCL/VeriSimDB; comments only)
+* [x] Integration descriptor `.machine_readable/integrations/verisimdb.a2ml`
+* [x] ADR-001 recorded in `META.a2ml`
+* [x] Client design + AS stub scaffold (`docs/verisimdb-client.adoc`, `bot-integration-affine/src/VeriSimClient.affine`)
+
+=== Remaining (deferred / gated)
+
+* [ ] Implement the client — replace the stub externs (`VeriSimClient.affine`) with a real Zig-FFI adapter (mirror `hpm-*`) or a REST impl, per `connectors/shared/openapi/verisim-api-v1.yaml`
+* [ ] Verify endpoint coverage (octad CRUD + search + drift) at wire-up time
+* [ ] Persist analysis results + code-graph + build metrics into the octad witnesses
+* [ ] Gated on: VeriSimDB maturity (v0.1.0) and the AffineScript transport (affinescript #421/#425 integration)
 
 == v0.2 - Operational App
 

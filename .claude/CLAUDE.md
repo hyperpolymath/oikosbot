@@ -1,5 +1,5 @@
 <!--
-SPDX-License-Identifier: MPL-2.0
+SPDX-License-Identifier: CC-BY-SA-4.0
 Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 -->
 ## Machine-Readable Artefacts
@@ -21,7 +21,7 @@ The following files in `.machine_readable/6a2/` contain structured project metad
 
 > **Disambiguation (READ FIRST — see [`DISAMBIGUATION.adoc`](../DISAMBIGUATION.adoc)):** this repo is **OikosBot** and **only** OikosBot. Do not conflate it with two separate, similarly-named projects:
 > - **oikos** — the stock-flow-consistent economics *DSL* (crates `oikos-syntax`/`oikos-parser`/`oikos-desugar`/`oikos-check`). It lives in its **own** repo `hyperpolymath/oikos-economics-accounting-dsl`, **not here**. Do **not** add `oikos-*` DSL crates to this repo.
-> - **sustainabot** — a *reserved member slot* of `hyperpolymath/gitbot-fleet` (`bots/sustainabot/`). **Not here.** A misfiled copy of OikosBot once lived there; it was moved into this repo and renamed `sustainabot-*` → `oikosbot-*`. Do **not** reintroduce the `sustainabot` name here (the sole exception is the legacy `crates/oikosbot-fleet` bridge, which still targets the fleet's `BotId::Sustainabot`).
+> - **sustainabot** — a *reserved member slot* of `hyperpolymath/gitbot-fleet` (`bots/sustainabot/`). **Not here.** A misfiled copy of OikosBot once lived there; it was moved into this repo and renamed `sustainabot-*` → `oikosbot-*`. Do **not** reintroduce the `sustainabot` name here. (The `crates/oikosbot-fleet` bridge now publishes under its own `BotId::Oikosbot` identity — distinct from the fleet's reserved `BotId::Sustainabot` slot.)
 >
 > **Policy refresh 2026-06-19**: This repo has two surfaces, both OikosBot. (1) The **Rust analysis workspace** at the repo root — crates `oikosbot-*` (`oikosbot-cli`/`-analysis`/`-metrics`/`-sarif`/`-eclexia`, plus the optional, workspace-excluded `oikosbot-fleet` bridge). The default `cargo` workspace builds **standalone** with no dependency on gitbot-fleet. (2) **OikosBot's webhook bot** at `bot-integration-affine/` is **AffineScript** as of the 2026-05-28 legacy-shutoff (oikos#41) — the previous ReScript implementation at `bot-integration/` was removed in the same PR. Write no new ReScript or TypeScript here. MPL-1.0 / MPL-1.0-or-later are banned; rewrite to MPL-2.0 wherever encountered (DR-010 supersedes DR-002).
 
@@ -94,4 +94,43 @@ Both are FOSS with independent governance (no Big Tech).
 - No hardcoded secrets
 - SHA-pinned dependencies
 - SPDX license headers on all files
+
+## Sustainable-Development Guidance
+
+Folded from the former `prompts/claude-code-instructions.md`. OikosBot's whole
+purpose is an ecological & economic review lens; apply the same lens when writing
+or refactoring code here — these are also the principles OikosBot evaluates in the
+repositories it monitors.
+
+### 1. Carbon Awareness (weight 40%)
+
+- Prefer lower algorithmic complexity (O(n) over O(n²), O(log n) over O(n)).
+- Minimise allocations and CPU cycles; batch I/O; cache strategically.
+- Sleep efficiently — event-driven, not busy-wait/polling.
+- Ask: "Will this run millions of times in production?"
+
+### 2. Economic Efficiency (weight 30%)
+
+- Pareto optimality: don't improve one axis at another's expense without saying so.
+- Allocative efficiency: put effort where it creates the most value.
+- Track and minimise technical debt; weigh opportunity cost.
+- Ask: "Does this abstraction justify its complexity?"
+
+### 3. Quality (weight 30%)
+
+- Keep cyclomatic complexity reasonable (< ~10 per function).
+- Minimise coupling; cover critical paths with tests.
+- Document non-obvious trade-offs.
+
+### Trade-off documentation
+
+When making a significant trade-off, record: the competing objectives, the
+decision taken, why it is Pareto-optimal for this context, and the rough metric
+impact (carbon / performance / complexity).
+
+### Anti-patterns to avoid
+
+Busy-waiting, N+1 queries, unbounded caches (use LRU + size limits), polling
+where webhooks/SSE/event-driven would do, and premature optimisation (profile
+first, then optimise hotspots).
 

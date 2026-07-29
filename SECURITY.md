@@ -1,9 +1,9 @@
 <!--
-SPDX-License-Identifier: MPL-2.0
+SPDX-License-Identifier: CC-BY-SA-4.0
 Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 -->
 # Security Policy
-*SustainaBot* adheres to **Rhodium Standard Repo (RSR)** principles, emphasizing **reversibility, attestation, and minimal attack surfaces**.
+*OikosBot* adheres to **Rhodium Standard Repo (RSR)** principles, emphasizing **reversibility, attestation, and minimal attack surfaces**.
 
 ---
 
@@ -12,21 +12,13 @@ Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 |---------|--------------------|----------------------------------------|
 | 0.x.x   | :white_check_mark: | Only the **latest minor version** receives security updates. |
 
-> **Note**: SustainaBot is in **early development**. Security updates are prioritized for the latest release.
+> **Note**: OikosBot is in **early development**. Security updates are prioritized for the latest release.
 
 ---
 
 ## Reporting a Vulnerability
 **Do not report vulnerabilities publicly** (e.g., GitHub/GitLab Issues).
-Instead, use one of these **private channels**:
-
-1. **GitLab Security Advisories**:
-   [Report a vulnerability](https://gitlab.com/hyperpolymath/scarcity-bot/-/security/advisories/new)
-   *(Preferred for traceability and RSR compliance.)*
-
-2. **Email**:
-   `security@hyperpolymath.org` (PGP: `0xYOUR_ED448_KEY`)
-   *(For urgent or sensitive disclosures.)*
+Instead, report privately by email to **j.d.a.jewell@open.ac.uk**.
 
 ---
 
@@ -35,7 +27,7 @@ Provide **detailed, actionable information**:
 - **Type of issue**:
   - Example: Buffer overflow, XSS, supply chain tampering, or **waste metric spoofing**.
 - **Affected components**:
-  - Source file paths (e.g., `lib/audit/exec.rb`).
+  - Source file paths (e.g., `crates/oikosbot-analysis/src/security.rs`).
   - **Commit hash/tag/branch** or direct URL.
 - **Reproduction steps**:
   - Command-line invocations, config snippets, or **Justfile recipes** used.
@@ -59,7 +51,7 @@ Provide **detailed, actionable information**:
 ## Security Considerations
 
 ### Data Handling
-SustainaBot processes:
+OikosBot processes:
 - **Source code** (for waste analysis).
 - **Dependency graphs** (economic/ecological impact).
 - **CI/CD configurations** (e.g., GitLab pipelines).
@@ -68,15 +60,10 @@ SustainaBot processes:
 **Guiding Principles**:
 - **Minimal Retention**: Data deleted post-audit unless **explicitly logged for reversibility**.
 - **Hashing**: All logs use **SHAKE256/Ed448** (see `logs/README.md`).
-- **BOINC Distributed Audits**:
-  - Nodes **never store raw repo data**; only **hashed waste metrics** are shared.
-- **Cloud Backups**:
-  - Metadata backed up to **Dropbox/OneDrive/Syncthing/iDrive** (per Memory #3).
-  - Full backups stored on **RAID 10 + Acronis** (per Memory #4).
 
 ### Integration Security
 - **Environment Variables**:
   ```bash
   # Example: .env
-  SCARCITY_API_KEY="x"  # Never commit this!
+  OIKOSBOT_API_KEY="x"  # Never commit this!
   GITHUB_TOKEN="y"      # Use GitLab CI variables or encrypted secrets.

@@ -8,14 +8,14 @@
 (specifications->manifest
   '(;; Core development tools
     "git"
-    "just"
-    "nickel"
+    "just"      ; not in guix 1.4.0 — verify in current guix
+    "nickel"    ; not in guix 1.4.0 — verify in current guix
     "curl"
     "bash"
     "coreutils"
 
     ;; Documentation
-    "asciidoctor"
+    "ruby-asciidoctor"   ; guix packages the asciidoctor gem as `ruby-asciidoctor`
     "pandoc"
 
     ;; Common build dependencies

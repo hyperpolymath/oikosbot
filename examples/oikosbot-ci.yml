@@ -3,8 +3,11 @@
 #
 # This workflow runs oikosbot on your codebase and uploads the SARIF
 # results to GitHub's Security tab, giving you inline PR annotations.
+# If the repo carries an .oikos.yml, oikosbot picks it up automatically
+# (mode, thresholds, excludes, languages).
 #
 # Usage: Copy this file to .github/workflows/oikosbot.yml in your repo.
+# Pin the container tag to a release once oikosbot tags releases.
 
 name: Sustainability Analysis
 
@@ -22,33 +25,40 @@ jobs:
   oikosbot:
     name: Eco & Economic Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ghcr.io/hyperpolymath/oikos:latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - name: Install oikosbot
-        run: cargo install --path . --locked
-        # Or, if published to crates.io:
-        # run: cargo install oikosbot
-
       - name: Run sustainability analysis
         run: |
-          oikosbot report ./src \
+          oikosbot report . \
             --format sarif \
-            --output results.sarif \
-            --eco-threshold 50
+            --output results.sarif
 
       - name: Upload SARIF to GitHub Security
         if: always()
-        uses: github/codeql-action/upload-sarif@6624720a57d4c312633c7b953db2f2da5bcb4c3a # v3
+        uses: github/codeql-action/upload-sarif@4187e74d05793876e9989daffde9c3e66b4acd07 # v3
         with:
           sarif_file: results.sarif
           category: oikosbot
+
+      # Optional: Pareto verdict on pull requests — compares the PR head
+      # against the base branch and reports improvement / regression /
+      # trade-off. Advisory: add --check to enforce documented trade-offs.
+      - name: Pareto verdict (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          git worktree add /tmp/base "origin/${{ github.base_ref }}"
+          oikosbot compare /tmp/base .
 
       # Optional: Run with policy evaluation
       - name: Run policy evaluation
         if: hashFiles('policies/') != ''
         run: |
-          oikosbot check ./src \
+          oikosbot check . \
             --format text \
-            --policy-dir policies/ \
-            --eco-threshold 50
+            --policy-dir policies/

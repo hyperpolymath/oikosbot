@@ -1,4 +1,4 @@
-;;; SPDX-License-Identifier: MPL-2.0-or-later
+;;; SPDX-License-Identifier: MPL-2.0
 ;;; SPDX-FileCopyrightText: 2024-2025 hyperpolymath
 ;;;
 ;;; Oikos Bot Guix Manifest
@@ -11,51 +11,38 @@
    ;; Core Languages
    ;; ========================================
 
-   ;; Haskell (for code analyzer)
+   ;; Haskell (analyzers/code-haskell)
    "ghc"
    "cabal-install"
    "hlint"
-   "haskell-language-server"
+   "haskell-language-server"   ; not in guix 1.4.0 — verify in current guix
 
-   ;; OCaml (for documentation analyzer)
-   "ocaml"
-   "dune"
-   "opam"
-   "ocaml-merlin"
-   "ocaml-ocp-indent"
-   "ocamlformat"
-
-   ;; ReScript (compiles from source, needs node for build)
-   "node"  ; Only for rescript compiler, not runtime
-
-   ;; Deno runtime
-   "deno"
-
-   ;; Python (for policy engine)
-   "python"
-   "python-pip"
-   "python-virtualenv"
-
-   ;; Rust (for orchestrator)
+   ;; Rust (crates/oikosbot-* analysis workspace + CLI)
    "rust"
    "rust-analyzer"
 
+   ;; Deno — the AffineScript bot's default backend + runtime. NOTE: Deno is
+   ;; NOT packaged in Guix, so it cannot be a manifest spec; install it
+   ;; separately (https://deno.land) or via a custom channel. The AffineScript
+   ;; compiler is likewise external (built in hyperpolymath/affinescript; point
+   ;; AS_BIN at it). ReScript was retired (oikos#41) and Python is not used —
+   ;; the policy engine is interpreted Datalog/DeepProbLog (souffle + swi-prolog).
+   ;; "deno"   ; unpackaged in Guix — left commented so `guix shell -m` works
+
    ;; ========================================
-   ;; Databases
+   ;; Datastore
    ;; ========================================
 
-   ;; ArangoDB client tools
-   "arangodb"
-
-   ;; Virtuoso (SPARQL)
-   "virtuoso-ose"
+   ;; Single store is VeriSimDB (external; not yet packaged in Guix). The legacy
+   ;; ArangoDB + Virtuoso dev tools were removed with the single-store migration;
+   ;; runtime client wiring is deferred (see ROADMAP.adoc).
 
    ;; ========================================
    ;; Logic Programming
    ;; ========================================
 
    ;; Datalog (Souffle)
-   "souffle"
+   "souffle"   ; not in guix 1.4.0 — verify in current guix
 
    ;; Prolog (for DeepProbLog base)
    "swi-prolog"
@@ -76,7 +63,7 @@
    ;; ========================================
 
    "podman"
-   "buildah"
+   "buildah"   ; not in guix 1.4.0 — verify in current guix
    "skopeo"
    "cni-plugins"
 
