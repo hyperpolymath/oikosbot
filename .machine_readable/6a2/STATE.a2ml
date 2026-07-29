@@ -5,14 +5,14 @@
 [metadata]
 project = "oikosbot"
 version = "0.1.0-dev"
-last-updated = "2026-06-21"
+last-updated = "2026-07-28"
 status = "active"
-session = "2026-06-21 close-out of the post-extraction work: fleet bridge → BotId::Oikosbot + ReScript-era containers removed (#5); finding taxonomy in NEUROSYM.a2ml [finding-taxonomy] + policies/finding_taxonomy.ecl (#9); robot-repo-automaton build fix + Rust build/test/clippy CI gate (gitbot-fleet); stale-identity sweep across SECURITY/CLAUDE/META (#11); standards reusable-workflow pin refresh (#13); LICENSE dual-SPDX MPL-2.0 + CC-BY-SA-4.0, SECURITY.md finalized (reporting → j.d.a.jewell@open.ac.uk), redundant trufflehog job dropped (#14); added docs/README.adoc documentation map. Open follow-ups: #12 (taxonomy vocab reconciliation), #16 (developer+maintainer docs + README split), #17 (end-user docs), #18 (taxonomy tags through Finding types)."
+session = "2026-07-28 generation-1 go-live: Pareto engine made executable (#42 — crates/oikosbot-pareto: ε-tolerant dominance, normalized weighted frontier, base-vs-head verdicts with confidence gating, oikosbot compare, SARIF pareto_* properties, EconScore composition per ARCHITECTURE); .oikos.yml --config + auto-discovery (estate configs + governance flag now real); push-email-notify removed (dual-use ruling); publish-image root-caused to GHCR package access (permission_denied: write_package — owner grant, Containerfile verified sound via podman); composite action.yml + docs/COMPARISON-climate-warrior.adoc. Rulings: Action-mode first then App; NO interim listener (upstream AffineScript Http::Server instead); advisor + machine-checked trade-offs; Scallop replaces DeepProbLog. Prior session: 2026-06-21 close-out of the post-extraction work: fleet bridge → BotId::Oikosbot + ReScript-era containers removed (#5); finding taxonomy in NEUROSYM.a2ml [finding-taxonomy] + policies/finding_taxonomy.ecl (#9); robot-repo-automaton build fix + Rust build/test/clippy CI gate (gitbot-fleet); stale-identity sweep across SECURITY/CLAUDE/META (#11); standards reusable-workflow pin refresh (#13); LICENSE dual-SPDX MPL-2.0 + CC-BY-SA-4.0, SECURITY.md finalized (reporting → j.d.a.jewell@open.ac.uk), redundant trufflehog job dropped (#14); added docs/README.adoc documentation map. Open follow-ups: #12 (taxonomy vocab reconciliation), #16 (developer+maintainer docs + README split), #17 (end-user docs), #18 (taxonomy tags through Finding types)."
 
 [project-context]
 name = "OikosBot"
 purpose = "OikosBot — an ecological & economic code-analysis GitHub/GitLab App. NB: the similarly-named 'oikos' DSL (separate repo hyperpolymath/oikos-economics-accounting-dsl) and the 'sustainabot' gitbot-fleet slot are SEPARATE projects — see DISAMBIGUATION.adoc."
-completion-percentage = 40
+completion-percentage = 50
 
 [position]
 phase = "implementation"   # design | implementation | testing | maintenance | archived
@@ -31,16 +31,33 @@ milestones = [
 
 [blockers-and-issues]
 issues = [
-  { id = "github-actions-budget", severity = "operational", summary = "Required-checks gates BLOCKED on GH Actions budget exhaustion — PRs admin-merged per estate pattern" }
+  { id = "github-actions-budget", severity = "operational", summary = "Actions spending limit exhausted intermittently across the estate. Signature: job conclusion 'failure' with ZERO steps and the annotation 'job was not started because recent account payments have failed'. Hit 2 of 15 swept consumer repos (chronicles-of-slavia, canonical-ums — the latter private). NOT a workflow defect; do not debug the workflow when steps==0." },
+  { id = "enforcement-inert", severity = "design", summary = "`--check` cannot block a merge: only Measured/Calibrated inputs may fail a run and the analyzer emits only Estimated (calibration.rs exists but estimate_resources() is still naive complexity*0.1 J). Refusal is LOUD (::warning::) as of #47, never silent. Real fix tracked in issue #48." },
+  { id = "idaptik-ums-repo-wide-startup-failure", severity = "external", summary = "metadatastician/idaptik-ums fails ALL workflows at startup on main (OikosBot, Licence hygiene, CodeQL), with two workflows displayed as PATHS not names — the estate tell for never-parsed. Repo-level, pre-existing, not caused by the OikosBot sweep (the same file succeeded on a branch there)." }
 ]
 
 [critical-next-actions]
 actions = [
-  { id = "bot-affine-webhook-handler", priority = "P1", summary = "Wire the AS-side webhook receiver in bot-integration-affine/ using Http server + Json stdlib externs" },
-  { id = "hpm-json-object-keys", priority = "P2", summary = "Add hpm_json_object_keys export to hpm-json-rsr Zig FFI to close the JObject materialisation gap in stdlib/json.affine to_json" },
-  { id = "verisimdb-client", priority = "P3", summary = "Build the deferred VeriSimDB client (Zig-FFI connector mirroring the hpm-* pattern, or a REST client from the AS transport) per connectors/shared/openapi/verisim-api-v1.yaml; gated on VeriSimDB maturity + affinescript #421/#425 integration" }
+  { id = "calibration-wiring", priority = "P1", summary = "Issue #48: map detected patterns to calibration OperationKinds so confidence is EARNED per finding, unlocking real enforcement. Changes every resource figure and every downstream score — needs before/after numbers." },
+  { id = "rsr-julia-template-phantom-sha", priority = "P1", summary = "hyperpolymath/rsr-julia-library-template-repo .github/workflows/codeql.yml pins phantom SHA 29b1f65c1f735799893313399435a59f54045865 (no such commit). It is a TEMPLATE, so every minted repo inherits a dead CodeQL gate. Valid replacement: 4187e74d05793876e9989daffde9c3e66b4acd07." },
+  { id = "bot-affine-webhook-handler", priority = "P2", summary = "Wire the AS-side webhook receiver in bot-integration-affine/ using Http server + Json stdlib externs (ruled: do the upstream AffineScript work, no interim listener)" },
+  { id = "hpm-json-object-keys", priority = "P3", summary = "Add hpm_json_object_keys export to hpm-json-rsr Zig FFI to close the JObject materialisation gap in stdlib/json.affine to_json" },
+  { id = "scallop-policy-engine", priority = "P3", summary = "Port policy-engine/datalog/eco_rules.dl to Scallop (Rust neurosymbolic Datalog) and retire the Python DeepProbLog assets. Ruled 2026-07-28; no Python exemption." },
+  { id = "verisimdb-client", priority = "P4", summary = "Build the deferred VeriSimDB client (Zig-FFI connector mirroring the hpm-* pattern, or a REST client from the AS transport); gated on VeriSimDB maturity + affinescript #421/#425 integration" }
+]
+
+[verified-facts]
+# Claims here were MEASURED on 2026-07-28, not inferred. Re-measure before trusting.
+facts = [
+  { id = "image-live", statement = "ghcr.io/hyperpolymath/oikos publishes and runs; `podman run --rm <digest> --version` => 'oikosbot 0.1.0'." },
+  { id = "sarif-ingestible", statement = "GitHub code scanning accepted 101 results from OikosBot (enaction-engine PR 21, analyses?ref=refs/pull/21/merge). Before #45 NO OikosBot SARIF was ingestible: `fixes[]` lacked the spec-required `artifactChanges`." },
+  { id = "json-valid-is-not-sarif-valid", statement = "serde_json parsing success proves parseable JSON only, NOT SARIF schema validity. That weaker check is what let the fixes[] defect ship." },
+  { id = "pages-first-ever-deploy", statement = "https://hyperpolymath.github.io/oikosbot/ returns 200. It had NEVER deployed: 30/30 casket-pages runs showed 'cancelled', which were timeout expiries (cold GHC build > timeout-minutes 15) — GitHub reports timeout as 'cancelled', not 'failed'." },
+  { id = "linter-was-vacuous", statement = "workflow-linter.yml 'Check pinned actions' could not fail on any input (never incremented, no exit) and globbed only .github/workflows. Fixed #46: increments+exits, scans examples/, and probes SHA EXISTENCE via the API. Falsifier-verified: exit 2 on a tag ref plus a real phantom SHA." },
+  { id = "phantom-sha-scale", statement = "Local grep suggested 149 files / 120 repos; measured against ORIGIN it is 31 files, of which only 7 are root-level (executable). 24 are nested inside monorepos where GitHub never executes them." }
 ]
 
 [maintenance-status]
-last-run-utc = "2026-05-28T11:00:00Z"
+last-run-utc = "2026-07-28T18:30:00Z"
 last-result = "pass"  # unknown | pass | warn | fail
+notes = "main green across CI, CodeQL, Governance, Hypatia, Language Policy, Scorecard, Secret Scanner, Workflow Security Linter, Publish Image and GitHub Pages. Zero open PRs."

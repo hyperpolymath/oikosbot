@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = OikosBot Documentation Map
 :toc: macro
@@ -45,6 +45,14 @@ The canonical project state and decisions live in `.machine_readable/6a2/`:
 * `NEUROSYM.a2ml` — neurosymbolic config + the **canonical finding taxonomy**.
 * `PLAYBOOK.a2ml` — operational runbook.
 * `AGENTIC.a2ml` / `ECOSYSTEM.a2ml` — AI-agent gating and ecosystem position.
+
+== Current state (read first)
+
+* link:STATUS.adoc[**STATUS**] — what works, what does *not*, and how each claim
+  was verified. Includes the standing caveat that resource figures are heuristic
+  estimates and `--check` cannot yet block a merge.
+* link:COMPARISON-climate-warrior.adoc[**OikosBot vs Climate Warrior**] —
+  positioning against the nearest GitHub Marketplace neighbour.
 
 == Concepts (to engage fully, beyond setup)
 

@@ -139,6 +139,7 @@ impl Analyzer {
             suggestion,
             end_location: Some((end.row + 1, end.column + 1)),
             confidence: oikosbot_metrics::Confidence::Estimated,
+            pareto: None,
         })
     }
 
@@ -217,6 +218,11 @@ impl Analyzer {
         EcoScore::new(energy_score)
     }
 
+    /// Provisional economic score from complexity alone — the technical-debt
+    /// proxy term. The full ARCHITECTURE.adoc composition
+    /// (EconScore = 0.5·Pareto + 0.3·Allocation + 0.2·Debt) needs the whole
+    /// result set and is applied by `oikosbot_pareto::apply_to_results`,
+    /// which folds this value in as DebtScore.
     fn calculate_econ_score(&self, complexity: usize) -> EconScore {
         // Lower complexity = higher efficiency
         let score = (100.0 - (complexity as f64 * 0.5)).max(0.0);
