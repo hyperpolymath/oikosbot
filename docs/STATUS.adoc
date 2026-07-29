@@ -1,0 +1,142 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot: current state
+:toc: macro
+:icons: font
+
+_Point-in-time status, 2026-07-28 (generation 1). Machine-readable counterpart:
+link:../.machine_readable/6a2/STATE.a2ml[`STATE.a2ml`]. Everything asserted here
+was measured, not inferred — see <<how-we-know>>._
+
+toc::[]
+
+[#what-works]
+== What works today
+
+OikosBot is **online in CI/Action mode**. A repository can consume it in three ways:
+
+[cols="1,3",options="header"]
+|===
+| Surface | Status
+
+| GitHub Action
+| `uses: hyperpolymath/oikosbot@v0.1.0` — runs the published container, no Rust
+  toolchain needed. Modes: `report` (SARIF), `check` (threshold), `compare`
+  (Pareto verdict).
+
+| Container
+| `ghcr.io/hyperpolymath/oikos` — published, digest-pinned by the action.
+
+| CLI
+| `cargo build --release` → `oikosbot analyze\|check\|report\|compare`.
+|===
+
+Findings reach GitHub's Security tab as SARIF 2.1.0, carrying `pareto_status`,
+`pareto_score`, `pareto_dominated_by`, `econ_score` and a `confidence` label on
+every result.
+
+=== The Pareto engine
+
+The economic core (`crates/oikosbot-pareto`) is real and executable:
+
+* ε-tolerant dominance, frontier extraction, dominated-by ranking — all total
+  functions (no panics on empty or degenerate input).
+* Objectives are **min-max normalized before any distance is measured** — raw
+  gCO2e, joules and bytes are not commensurable — with weights folded into the
+  metric. ParetoScore = `100 × (1 − weighted distance to frontier)`.
+* Pull-request verdicts: **pareto-improvement**, **pareto-regression**,
+  **trade-off**, **neutral**, with per-objective deltas.
+* Trade-off documentation (a `Pareto-Trade-off:` trailer or heading) is
+  machine-checked, per the doctrine "don't improve one axis at another's
+  expense without saying so".
+* `EconScore = 0.5·Pareto + 0.3·allocation (shadow prices) + 0.2·debt`, as
+  specified in link:../ARCHITECTURE.adoc[ARCHITECTURE.adoc].
+
+[#what-does-not]
+== What does *not* work yet — read this before trusting a number
+
+[IMPORTANT]
+====
+**Every resource figure is a heuristic estimate, and enforcement is inert.**
+
+`Analyzer::estimate_resources()` is still `complexity × 0.1 J` — the naive form
+that `calibration.rs` was written to replace but is not yet wired to. So every
+result carries `Confidence::Estimated`, and since only `Measured` or
+`Calibrated` inputs may fail a run, **`--check` always exits 0**.
+
+It says so loudly — a `::warning::` annotation naming the verdict and the
+confidence that blocked enforcement — rather than passing silently. A gate that
+quietly does nothing is indistinguishable from one that passed, which is exactly
+the failure mode OikosBot exists to find.
+
+Tracked in issue #48. Until it lands, treat OikosBot as an advisor, not a
+regulator.
+====
+
+Also incomplete:
+
+* **Languages**: Rust, JavaScript, Python only. A `.oikos.yml` naming
+  unsupported languages is warned about loudly, never silently skipped.
+* **GitHub App** (webhook, comments without CI): not live. Ruled 2026-07-28 to
+  wait on upstream AffineScript stdlib work rather than build an interim
+  listener.
+* **Policy engine**: `policy-engine/datalog/eco_rules.dl` has never executed. It
+  is a specification, kept as the reference the Rust dominance code conforms to.
+  Ruled port target: Scallop (Rust), not DeepProbLog (Python).
+* **VeriSimDB / praxis loop**: design and config only.
+
+[#how-we-know]
+== How we know (verification performed)
+
+* The published container was pulled and run end-to-end, producing SARIF that
+  **GitHub accepted: 101 results** ingested via
+  `metadatastician/enaction-engine` PR #21.
+* Workspace tests pass, including property tests for dominance
+  (irreflexivity, antisymmetry), the frontier invariant, normalization
+  orientation, and conformance with the Datalog dominance semantics.
+* The pinned image digest was verified to resolve, run, and contain the SARIF
+  fix before being committed.
+
+=== Two measurement traps worth remembering
+
+. **Parseable JSON is not schema-valid SARIF.** `serde_json` accepted output
+  that GitHub rejected, because our `fixes[]` objects lacked the required
+  `artifactChanges`. No OikosBot SARIF was ingestible before #45. A regression
+  test now guards it.
+. **Timeout expiry is reported as "cancelled", not "failed".** The docs site had
+  never deployed — 30 consecutive runs showed `cancelled`, which were the cold
+  GHC build exceeding a 15-minute limit. Raised to 60; the site is now live.
+
+[#consumers]
+== Consumers
+
+Seventeen repositories carry a `.oikos.yml` and an OikosBot workflow. All of
+them previously pinned an image tag that had never existed, and masked the
+resulting failure with `|| echo` — so the gate was green while never once
+executing. All are now on the composite action, having been proven on one repo
+first before the pattern was swept.
+
+Consumer workflow shape (see link:../examples/oikosbot-ci.yml[`examples/oikosbot-ci.yml`]):
+
+[source,yaml]
+----
+- uses: hyperpolymath/oikosbot@v0.1.0
+  with:
+    mode: report
+    path: .
+    output: results.sarif
+- uses: github/codeql-action/upload-sarif@<verified-sha>
+  with:
+    sarif_file: results.sarif
+    category: oikosbot
+----
+
+A `container:` job cannot be used: the image sets a non-root `USER`, which
+GitHub rejects.
+
+== Positioning
+
+See link:COMPARISON-climate-warrior.adoc[OikosBot vs Climate Warrior] for how
+this differs from the nearest GitHub Marketplace neighbour. In short: that
+product is storage with carbon telemetry; OikosBot is a code analyzer with an
+economics engine. The overlap is the SCI vocabulary and nothing else.
