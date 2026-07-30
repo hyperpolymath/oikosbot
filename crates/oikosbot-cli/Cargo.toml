@@ -20,6 +20,7 @@ security = ["oikosbot-analysis/panic-attack"]
 [dependencies]
 oikosbot-analysis = { path = "../oikosbot-analysis" }
 oikosbot-metrics = { path = "../oikosbot-metrics" }
+oikosbot-pareto = { path = "../oikosbot-pareto" }
 oikosbot-sarif = { path = "../oikosbot-sarif" }
 oikosbot-eclexia = { path = "../oikosbot-eclexia" }
 # NB: `oikosbot-fleet` (the gitbot-fleet bridge) is deliberately NOT a dependency
@@ -27,7 +28,13 @@ oikosbot-eclexia = { path = "../oikosbot-eclexia" }
 # The `fleet` subcommand prints how to run the bridge; see crates/oikosbot-fleet.
 clap.workspace = true
 anyhow.workspace = true
+serde.workspace = true
 serde_json.workspace = true
+serde_yaml_ng = "0.10"
+globset = "0.4"
 tracing.workspace = true
 tracing-subscriber.workspace = true
 walkdir = "2"
+
+[dev-dependencies]
+tempfile = "3"
