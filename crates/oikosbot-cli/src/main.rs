@@ -7,6 +7,8 @@
 //! Built with Eclexia principles - proving resource-aware design works.
 
 #![forbid(unsafe_code)]
+mod config;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use oikosbot_analysis::analyze_file;
@@ -51,9 +53,14 @@ enum Commands {
         /// Directory to check
         path: PathBuf,
 
-        /// Minimum eco score threshold (0-100)
-        #[arg(long, default_value = "50")]
-        eco_threshold: f64,
+        /// Minimum eco score threshold (0-100); defaults to the config's
+        /// thresholds.eco_minimum, else 50
+        #[arg(long)]
+        eco_threshold: Option<f64>,
+
+        /// Path to an .oikos.yml config; defaults to <path>/.oikos.yml if present
+        #[arg(long)]
+        config: Option<PathBuf>,
 
         /// Output format (text, json, sarif)
         #[arg(short, long, default_value = "text")]
@@ -85,9 +92,14 @@ enum Commands {
         #[arg(short, long)]
         output: Option<PathBuf>,
 
-        /// Minimum eco score threshold (0-100)
-        #[arg(long, default_value = "50")]
-        eco_threshold: f64,
+        /// Minimum eco score threshold (0-100); defaults to the config's
+        /// thresholds.eco_minimum, else 50
+        #[arg(long)]
+        eco_threshold: Option<f64>,
+
+        /// Path to an .oikos.yml config; defaults to <path>/.oikos.yml if present
+        #[arg(long)]
+        config: Option<PathBuf>,
 
         /// Include security-sustainability correlation (requires panic-attack feature)
         #[arg(long)]
@@ -96,6 +108,41 @@ enum Commands {
         /// Directory containing Eclexia policy files (.ecl)
         #[arg(long)]
         policy_dir: Option<PathBuf>,
+    },
+
+    /// Compare base vs head analyses and issue a Pareto verdict
+    ///
+    /// Verdicts: pareto-improvement (better on >=1 objective, worse on none),
+    /// pareto-regression (worse on >=1, better on none), trade-off (mixed —
+    /// must be documented), neutral (no objective moved beyond tolerance).
+    Compare {
+        /// Base directory or file (e.g. a checkout of the target branch)
+        base: PathBuf,
+
+        /// Head directory or file (the proposed change)
+        head: PathBuf,
+
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+
+        /// Write output to file instead of stdout
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+
+        /// File containing the PR description; checked for a documented
+        /// trade-off ("Pareto-Trade-off:" trailer or heading)
+        #[arg(long)]
+        pr_body: Option<PathBuf>,
+
+        /// Path to an .oikos.yml config; defaults to <head>/.oikos.yml if present
+        #[arg(long)]
+        config: Option<PathBuf>,
+
+        /// Exit non-zero on an undocumented, actionable regression or
+        /// trade-off (regulator behaviour; default is advisory)
+        #[arg(long)]
+        check: bool,
     },
 
     /// Run as a gitbot-fleet member
@@ -126,13 +173,15 @@ fn main() -> Result<()> {
             output,
         } => {
             info!("Analyzing file: {}", file.display());
-            let results = analyze_file(&file)?;
+            let mut results = analyze_file(&file)?;
+            oikosbot_pareto::apply_to_results(&mut results, oikosbot_pareto::DEFAULT_EPSILON);
             emit_output(&results, &format, output.as_deref())?;
         }
 
         Commands::Check {
             path,
             eco_threshold,
+            config,
             format,
             output,
             security,
@@ -143,12 +192,31 @@ fn main() -> Result<()> {
             format,
             output,
             eco_threshold,
+            config,
             security,
             policy_dir,
         } => {
             info!("Checking directory: {}", path.display());
 
-            let mut all_results = collect_directory_results(&path)?;
+            let cfg = config::resolve(config.as_deref(), &path)?;
+            if let Some(ref c) = cfg {
+                info!(
+                    "config: {} (mode {:?}, blocking: {})",
+                    c.source.display(),
+                    c.mode,
+                    c.enforcement_blocking
+                );
+            }
+            let eco_threshold = eco_threshold
+                .or(cfg.as_ref().and_then(|c| c.eco_threshold))
+                .unwrap_or(50.0);
+
+            let mut all_results = collect_directory_results(&path, cfg.as_ref())?;
+
+            // Intra-repo Pareto pass over the organic code units (before
+            // synthetic policy/security findings join the set): frontier
+            // membership, ParetoScore, and the full EconScore composition.
+            oikosbot_pareto::apply_to_results(&mut all_results, oikosbot_pareto::DEFAULT_EPSILON);
 
             // Security-sustainability correlation
             if security {
@@ -195,13 +263,128 @@ fn main() -> Result<()> {
                         println!("\nOutput written to: {}", out_path.display());
                     }
 
+                    // Without a config, keep the historical blocking behaviour.
+                    // With one, honor its enforcement: advisor/warning configs
+                    // report without failing the run; blocking/regulator fail.
+                    let blocking = cfg.as_ref().is_none_or(|c| c.enforcement_blocking);
                     if files_below_threshold > 0 {
-                        std::process::exit(1);
+                        if blocking {
+                            std::process::exit(1);
+                        } else {
+                            println!(
+                                "\nAdvisory mode ({}): not failing the run.",
+                                cfg.as_ref()
+                                    .map(|c| c.source.display().to_string())
+                                    .unwrap_or_default()
+                            );
+                        }
                     }
                 }
                 _ => {
                     eprintln!("Unsupported format: {}", format);
                 }
+            }
+        }
+
+        Commands::Compare {
+            base,
+            head,
+            format,
+            output,
+            pr_body,
+            config,
+            check,
+        } => {
+            let cfg = config::resolve(config.as_deref(), &head)?;
+            let collect = |p: &std::path::Path| -> Result<Vec<oikosbot_metrics::AnalysisResult>> {
+                if p.is_file() {
+                    analyze_file(p)
+                } else {
+                    collect_directory_results(p, cfg.as_ref())
+                }
+            };
+            let base_results = collect(&base)?;
+            let head_results = collect(&head)?;
+
+            let objectives = oikosbot_pareto::result_objectives();
+            let (Some(base_point), Some(head_point)) = (
+                oikosbot_pareto::aggregate_point(&base_results),
+                oikosbot_pareto::aggregate_point(&head_results),
+            ) else {
+                anyhow::bail!(
+                    "no analyzable files under {} and/or {}",
+                    base.display(),
+                    head.display()
+                );
+            };
+
+            let confidence = oikosbot_pareto::weaker_confidence(
+                oikosbot_pareto::aggregate_confidence(&base_results),
+                oikosbot_pareto::aggregate_confidence(&head_results),
+            );
+            let confidences = vec![confidence; objectives.len()];
+            let assessment = oikosbot_pareto::assess(
+                &objectives,
+                &base_point,
+                &head_point,
+                &confidences,
+                oikosbot_pareto::DEFAULT_EPSILON,
+            );
+
+            let documented = match pr_body {
+                Some(ref p) => Some(oikosbot_pareto::tradeoff_documented(&fs::read_to_string(
+                    p,
+                )?)),
+                None => None,
+            };
+
+            match format.as_str() {
+                "json" => {
+                    let payload = serde_json::json!({
+                        "assessment": assessment,
+                        "confidence": format!("{:?}", confidence),
+                        "tradeoff_documented": documented,
+                    });
+                    let text = serde_json::to_string_pretty(&payload)?;
+                    match output {
+                        Some(ref path) => {
+                            fs::write(path, &text)?;
+                            eprintln!("Output written to: {}", path.display());
+                        }
+                        None => println!("{}", text),
+                    }
+                }
+                _ => print_comparison(&assessment, confidence, documented),
+            }
+
+            // Advisory by default; --check enforces the trade-off doctrine —
+            // and only on verdicts whose drivers are measured or calibrated.
+            let needs_documentation = matches!(
+                assessment.verdict,
+                oikosbot_pareto::ParetoVerdict::Regression
+                    | oikosbot_pareto::ParetoVerdict::TradeOff
+            );
+            if check && needs_documentation && documented != Some(true) {
+                if assessment.actionable {
+                    std::process::exit(1);
+                }
+                // Enforcement was asked for and cannot be delivered: the
+                // driving objectives rest on heuristic estimates, which by
+                // design may not block a merge. Say so unmissably. A gate
+                // that silently no-ops is indistinguishable from one that
+                // passed, which is the failure mode this tool exists to
+                // find — so it must never be silent about its own limits.
+                eprintln!(
+                    "::warning::--check requested but NOT enforced: the objectives driving \
+                     this {} verdict are {:?}, and only Measured or Calibrated inputs may \
+                     block. Reported as advisory. See docs: enforcement is inert while \
+                     resource figures remain heuristic estimates.",
+                    match assessment.verdict {
+                        oikosbot_pareto::ParetoVerdict::Regression => "pareto-regression",
+                        _ => "trade-off",
+                    },
+                    confidence,
+                );
             }
         }
 
@@ -247,11 +430,17 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Collect analysis results from all supported files in a directory
+/// Collect analysis results from all supported files in a directory,
+/// honoring the config's exclude globs and language list when present.
 fn collect_directory_results(
     path: &std::path::Path,
+    cfg: Option<&config::ResolvedConfig>,
 ) -> Result<Vec<oikosbot_metrics::AnalysisResult>> {
     let mut all_results = Vec::new();
+    let default_extensions = ["rs", "js", "py"];
+    let allowed: &[&str] = cfg
+        .map(|c| c.allowed_extensions.as_slice())
+        .unwrap_or(&default_extensions);
 
     for entry in WalkDir::new(path)
         .follow_links(false)
@@ -274,8 +463,17 @@ fn collect_directory_results(
             .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("");
-        if !matches!(ext, "rs" | "js" | "py") {
+        if !allowed.contains(&ext) {
             continue;
+        }
+
+        // Exclude globs match against the path relative to the analyzed root
+        // (the shape estate .oikos.yml patterns like "**/target/**" expect).
+        if let Some(c) = cfg {
+            let relative = entry_path.strip_prefix(path).unwrap_or(entry_path);
+            if c.exclude.is_match(relative) {
+                continue;
+            }
         }
 
         match analyze_file(entry_path) {
@@ -321,6 +519,66 @@ fn emit_output(
     }
 
     Ok(())
+}
+
+fn print_comparison(
+    assessment: &oikosbot_pareto::Comparison,
+    confidence: oikosbot_metrics::Confidence,
+    documented: Option<bool>,
+) {
+    let verdict_label = match assessment.verdict {
+        oikosbot_pareto::ParetoVerdict::Improvement => "PARETO IMPROVEMENT",
+        oikosbot_pareto::ParetoVerdict::Regression => "PARETO REGRESSION",
+        oikosbot_pareto::ParetoVerdict::TradeOff => "TRADE-OFF",
+        oikosbot_pareto::ParetoVerdict::Neutral => "NEUTRAL",
+    };
+    println!("Pareto verdict: {}\n", verdict_label);
+
+    println!(
+        "  {:<20} {:>14} {:>14}   movement",
+        "objective", "base", "head"
+    );
+    for d in &assessment.deltas {
+        let movement = if d.improvement > oikosbot_pareto::DEFAULT_EPSILON {
+            "improved"
+        } else if d.improvement < -oikosbot_pareto::DEFAULT_EPSILON {
+            "worsened"
+        } else {
+            "unchanged"
+        };
+        println!(
+            "  {:<20} {:>14.4} {:>14.4}   {}",
+            d.name, d.base, d.head, movement
+        );
+    }
+
+    if !assessment.drivers.is_empty() {
+        println!("\nDrivers: {}", assessment.drivers.join(", "));
+    }
+    println!(
+        "Confidence: {:?}{}",
+        confidence,
+        if assessment.actionable {
+            ""
+        } else {
+            " (advisory - heuristic estimates cannot drive blocking decisions)"
+        }
+    );
+
+    match (assessment.verdict, documented) {
+        (
+            oikosbot_pareto::ParetoVerdict::TradeOff | oikosbot_pareto::ParetoVerdict::Regression,
+            Some(true),
+        ) => println!("Trade-off documentation: present"),
+        (
+            oikosbot_pareto::ParetoVerdict::TradeOff | oikosbot_pareto::ParetoVerdict::Regression,
+            Some(false),
+        ) => println!(
+            "Trade-off documentation: MISSING - add a \"Pareto-Trade-off:\" trailer \
+             (competing objectives, decision, why it is Pareto-optimal here, rough metric impact)"
+        ),
+        _ => {}
+    }
 }
 
 fn print_summary(

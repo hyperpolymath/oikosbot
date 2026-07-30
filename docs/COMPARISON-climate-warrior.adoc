@@ -1,0 +1,110 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot vs Climate Warrior: positioning
+:toc: macro
+:icons: font
+
+_A point-in-time comparison (2026-07-28) against
+https://github.com/marketplace/climate-warrior-official[Climate Warrior Official],
+the closest sustainability-branded product on the GitHub Marketplace. Facts
+about Climate Warrior are taken from its Marketplace listing and
+https://github.com/rollthecloudinc/climatewarrior/wiki/Github-App-Docs[App docs]
+as of that date; corrections welcome._
+
+toc::[]
+
+== Short version
+
+The two products share the Software Carbon Intensity (SCI) vocabulary and
+almost nothing else. **Climate Warrior is a storage product with carbon
+telemetry** — a GitHub App (category: API Management) that turns repositories
+into versioned JSON document stores ("energy-efficient databases") and records
+SCI for its own operations, mainly lambda executions. **OikosBot is a code
+analyzer with an economics engine** — it reads your source, estimates
+per-function carbon/energy/time/memory, and renders a *Pareto verdict* on
+every change: improvement, regression, or a trade-off that must be documented.
+
+They are not substitutes. A team could run both without overlap: Climate
+Warrior to store documents with an SCI ledger, OikosBot to review code.
+
+== Matrix
+
+[cols="1,2,2",options="header"]
+|===
+| Dimension | OikosBot | Climate Warrior
+
+| What it is
+| Code-analysis CLI + GitHub Action (GitHub App planned; AffineScript
+  receiver in flight)
+| GitHub App
+
+| Marketplace category fit
+| Code quality / code scanning (SARIF into the Security tab)
+| API Management (its actual listing category)
+
+| Unit of analysis
+| Functions and files in your source (tree-sitter AST; Rust, JavaScript,
+  Python today)
+| Its own storage/API operations (JSON documents, lambda executions)
+
+| Metrics
+| Per-function energy (J), carbon (gCO2e), time (ms), memory (bytes);
+  Eco/Econ/Quality scores; composite health index
+| Software Carbon Intensity of service operations; historical SCI
+
+| The economics layer
+| **Pareto engine**: ε-tolerant dominance over weighted, normalized
+  objectives; frontier membership + ParetoScore per unit; base-vs-head
+  verdicts (improvement / regression / trade-off / neutral);
+  EconScore = 0.5·Pareto + 0.3·allocation (shadow prices) + 0.2·debt
+| None (no notion of trade-offs or optimality)
+
+| PR workflow
+| Verdict per change; trade-offs and regressions ask for a documented
+  justification (`Pareto-Trade-off:` trailer, machine-checked); advisor by
+  default, regulator opt-in per repo
+| None (not a review tool)
+
+| Output formats
+| SARIF 2.1.0 (GitHub code scanning, with `pareto_*` properties), JSON, text
+| App-internal; repository documents
+
+| Configuration
+| `.oikos.yml` per repo: mode, thresholds, excludes, languages
+| App installation settings
+
+| Methodology transparency
+| Open source (MPL-2.0); estimation model in-tree and SCI-spec-referenced
+  (ISO/IEC 21031:2024); every figure carries a confidence label
+  (Measured / Calibrated / Estimated / Unknown), and heuristic figures are
+  barred from blocking decisions by construction
+| Not disclosed on the listing
+
+| Pricing / maturity
+| Free, open source, v0.1.x (pre-1.0; App mode not yet live)
+| Free tier ("Squire"); ~16 installs at time of writing
+|===
+
+== What OikosBot does not do (honesty section)
+
+* Estimates are **static heuristics** today (`Confidence::Estimated`), not
+  measurements. Runtime calibration and the VeriSimDB-backed praxis loop are
+  roadmap items. This is exactly why the confidence gate exists: heuristics
+  advise; only measured or calibrated figures may ever block a merge.
+* The GitHub **App** (webhook, PR comments without CI) is not yet live — CI
+  Action mode is the generation-1 surface. The App is gated on upstream
+  AffineScript stdlib work by deliberate ruling (no interim listener).
+* Language coverage is Rust / JavaScript / Python; listed-but-unsupported
+  languages in `.oikos.yml` are ignored loudly, never silently.
+* Climate Warrior's document-storage use case is entirely out of scope:
+  OikosBot stores nothing about your repository (until the optional
+  VeriSimDB layer lands, and then only where configured).
+
+== Positioning takeaway
+
+If a Marketplace listing is pursued, OikosBot belongs in **code quality /
+security (code scanning)** next to linters and SAST tools — not in the
+sustainability-storage niche where Climate Warrior sits. Its differentiator
+is not "we mention carbon" but the **economics**: making every PR answer
+"did this change move us toward or away from the efficient frontier, and if
+it traded something away, did the author say so?"

@@ -246,6 +246,19 @@ impl HealthIndex {
     }
 }
 
+/// Pareto standing of one code unit relative to its peers, computed by the
+/// `oikosbot-pareto` intra-repo pass.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParetoInfo {
+    /// "optimal" (on the frontier) or "dominated".
+    pub status: String,
+    /// ParetoScore 0-100: 100 on the frontier, decreasing with weighted
+    /// normalized distance from it.
+    pub score: f64,
+    /// How many peer units dominate this one.
+    pub dominated_by: usize,
+}
+
 /// Analysis result for a single code unit (function, file, module)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalysisResult {
@@ -265,6 +278,10 @@ pub struct AnalysisResult {
     /// How confident is this estimate?
     #[serde(default)]
     pub confidence: Confidence,
+    /// Pareto standing relative to peer units (filled by the intra-repo
+    /// Pareto pass; None when analyzed in isolation).
+    #[serde(default)]
+    pub pareto: Option<ParetoInfo>,
 }
 
 /// Source code location
