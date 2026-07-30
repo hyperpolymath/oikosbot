@@ -38,11 +38,26 @@ end-user) and by concept — see link:docs/README.adoc[`docs/README.adoc`].
 
 == Status
 
-`0.1.0-dev`. OikosBot is not currently deployed in production.
+`v0.1.0` — **online in CI/Action mode**. Full picture:
+link:docs/STATUS.adoc[`docs/STATUS.adoc`] (human) and
+link:.machine_readable/6a2/STATE.a2ml[`STATE.a2ml`] (machine).
+
+Working: the Pareto engine (`crates/oikosbot-pareto`), the published container
+`ghcr.io/hyperpolymath/oikos`, the composite GitHub Action, `.oikos.yml`
+configuration, and SARIF output that GitHub code scanning ingests.
+
+[IMPORTANT]
+====
+**Every resource figure is a heuristic estimate and `--check` cannot block a
+merge.** Only `Measured`/`Calibrated` inputs may fail a run, and the analyzer
+emits only `Estimated` — calibration exists but is not yet wired in (issue
+\#48). OikosBot warns loudly rather than passing silently, but treat it as an
+advisor, not a regulator. See link:docs/STATUS.adoc[`docs/STATUS.adoc`].
+====
 
 The Rust analysis workspace (`crates/oikosbot-*`: CLI, analysis engine, metrics,
-SARIF output, and Eclexia policy evaluation) builds and tests cleanly and is the
-most complete surface — it was extracted from the former
+Pareto engine, SARIF output, and Eclexia policy evaluation) builds and tests
+cleanly and is the most complete surface — it was extracted from the former
 `gitbot-fleet/bots/sustainabot/` and renamed.
 
 The AffineScript webhook receiver (`bot-integration-affine/`) is a scaffold.
@@ -123,6 +138,28 @@ link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`].
 
 `just affine-check` expects an AffineScript compiler. Override the compiler path
 with `AS_BIN=/path/to/main.exe` when needed.
+
+== GitHub Action
+
+OikosBot runs in CI as a composite action wrapping the published container
+(`ghcr.io/hyperpolymath/oikos`):
+
+[source,yaml]
+----
+- uses: hyperpolymath/oikosbot@main   # pin a tag/SHA in production
+  with:
+    mode: report          # report | check | compare
+    path: .
+    output: results.sarif # upload with github/codeql-action/upload-sarif
+----
+
+`compare` mode issues a Pareto verdict against a base checkout (see
+link:QUICKSTART.adoc[QUICKSTART]). A repo-local `.oikos.yml` is honored
+automatically. Full workflow example:
+link:examples/oikosbot-ci.yml[`examples/oikosbot-ci.yml`].
+
+How OikosBot relates to the nearest Marketplace neighbour:
+link:docs/COMPARISON-climate-warrior.adoc[OikosBot vs Climate Warrior].
 
 == GitHub App
 

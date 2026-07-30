@@ -252,6 +252,7 @@ fn dep_finding_to_result(finding: DepFinding) -> AnalysisResult {
         suggestion: Some(finding.suggestion),
         end_location: None,
         confidence: Confidence::Estimated,
+        pareto: None,
     }
 }
 

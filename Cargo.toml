@@ -7,6 +7,7 @@ members = [
     "crates/oikosbot-cli",
     "crates/oikosbot-analysis",
     "crates/oikosbot-metrics",
+    "crates/oikosbot-pareto",
     "crates/oikosbot-sarif",
     "crates/oikosbot-eclexia",
 ]
