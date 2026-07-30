@@ -444,6 +444,7 @@ pub fn decisions_to_results(decisions: &[PolicyDecision]) -> Vec<AnalysisResult>
                 suggestion: d.suggestion.clone(),
                 end_location: None,
                 confidence: oikosbot_metrics::Confidence::Estimated,
+                pareto: None,
             }
         })
         .collect()
@@ -524,6 +525,7 @@ mod tests {
             suggestion: None,
             end_location: None,
             confidence: oikosbot_metrics::Confidence::Estimated,
+            pareto: None,
         }
     }
 }
