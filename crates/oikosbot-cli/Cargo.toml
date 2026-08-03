@@ -23,6 +23,9 @@ oikosbot-metrics = { path = "../oikosbot-metrics" }
 oikosbot-pareto = { path = "../oikosbot-pareto" }
 oikosbot-sarif = { path = "../oikosbot-sarif" }
 oikosbot-eclexia = { path = "../oikosbot-eclexia" }
+oikosbot-telemetry = { path = "../oikosbot-telemetry" }
+oikosbot-capability = { path = "../oikosbot-capability" }
+oikosbot-dea = { path = "../oikosbot-dea" }
 # NB: `oikosbot-fleet` (the gitbot-fleet bridge) is deliberately NOT a dependency
 # here. It is excluded from the default workspace so OikosBot stays standalone.
 # The `fleet` subcommand prints how to run the bridge; see crates/oikosbot-fleet.

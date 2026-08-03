@@ -8,6 +8,7 @@
 
 #![forbid(unsafe_code)]
 mod config;
+mod estate;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -157,6 +158,12 @@ enum Commands {
 
     /// Show analysis of oikosbot itself (dogfooding!)
     SelfAnalyze,
+
+    /// Estate-level telemetry, capability and DEA analysis (read-only)
+    Estate {
+        #[command(subcommand)]
+        cmd: estate::EstateCmd,
+    },
 }
 
 fn main() -> Result<()> {
@@ -424,6 +431,10 @@ fn main() -> Result<()> {
             } else {
                 println!("Run from oikosbot repository root.");
             }
+        }
+
+        Commands::Estate { cmd } => {
+            estate::run(cmd)?;
         }
     }
 
