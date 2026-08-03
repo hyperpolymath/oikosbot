@@ -11,4 +11,5 @@ repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+serde.workspace = true
 good_lp = { version = "1.15", default-features = false, features = ["highs"] }
