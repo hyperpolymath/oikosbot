@@ -18,6 +18,7 @@ use oikosbot_telemetry::snapshot;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 #[derive(Subcommand)]
 pub enum EstateCmd {
@@ -132,6 +133,10 @@ pub fn pearson(a: &[f64], b: &[f64]) -> f64 {
 /// (directly, or via `derive_per_repo`/`assess`, which do the same), so
 /// iteration order — and therefore `analysis.json` — never depends on
 /// input row order.
+///
+/// A repo present in `repos` with zero rows in `runs` never appears in
+/// `derived` (which is keyed off `runs`) and is therefore silently absent
+/// from `dea` too — DEA only scores DMUs actually derived from telemetry.
 pub fn run_analysis(
     runs: &[RunRow],
     repos: &[RepoRow],
@@ -215,20 +220,33 @@ pub fn run_analysis(
     })
 }
 
-/// Replace `/` in a `owner/repo` full name with `-` for use in a filename.
-fn slug(repo: &str) -> String {
-    repo.replace('/', "-")
+/// The `repo` part of a `owner/repo` full name (GitHub repo names cannot
+/// themselves contain `/`, so this is unambiguous — unlike collapsing the
+/// whole full name with a single separator, which lets `owner "a-b" + repo
+/// "c"` and `owner "a" + repo "b-c"` collide on the same flattened string).
+fn repo_name(full_name: &str) -> &str {
+    full_name.rsplit_once('/').map_or(full_name, |(_, n)| n)
 }
 
-/// Sweep `owners` via `gh`, writing one staging JSON per owner (repo list)
-/// and per repo (runs, releases). Resumable: any staging file that already
+/// Sweep `owners` via `gh`, writing staging JSON nested under one directory
+/// per owner (`<out>/<owner>/repos-<owner>.json`, `<out>/<owner>/runs-<repo
+/// name>.json`, `<out>/<owner>/releases-<repo name>.json`). Nesting by owner
+/// — rather than flattening `owner/repo` into a single filename — is what
+/// keeps staging files unambiguous: two different (owner, repo) pairs can
+/// share a flattened string (e.g. owner "a-b" + repo "c" vs. owner "a" +
+/// repo "b-c") but never share a (directory, filename) pair, since a repo
+/// name alone cannot contain `/`. Resumable: any staging file that already
 /// exists is skipped. Per-repo/per-owner errors are logged to stderr and do
 /// not abort the sweep — one bad repo must not kill a 400-repo run.
 fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) -> Result<()> {
     fs::create_dir_all(out).with_context(|| format!("create staging dir {}", out.display()))?;
 
     for owner in owners {
-        let repos_path = out.join(format!("repos-{owner}.json"));
+        let owner_dir = out.join(owner);
+        fs::create_dir_all(&owner_dir)
+            .with_context(|| format!("create owner staging dir {}", owner_dir.display()))?;
+
+        let repos_path = owner_dir.join(format!("repos-{owner}.json"));
         let repos: Vec<RepoRow> = if repos_path.exists() {
             eprintln!("skip (exists): {}", repos_path.display());
             let text = fs::read_to_string(&repos_path)
@@ -261,9 +279,9 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
                 eprintln!("skip archived: {}", repo.repo);
                 continue;
             }
-            let repo_slug = slug(&repo.repo);
+            let name = repo_name(&repo.repo);
 
-            let runs_path = out.join(format!("runs-{repo_slug}.json"));
+            let runs_path = owner_dir.join(format!("runs-{name}.json"));
             if runs_path.exists() {
                 eprintln!("skip (exists): {}", runs_path.display());
             } else {
@@ -283,7 +301,7 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
                 }
             }
 
-            let releases_path = out.join(format!("releases-{repo_slug}.json"));
+            let releases_path = owner_dir.join(format!("releases-{name}.json"));
             if releases_path.exists() {
                 eprintln!("skip (exists): {}", releases_path.display());
             } else {
@@ -308,15 +326,17 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
     Ok(())
 }
 
-/// Load and concatenate every staging JSON file in `dir` whose name starts
-/// with `prefix` and ends with `.json`, sorted by filename first so the
+/// Load and concatenate every staging JSON file under `dir` (recursively —
+/// staging files are nested one level down per owner) whose name starts
+/// with `prefix` and ends with `.json`, sorted by full path first so the
 /// concatenation order (and hence any downstream unaggregated output) is
 /// deterministic across runs.
 fn load_json_prefixed<T: serde::de::DeserializeOwned>(dir: &Path, prefix: &str) -> Result<Vec<T>> {
-    let mut paths: Vec<PathBuf> = fs::read_dir(dir)
-        .with_context(|| format!("read staging dir {}", dir.display()))?
+    let mut paths: Vec<PathBuf> = WalkDir::new(dir)
+        .into_iter()
         .filter_map(|e| e.ok())
-        .map(|e| e.path())
+        .filter(|e| e.file_type().is_file())
+        .map(|e| e.into_path())
         .filter(|p| {
             p.file_name()
                 .and_then(|n| n.to_str())
@@ -580,20 +600,88 @@ mod tests {
     }
 
     #[test]
-    fn slug_replaces_slash() {
-        assert_eq!(slug("owner/repo"), "owner-repo");
+    fn repo_name_strips_owner_prefix() {
+        assert_eq!(repo_name("owner/repo"), "repo");
+        assert_eq!(repo_name("norepo"), "norepo");
+    }
+
+    struct Panicky;
+    impl GhRunner for Panicky {
+        fn api(&self, _path: &str) -> Result<serde_json::Value> {
+            panic!("gh api should not be called when staging files already exist");
+        }
     }
 
     #[test]
     fn collect_skips_existing_staging_files() {
-        struct Panicky;
-        impl GhRunner for Panicky {
-            fn api(&self, _path: &str) -> Result<serde_json::Value> {
-                panic!("gh api should not be called when staging files already exist");
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir_all(dir.path().join("o")).unwrap();
+        fs::write(dir.path().join("o").join("repos-o.json"), "[]").unwrap();
+        collect(&Panicky, &["o".to_string()], dir.path(), 200).unwrap();
+    }
+
+    /// Regression for the filename-collision bug: flattening `owner/repo`
+    /// into a single string with `/` -> `-` let owner "a-b" + repo "c" and
+    /// owner "a" + repo "b-c" both produce "runs-a-b-c.json", silently
+    /// merging two distinct repos' staging files. Nesting under a per-owner
+    /// directory keeps them apart because a bare repo name cannot contain
+    /// `/`.
+    struct TwoOwnersFake;
+    impl GhRunner for TwoOwnersFake {
+        fn api(&self, path: &str) -> Result<serde_json::Value> {
+            if path.starts_with("users/a-b/repos") {
+                Ok(serde_json::json!([{
+                    "full_name": "a-b/c", "visibility": "public",
+                    "archived": false, "pushed_at": "", "size": 1
+                }]))
+            } else if path.starts_with("users/a/repos") {
+                Ok(serde_json::json!([{
+                    "full_name": "a/b-c", "visibility": "public",
+                    "archived": false, "pushed_at": "", "size": 1
+                }]))
+            } else if path.contains("/actions/runs") {
+                Ok(serde_json::json!({"workflow_runs": []}))
+            } else {
+                Ok(serde_json::json!([]))
             }
         }
+    }
+
+    #[test]
+    fn collect_avoids_owner_repo_filename_collision() {
         let dir = tempfile::tempdir().unwrap();
-        fs::write(dir.path().join("repos-o.json"), "[]").unwrap();
-        collect(&Panicky, &["o".to_string()], dir.path(), 200).unwrap();
+        collect(
+            &TwoOwnersFake,
+            &["a-b".to_string(), "a".to_string()],
+            dir.path(),
+            5,
+        )
+        .unwrap();
+
+        // Old flat scheme would have written BOTH of these to the single
+        // path "runs-a-b-c.json"; nested-by-owner keeps them distinct.
+        let p1 = dir.path().join("a-b").join("runs-c.json");
+        let p2 = dir.path().join("a").join("runs-b-c.json");
+        assert!(p1.exists(), "missing {}", p1.display());
+        assert!(p2.exists(), "missing {}", p2.display());
+        assert_ne!(p1, p2);
+
+        let r1: Vec<oikosbot_telemetry::rows::RunRow> =
+            serde_json::from_str(&fs::read_to_string(&p1).unwrap()).unwrap();
+        let r2: Vec<oikosbot_telemetry::rows::RunRow> =
+            serde_json::from_str(&fs::read_to_string(&p2).unwrap()).unwrap();
+        assert!(r1.is_empty() && r2.is_empty()); // fake returns no runs; distinctness is the point
+
+        // A second sweep over both owners now finds every staging file
+        // already present and must not call `gh` at all — proving resume
+        // correctly recognises BOTH nested files rather than confusing them
+        // with a single flattened one.
+        collect(
+            &Panicky,
+            &["a-b".to_string(), "a".to_string()],
+            dir.path(),
+            5,
+        )
+        .unwrap();
     }
 }
