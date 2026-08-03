@@ -229,10 +229,23 @@ fn evaluate_native(
     }
 }
 
+/// The builtin backend matches policies by FILE STEM and applies hardcoded
+/// thresholds; the .ecl contents are never read. Until the eclexia parser is
+/// wired (round two), every builtin evaluation must say so out loud.
+pub fn builtin_warning(policy_stem: &str) -> String {
+    format!(
+        "::warning::policy {policy_stem}.ecl evaluated by BUILTIN fallback: \
+         file contents NOT parsed; hardcoded thresholds applied (may disagree \
+         with the .ecl text). Install `eclexia` or await the native backend."
+    )
+}
+
 /// Built-in policy evaluation when eclexia binary is not available.
 ///
 /// Implements the core policies in Rust as a fallback.
 fn evaluate_builtin(results: &[AnalysisResult], policy_name: &str) -> Result<PolicyDecision> {
+    eprintln!("{}", builtin_warning(policy_name));
+
     let total_energy: f64 = results.iter().map(|r| r.resources.energy.0).sum();
     let total_carbon: f64 = results.iter().map(|r| r.resources.carbon.0).sum();
     let avg_eco = if results.is_empty() {
@@ -458,6 +471,14 @@ mod tests {
     fn test_example_policy_syntax() {
         assert!(EXAMPLE_POLICY.contains("def evaluate_policy"));
         assert!(EXAMPLE_POLICY.contains("@requires"));
+    }
+
+    #[test]
+    fn builtin_warning_names_file_and_admits_not_parsing() {
+        let w = builtin_warning("energy_threshold");
+        assert!(w.contains("energy_threshold.ecl"));
+        assert!(w.contains("NOT parsed"));
+        assert!(w.starts_with("::warning::"));
     }
 
     #[test]

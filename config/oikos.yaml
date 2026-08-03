@@ -19,12 +19,16 @@ thresholds:
     description: "Minimum acceptable eco standards"
     enforcement: blocking  # Will block PRs below this threshold
 
+  # ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+  # Documented for the target design; nothing below this line takes effect yet.
   eco_standard:
     carbon: 70
     energy: 70
     description: "Recommended eco standards"
     enforcement: warning  # Will warn but not block
 
+  # ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+  # Documented for the target design; nothing below this line takes effect yet.
   eco_excellence:
     carbon: 85
     energy: 85
@@ -32,6 +36,8 @@ thresholds:
     enforcement: none  # Just a badge/recognition
 
 # Weights for composite health index
+# ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+# Documented for the target design; nothing below this line takes effect yet.
 weights:
   ecological: 0.4   # Carbon + Energy + Resources
   economic: 0.3     # Pareto + Allocation + Debt
@@ -60,12 +66,16 @@ analysis:
     - "**/build/**"
 
   # Carbon estimation model
+  # ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+  # Documented for the target design; nothing below this line takes effect yet.
   carbon:
     grid_intensity: 475  # gCO2eq/kWh (global average)
     hardware_lifespan: 4  # years
     usage_percentage: 0.01  # 1% of hardware
 
   # Energy pattern detection
+  # ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+  # Documented for the target design; nothing below this line takes effect yet.
   energy:
     detect_busy_waiting: true
     detect_polling: true
@@ -73,6 +83,8 @@ analysis:
     detect_resource_leaks: true
 
   # Complexity thresholds
+  # ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+  # Documented for the target design; nothing below this line takes effect yet.
   complexity:
     cyclomatic_warning: 10
     cyclomatic_critical: 20
@@ -89,6 +101,8 @@ analysis:
 # DEFERRED/GATED: VeriSimDB is v0.1.0 and the OikosBot runtime client is not yet
 # wired (gated on VeriSimDB maturity + the AffineScript transport). Design/config
 # only — see ROADMAP.adoc.
+# ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+# Documented for the target design; nothing below this line takes effect yet.
 databases:
   verisimdb:
     # REST surface per connectors/shared/openapi/verisim-api-v1.yaml.
@@ -111,6 +125,8 @@ databases:
     semantic_seed: "databases/ontology/eco.ttl"
 
 # External integrations
+# ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+# Documented for the target design; nothing below this line takes effect yet.
 integrations:
   github:
     enabled: true
@@ -129,6 +145,8 @@ integrations:
     verify_pareto_claims: true
 
 # AI assistant integration
+# ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+# Documented for the target design; nothing below this line takes effect yet.
 ai_assistants:
   copilot:
     generate_instructions: true
@@ -141,6 +159,8 @@ ai_assistants:
     update_on_analysis: true
 
 # Praxis loop configuration
+# ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+# Documented for the target design; nothing below this line takes effect yet.
 praxis:
   enabled: true
   learning_rate: 0.01
@@ -154,6 +174,8 @@ praxis:
     - user_feedback  # Explicit feedback on recommendations
 
 # Reporting configuration
+# ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+# Documented for the target design; nothing below this line takes effect yet.
 reporting:
   # PR comment format
   pr_comments:
@@ -180,6 +202,8 @@ reporting:
     port: 8080
 
 # Notification configuration
+# ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+# Documented for the target design; nothing below this line takes effect yet.
 notifications:
   # Slack integration
   slack:
@@ -196,6 +220,8 @@ notifications:
     from: "oikos-bot@example.com"
 
 # Logging
+# ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
+# Documented for the target design; nothing below this line takes effect yet.
 logging:
   level: info  # debug, info, warn, error
   format: json
