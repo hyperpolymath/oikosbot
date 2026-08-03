@@ -10,6 +10,9 @@ members = [
     "crates/oikosbot-pareto",
     "crates/oikosbot-sarif",
     "crates/oikosbot-eclexia",
+    "crates/oikosbot-telemetry",
+    "crates/oikosbot-capability",
+    "crates/oikosbot-dea",
 ]
 # `oikosbot-fleet` is the OPTIONAL gitbot-fleet bridge. It is intentionally
 # excluded from the default workspace so OikosBot builds standalone with no
