@@ -1,0 +1,429 @@
+# OikosBot — Pareto-first estate economics
+
+## Context
+
+Two things prompted this plan.
+
+**The sitrep.** Asked for a status check on OikosBot, measured live on 2026-08-03.
+Generation 1 shipped and was verified end-to-end on 2026-07-28 (v0.1.0 tagged,
+container published, 101 SARIF results ingested by GitHub code scanning on the
+`enaction-engine` pilot). Since then three things have gone wrong, two of them
+genuine defects rather than environmental noise. They are cheap to fix and are
+folded in below as Part 0.
+
+**The real question.** How should OikosBot grow to match the functionality of
+comparable products, while taking its *orientation* from economic optimality —
+Pareto optimality, allocative efficiency, productive efficiency, dynamic
+efficiency, opportunity cost — treating the economic as seriously as the
+ecological, and using Eclexia as the language for expressing it.
+
+Investigation found that the honest answer requires changing the unit of analysis,
+not adding features. The detail matters, so it is stated plainly:
+
+> `estimate_resources()` derives energy, duration, carbon and memory from a single
+> integer — `complexity`, a raw AST node count. `energy = n × 0.1`,
+> `duration = n × 0.5`, `carbon = energy × 1.319e-4`, `memory = n × 2KB`. Four of
+> the five Pareto objectives are therefore scalar multiples of one another, and a
+> frontier over collinear axes collapses to a one-dimensional sort. `Alloc`
+> reduces to roughly `0.35 × complexity` rank-inverted; `Debt` is
+> `100 − 0.5 × complexity`. All three EconScore terms are the same variable in
+> different clothes.
+
+The dominance mathematics in `crates/oikosbot-pareto` is good work — ε-tolerant,
+min-max normalised before any distance is measured, weights inside the metric, all
+functions total, conformance-tested against `eco_rules.dl`. The problem is
+entirely upstream of it, in what gets fed in.
+
+A second structural point drove the design:
+
+> Allocative efficiency is not a property of a single change. It means scarce
+> resources are distributed to their highest-valued competing use; with one diff
+> in front of you there is nothing to allocate between. Opportunity cost and
+> marginal analysis have the same requirement. They need a portfolio.
+
+## Decisions taken
+
+| # | Question | Ruling |
+|---|---|---|
+| 1 | Unit of analysis | **The estate as a portfolio**, ~400 repos competing for a shared budget of hours, CI minutes, energy and money. The PR check survives as one projection of a persistent model, not as the product. |
+| 2 | Where numbers come from | **CI telemetry becomes the `Measured` tier.** Billable minutes, runner class, wall-clock and queue time from the GitHub API — retroactive, no instrumentation, every repo. |
+| 3 | Eclexia's role | **Bidirectional, with self-hosting as the horizon.** A shared dominance crate that Eclexia's inert `@optimize` finally consumes; Eclexia serves as OikosBot's typed policy surface today; OikosBot's allocation LP emits real duals that become Eclexia's shadow prices. Owner clarification (2026-08-03): Eclexia is a Turing-complete general-purpose language implementing the Economics-as-Code paradigm (per its whitepaper) with applications far beyond this bot — and OikosBot is eventually to be **implemented in** Eclexia. |
+| 4 | Output measure | **Verified capability** — tests that genuinely execute, gates that can genuinely fail, proofs discharged, workflows that parse, artefacts that publish. |
+| 5 | Model locus | **Versioned columnar snapshots in a dedicated `oikos-estate` dataset repo.** History is git history. No infrastructure, no upstream blocker. |
+
+### Why these cohere
+
+Decision 2 breaks the collinearity that makes the present engine vacuous: money,
+wall-clock, energy and carbon sourced from telemetry are mutually independent and
+independent of node count. Decision 4 supplies the output term without which every
+efficiency measure degenerates into "delete the code". Decisions 1, 4 and 5
+together make Data Envelopment Analysis applicable — DEA compares units with
+multiple incommensurable inputs *and* outputs, requires no prices, and returns both
+a frontier and a distance-to-frontier per unit. DEA is a linear program, and its
+dual yields virtual weights on each input and output: marginal scarcity derived
+from the estate's own data. Those duals are decision 3's shadow prices. One LP
+produces the efficiency verdict and the prices Eclexia consumes.
+
+The payoff of decision 4 deserves emphasis. The estate's documented pathologies —
+gates that cannot fail, workflows that never parsed, proof checks that exit 0
+without a prover, `eclexiaiser.toml` manifests pointing at a template's files —
+all become a single *economic* fact: real input consumed, zero output produced.
+That is X-inefficiency, and OikosBot would be measuring and pricing it rather than
+merely listing it.
+
+### What the landscape says (surveyed live, 2026-08-03)
+
+Full survey in the session record; the points that bind the design:
+
+- **Hardware energy counters do not exist on hosted CI.** GitHub runners are Azure
+  VMs; the kernel deliberately does not load the RAPL powercap driver in
+  virtualised environments — an absent-file problem, not permissions. Only two
+  honest strategies exist: deterministic instrumentation (Valgrind-derived, the
+  CodSpeed approach) or modelled estimation from utilisation (the **Eco-CI**
+  approach: power curves over SPECpower-trained models, vhost ratio 0.03125 for
+  `ubuntu-latest`). This *confirms* decision 2 as the only honest route, and makes
+  Eco-CI required reading before writing the energy model.
+- **The unoccupied market square is a working gate with honest numbers.** Eco-CI,
+  Green Metrics Tool and Impact Framework measure but never block; Creedengo
+  blocks but on static rules with thin empirical grounding. Nobody gates on
+  measured sustainability + economics. Meanwhile the *universal* table stake
+  OikosBot lacks is **PR decoration** — every surveyed product posts a comment or
+  check run. Pattern to copy: Infracost's single updated-in-place comment with a
+  one-line verdict header and an honest "M estimated, K not estimated" footnote.
+- **DEA needs no dependency.** No Rust DEA crate exists; input-oriented CCR is
+  ~150 lines of LP on `good_lp` (`default-features = false, features = ["highs"]`
+  — HiGHS is MIT; avoid the stale EPL CBC default). BCC adds one constraint;
+  scale efficiency falls out of the ratio. **Allocative efficiency has a standard
+  LP definition** (cost efficiency ÷ technical efficiency, given input prices),
+  and the **Malmquist index** — four LPs over two periods, decomposing
+  productivity change into efficiency-change × technical-change — is the textbook
+  formalism for base-vs-head comparison. SFA is ruled out (MLE research project;
+  DEA is deterministic and sufficient).
+- **Vocabulary: SCI (ISO/IEC 21031:2024).** Prose-only standard, no schema — so
+  OikosBot defines the JSON in SCI's own terms (`E`, `I`, `M`, `R`) and inherits
+  ISO's authority. SARIF idiom: numbers as value+unit+method triples in
+  hierarchical camelCase property bags; classification via `taxonomies`, not tags;
+  `partialFingerprints` hash the finding's *shape*, never the metric value;
+  human-readable tables into `help.markdown` (GitHub ignores unknown properties).
+- **Data sources for round one**, by licence and reliability: GitHub **Billing
+  Usage API** (GA 2026-06-04) for actual consumed minutes; published per-minute
+  prices (~40% cut effective 2026-01-01 — verify live rates before hardcoding);
+  vendored **CCF coefficients** (Apache-2.0: per-family min/max watts + embodied
+  kgCO2e — the clean-licence indirection over SPECpower, which is a licence
+  hazard to touch directly); **UK NESO carbon-intensity API** (free, CC-BY,
+  verified live) plus **GSF Real Time Cloud CSV** for regions; **Boavizta** as an
+  AGPL *sidecar* (never linked) for embodied hardware carbon; **EPA scghg CSV
+  vendored** for the social cost of carbon. deps.dev (CC-BY, no auth) when
+  dependency data is wanted.
+- **The Social Cost of Carbon is now a political hazard.** The US federal SC-GHG
+  framework was dismantled in 2025 (IWG disbanded, estimates withdrawn, EPA
+  rescission). Any SCC-denominated finding is a scientific claim, not a
+  compliance one. Ruling: SCC is a configurable preset — value + source +
+  vintage + discount rate recorded in the SARIF properties — shipping EPA-2023
+  ($190/tCO2 at 2% Ramsey) as a *labelled* preset alongside UK DESNZ and EU ETS
+  prices, never as "the official value".
+- **Debt gets two independent dollar denominators** to cross-check: SonarQube's
+  published remediation model (30 min/line default, A–E bands at 5/10/20/50% —
+  adopting the band grid costs nothing and buys legibility) and COCOMO via `scc`
+  (Go binary, shell out). `rust_finprim` (MIT, maintained) turns debt-as-interest
+  into real discounted-cash-flow arithmetic. The Technical Debt Dataset (31
+  Apache projects, SQLite) is the calibration corpus.
+- **Flag against the Scallop ruling** (recorded, not overturned — the port is a
+  later phase): Scallop is not on crates.io, needs nightly, has no `license`
+  field in its manifest, and last released 2024-08. If the policy layer stays
+  deterministic, crisp Datalog (`ascent`, stable Rust, on crates.io) suffices;
+  Scallop is warranted only if probabilistic reasoning is genuinely wanted.
+  Decide at that phase; if Scallop, vendor and SHA-pin.
+- **Two honesty notes**: X-inefficiency and Baumol's cost disease have *no*
+  software-engineering literature — using the terms is our framing and must say
+  so. And `config/oikos.yaml` currently declares PR comments, a dashboard, OTel
+  and Slack integrations that do not exist in code (added to Part 0).
+
+### Eclexia's trajectory: OikosBot as reference implementation
+
+Per the owner's clarification and the whitepaper (*Economics-as-Code: A Novel
+Programming Paradigm for Sustainable Computing* — first-class scarcity,
+trade-offs, opportunity cost and multi-objective optimisation, with formal
+semantics and type-safety proofs), the relationship is not "bot with a config
+language". It is: **Eclexia is the paradigm's language; OikosBot is its first
+serious application and, eventually, a program written in it.**
+
+Consequences for this design:
+
+1. **Rust OikosBot is the reference implementation, built to emigrate.** Each
+   component is a candidate for migration into Eclexia as the language matures,
+   and each migration is a live test of the paradigm claim — can this actually be
+   said in Economics-as-Code? The migration order suggests itself: dominance/
+   frontier maths → Eclexia stdlib (making `@optimize` semantically real for
+   *every* Eclexia program, not just this one); DEA's LP and its duals → the real
+   solver behind `shadow_price()`, replacing hand-set constants and discharging
+   the ShadowPrices.v axioms (eclexia #43) by implementation; telemetry ingestion
+   → the runtime's known gap "metrics not wired to real OS metrics".
+2. **Contributions upstream are language work, not bot plumbing.** The shared
+   dominance crate, money literals, and measured shadow prices all serve Eclexia's
+   general ambitions; OikosBot merely needs them first.
+3. **Keep the boundary honest meanwhile.** Until Eclexia can express these
+   components, the Rust implementation must not pretend otherwise — the current
+   filename-matching `.ecl` backend is exactly the pretence to eliminate. The
+   whitepaper's evaluation numbers (20–40% energy etc.) are projections by its own
+   admission ("no measured benchmarks"); the estate telemetry programme is,
+   incidentally, the first chance to replace those projections with measurements.
+
+### The accounting DSL (`oikos-economics-accounting-dsl`)
+
+Assessed at the owner's suggestion, with the caution that it is "not massively
+developed but could have some value". Measured state: a real parser front-end
+(Logos + Chumsky, 71 passing tests) plus five shallow AST lint passes — and no
+typechecker, no compiler, no CLI, no evaluator; nothing in it computes a number.
+The advertised guarantee ("a model that violates any accounting identity does not
+compile") is unimplemented: the enforcement path is a commented-out call to a stub
+returning `Err(EphapaxNotAvailable)`. The Godley check counts sign glyphs and
+ignores amounts; the README's own example fails its own checker; `Stock`/`Flow` is
+a parsed keyword no checker reads; ΔStock = Σflows exists nowhere. Development
+stopped ~2026-06-20.
+
+**Ruling on its role.** Adopt the *discipline*, not the dependency, and invert the
+relationship:
+
+1. **The estate ledger is stock-flow consistent by construction.** In the snapshot
+   schema, every flow (minutes, £, joules, gCO2e per period) debits one account and
+   credits another; every stock (cumulative spend, cumulative carbon, debt
+   principal) must reconcile against its accumulated flows at each snapshot. This
+   is implemented as identity checks over real numbers inside the round-one crates
+   — a few hundred lines, and precisely the substance the DSL is missing.
+2. **Borrow its vocabulary, not its checker.** `oikos-syntax` is a clean,
+   serde-serialisable AST for sectors / accounts / periods / transaction-flow
+   matrices; naming the snapshot schema in its terms costs nothing and keeps the
+   two projects convergent. Its instrument typestate checker (~115 lines, correct)
+   and its pipe-table `godley { }` syntax are worth lifting if a human-writable
+   matrix surface is ever wanted.
+3. **OikosBot becomes the DSL's first real testbed, not its consumer.** A live,
+   numerically-real SFC model of the estate is exactly the proving ground the DSL
+   lacks. When its Ephapax lowering eventually lands, the estate ledger is the
+   model waiting to compile — the dependency points forward, and nothing in this
+   design blocks on a stalled language project.
+
+Two side-findings for the estate log: the DSL checkout is 1 commit ahead of origin
+(a CodeQL re-pin — verify the SHA before pushing, per the phantom-SHA landmine),
+and its stated Ephapax blocker ("parser not yet complete") looks stale — 
+`ephapax-parser` is now ~5.4k LOC and Ephapax's README marks most components
+complete; the assumption has not been retested since June.
+
+## Part 0 — repairs before any new work
+
+These are independent of the design and should land first.
+
+1. **`timeout-minutes` on a `uses:` job kills two workflows.**
+   `.github/workflows/mirror.yml` and `.github/workflows/secret-scanner.yml` both
+   carry `timeout-minutes: 10` on a job whose body is `uses:`. That key is illegal
+   there and invalidates the whole file — the distinguishing signature is a run
+   whose conclusion is `failure` at 0s and whose *name is the file path* rather
+   than the workflow's `name:`. PR #56 fixed exactly this in `scorecard.yml` on
+   07-30 and missed these two. Verified by comparison: governance, hypatia-scan
+   and scorecard have zero job-level `timeout-minutes`; these two have one each.
+   The standards pin `d135b05bfc64` is real, so this is not a phantom-SHA case.
+
+2. **The proven pilot has been switched off.**
+   `metadatastician/enaction-engine`'s oikosbot job now carries
+   `if: vars.OIKOSBOT_ENABLED == 'true'`, and the repo has no variables set — so
+   the one repo that demonstrably ingested 101 results never runs. Its inline
+   justification claims the image "has never been published", which is stale:
+   publish-image went green on 07-28 and the image was podman-verified. It is the
+   only one of the 14 reachable consumers gated this way; the other 13 pin
+   `oikosbot@bb95ab50…` cleanly with no `|| echo`. Either set the variable or
+   remove the gate and correct the comment.
+
+3. **Two consumer repos no longer resolve.**
+   `hyperpolymath/boj-server-mk2` and `hyperpolymath/idaptik-ums` return
+   "could not resolve to a Repository" — renamed, transferred, or deleted. Trace
+   them; `metadatastician/canonical-ums` shows the estate has done such renames
+   before.
+
+4. **The Eclexia policy path is a fake gate.**
+   `oikosbot-eclexia`'s default backend, `evaluate_builtin`, dispatches on the
+   `.ecl` **file stem** and runs hardcoded Rust thresholds; the file's contents are
+   never read. The thresholds contradict the files they claim to implement —
+   `energy_threshold.ecl` declares `> 50.0 J` per function, the builtin fires at
+   `> 1000 J` total. The `eclexia-native` backend cannot compile (parser and interp
+   are not dependencies). This is resolved by the Eclexia work below, but should be
+   made loud immediately rather than left silently wrong.
+
+5. **Local checkout is 7 PRs stale** — HEAD `3f1e6e6` (#50) against origin
+   `7e73ddf` (#57), with uncommitted `.editorconfig` and `.gitignore` edits.
+
+6. **`config/oikos.yaml` over-promises.** It declares PR comments, a dashboard on
+   :8080, OTel export, Slack/email notification and a praxis loop, none of which
+   exist in code; the config loader silently discards them. A new adopter reading
+   the reference config will believe OikosBot does things it does not. Annotate
+   the file to mark aspirational blocks, or trim them.
+
+**Blocking constraint.** Every Actions workflow in the estate currently dies at
+startup with a 0-second `startup_failure`, root-caused on 2026-08-03 to GitHub's
+new workflow-lockfile enforcement. It is not repairable from inside any repo: it
+needs `gh extension install github/gh-actions-lock`, run once by the owner. Nothing
+below can be CI-verified until that lands — which is precisely why decision 5 puts
+collection in a local CLI reading server-side history, so the work is not gated on
+it.
+
+## Architecture
+
+Round one is a read-only pipeline. Nothing blocks, nothing is enforced, and no
+existing behaviour changes.
+
+```
+gh API ──► collect ──► snapshot ──► derive ──► DEA ──► report
+           (crate)     (parquet)   (crate)   (crate)   (md/json)
+```
+
+### New crates
+
+**`oikos-telemetry`** — the collector. Reads, per repo, from the GitHub REST and
+GraphQL APIs: workflow run history (conclusion, duration, `run_started_at`,
+runner labels), `timing` per run for billable milliseconds by runner class,
+Actions billing, releases, packages, and repository metadata. Writes rows, not
+verdicts. Rate-limit aware and resumable, because ~400 repos with history is a
+lot of calls; it must be safe to interrupt and re-run.
+
+**`oikos-capability`** — the output measure, deliberately derived from run history
+rather than source analysis in round one. The signals are cheap and hard to fake:
+
+- *Does the workflow parse?* A run that is `startup_failure`, or whose name is its
+  own file path, produced nothing from real input.
+- *Can the gate fail?* A required check with N successful runs and **zero** failures
+  in its entire history is a fake-gate candidate. This is a pure telemetry signal —
+  no code analysis at all — and it operationalises a pathology the estate has
+  documented repeatedly.
+- *Do tests execute?* Test counts extracted from run logs, versus jobs that report
+  success with no test output.
+- *Do artefacts publish?* Releases and package versions actually produced.
+
+Static signals (proof bodies containing `sorry`/`axiom`/`admit`, `just` recipes
+that exit 0 without a prover) are deferred to round two; they are valuable but they
+are estimates, and round one is about establishing a Measured floor.
+
+**`oikos-dea`** — Data Envelopment Analysis, implemented natively (~150 lines of
+LP per model on `good_lp` with the HiGHS backend, MIT throughout; no Rust DEA
+crate exists and none is needed). Input-oriented CCR solved per repo, returning
+three things: the efficiency score θ, the **peer reference set** (the frontier
+repos this one is measured against — the most actionable output DEA gives,
+because it names a concrete exemplar rather than a number), and the **dual
+variables**, the virtual weights on each input and output. Those duals are the
+future shadow prices; round one computes and records them without anything
+consuming them yet. BCC (one added convexity constraint) gives pure technical
+efficiency, and θ_CCR/θ_BCC separates scale effects. Later rounds get standard
+definitions for free: allocative efficiency = cost efficiency ÷ technical
+efficiency once input prices are attached, and the **Malmquist index** (four LPs
+over two snapshots) becomes the principled base-vs-head productivity comparison.
+
+**Ledger discipline.** The snapshot schema is a stock-flow-consistent ledger:
+every flow debits one account and credits another; every stock reconciles against
+its accumulated flows at each snapshot, and the reconciliation is a hard check in
+`analyse`. Named in the `oikos-syntax` vocabulary (sectors / accounts / periods /
+transaction-flow matrix) per the DSL ruling above.
+
+**Reporting vocabulary.** Metrics are named and disclosed in SCI terms
+(ISO/IEC 21031) — energy `E`, intensity `I`, embodied `M`, per functional unit
+`R` — with every number carried as a value + unit + method triple. Confidence
+follows the existing ladder, and every report states the Estimated/Calibrated/
+Measured counts the way Infracost discloses unpriced resources.
+
+**`oikosbot-pareto`** is reused unchanged. Extracting it into a crate shared with
+Eclexia belongs to round two.
+
+### The confidence ladder does real work here
+
+This is the part that keeps the design honest, and it uses machinery the codebase
+already has rather than adding any.
+
+| Quantity | Source | Confidence |
+|---|---|---|
+| Billable minutes, wall-clock, queue time | GitHub API, directly | **Measured** |
+| Money | minutes × published per-minute rate | **Measured** |
+| Verified-capability signals from run history | GitHub API, directly | **Measured** |
+| Energy | minutes × runner TDP × PUE | **Calibrated** — a coefficient over a measurement |
+| Carbon | energy × grid intensity | **Estimated** — GitHub does not expose the runner's region, so intensity rests on a declared assumption |
+
+That stratification is a feature, not an apology. It means the economic axes are
+the *strongest* ones — money and time are directly measured — which is exactly the
+"economic as strongly as the ecological" requirement, and it is the first time
+anything in this system has been able to claim `Measured`. It also means that when
+enforcement arrives in a later round, it can legitimately block on cost and waste
+while carbon remains advisory until better data exists. The existing gate already
+implements precisely this rule: only `Measured` or `Calibrated` may block.
+
+### Where things live
+
+A new `oikos-estate` repository holds versioned snapshots (Parquet), one per
+collection run, plus the schema. Analysis code stays in `oikosbot`. Keeping the
+data out of `oikosbot` avoids the tool's own history becoming a data-publishing
+concern, and keeps OikosBot from silently measuring a corpus that contains itself.
+
+### CLI surface
+
+`oikosbot estate collect | analyse | report`, mirroring the existing
+`check`/`report` conventions and honouring `.oikos.yml`. Collection runs locally
+against the API today and can move into CI once the lockfile blocker clears,
+without changing the code.
+
+## Roadmap beyond round one
+
+**Ruled (2026-08-03): round two is decided by round one's evidence, not
+pre-committed.** The plan records the candidates and the decision criterion:
+
+- **Candidate A — the Eclexia join**: export DEA duals as shadow prices, parse
+  `.ecl` for real, patch Eclexia's selector to consume `@optimize` via the shared
+  dominance crate. Chosen if the independence check passes cleanly and the duals
+  are stable across snapshots (unstable prices should not be exported).
+- **Candidate B — enforcement + calibration (#48)**: wire `calibration.rs`, let
+  `compare --check` block on Measured/Calibrated axes. Chosen if the telemetry
+  proves reliable enough to gate on and consumers are ready for a gate. Per the
+  landscape survey, a *working* gate with honest numbers is the unoccupied market
+  square — but per estate doctrine, it ships working or ships disabled-and-says-so;
+  never in between.
+- **Candidate C — substrate deepening**: SFC identity checks live, static
+  capability signals (proof-body scans, fake-gate source analysis), longer
+  backfill. Chosen if round one's DEA population or data quality is too thin to
+  support A or B.
+
+**Decision criterion**: the independence matrix, dual stability across ≥2
+snapshots, and coverage (fraction of repos with non-degenerate telemetry) — all
+three reported by round one itself.
+
+**PR decoration** (single updated-in-place comment, verdict header, honest
+estimated/measured counts — the one table stake every comparable product has)
+attaches to whichever round first produces per-PR output; it is blocked on
+nothing and may be pulled forward if a quick win is wanted.
+
+**Later, sequenced by the above**: Scallop-vs-ascent decision at the policy-engine
+port (evidence recorded in the landscape section); Malmquist index for base-vs-head
+once ≥2 snapshots exist; debt-as-DCF via `rust_finprim` with the two dollar
+denominators cross-checked; language coverage beyond Rust/JS/Python (the analyzer
+gap is moot for round one, since telemetry is language-agnostic — one reason the
+estate's Zig/Idris repos are finally measurable at all); OikosBot-in-Eclexia
+migrations as the language matures.
+
+## Verification
+
+Round one is verifiable *without CI*, which is the point of sequencing it first.
+
+1. **Independence check — the falsifier for the whole premise.** Compute the
+   correlation matrix across the collected axes (money, wall-clock, energy, carbon,
+   node count). If money and time are not substantially independent of node count,
+   the collinearity problem has not been solved and the design is wrong. This test
+   must be run and reported before any DEA result is trusted.
+2. **Reproducibility.** Two collection runs over the same time window must produce
+   identical snapshots. Re-running `analyse` on a committed snapshot must be
+   deterministic.
+3. **DEA correctness.** Validate against a published worked example with known
+   efficiency scores; verify θ ∈ (0,1], that every frontier unit scores exactly 1,
+   and that duals satisfy complementary slackness. A DEA implementation that has
+   not been checked against a known answer is not evidence.
+4. **Ground truth on known cases.** The estate has documented fake gates and dead
+   workflows. The capability detector must find them. If it does not flag repos
+   already known to have gates that cannot fail, it is not measuring capability.
+5. **Confidence labelling.** Assert that no quantity is labelled `Measured` unless
+   it came directly from the API, and specifically that carbon never claims better
+   than `Estimated`.
+6. **Part 0 repairs** are verified by workflow-file inspection now, and by an
+   actual green run once the lockfile fix lands — not before.
+
