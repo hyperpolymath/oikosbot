@@ -65,14 +65,27 @@ pub fn collect_runs(gh: &dyn GhRunner, repo: &str, max_runs: usize) -> Result<Ve
         for r in &runs {
             let started = r["run_started_at"].as_str().unwrap_or("").to_string();
             let updated = r["updated_at"].as_str().unwrap_or("").to_string();
+            // `run_started_at` is nullable in GitHub's API (queued/early-state
+            // runs); a null/absent value maps to "" above. Never subtract
+            // through an empty timestamp — iso_to_epoch("") is epoch zero,
+            // which would otherwise inflate duration_s by ~1970 years'
+            // worth of seconds. Treat either side missing as duration 0.
+            let duration_s = if started.is_empty() || updated.is_empty() {
+                0
+            } else {
+                (iso_to_epoch(&updated) - iso_to_epoch(&started)).max(0)
+            };
             rows.push(RunRow {
                 repo: repo.to_string(),
                 run_id: r["id"].as_i64().unwrap_or(0),
                 workflow_name: r["name"].as_str().unwrap_or("").to_string(),
                 workflow_path: r["path"].as_str().unwrap_or("").to_string(),
                 event: r["event"].as_str().unwrap_or("").to_string(),
+                // `conclusion` is null for in-progress runs and maps to ""
+                // here; downstream counting must treat "" as neither
+                // success nor failure, not as a distinct outcome bucket.
                 conclusion: r["conclusion"].as_str().unwrap_or("").to_string(),
-                duration_s: (iso_to_epoch(&updated) - iso_to_epoch(&started)).max(0),
+                duration_s,
                 started_at: started,
                 updated_at: updated,
             });
@@ -146,6 +159,20 @@ mod tests {
         assert_eq!(rows[0].conclusion, "startup_failure");
         assert_eq!(rows[0].duration_s, 0);
         assert_eq!(rows[0].workflow_path, ".github/workflows/ci.yml");
+    }
+
+    #[test]
+    fn collect_runs_zeroes_duration_when_started_at_is_null() {
+        let fake = Fake(serde_json::json!({"workflow_runs":[{
+            "id": 43, "name": "CI", "path": ".github/workflows/ci.yml",
+            "event": "push", "conclusion": null,
+            "run_started_at": null, "updated_at": "2026-08-01T00:05:00Z"}]}));
+        let rows = collect_runs(&fake, "o/r", 50).unwrap();
+        assert_eq!(
+            rows[0].duration_s, 0,
+            "null run_started_at must not be treated as epoch zero"
+        );
+        assert_eq!(rows[0].conclusion, "");
     }
 
     #[test]
