@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+
+[package]
+name = "oikosbot-telemetry"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+oikosbot-metrics = { path = "../oikosbot-metrics" }
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+parquet = "59.1.0"
+parquet_derive = "59.1.0"
