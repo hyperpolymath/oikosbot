@@ -21,10 +21,13 @@ workflows:
         - 'github/codeql-action@v4.37.3'
     '.github/workflows/dependabot-automerge.yml':
         - 'dependabot/fetch-metadata@v3.1.0'
+    '.github/workflows/governance.yml': []
+    '.github/workflows/hypatia-scan.yml': []
     '.github/workflows/instant-sync.yml':
         - 'peter-evans/repository-dispatch@v4.0.1'
     '.github/workflows/language-policy.yml':
         - 'actions/checkout@v7.0.1'
+    '.github/workflows/mirror.yml': []
     '.github/workflows/publish-image.yml':
         - 'actions/attest-build-provenance@v4.1.1'
         - 'actions/checkout@v7.0.1'
@@ -34,6 +37,8 @@ workflows:
         - 'docker/setup-buildx-action@v4.2.0'
     '.github/workflows/push-email-notify.yml':
         - 'dawidd6/action-send-mail@v3.12.0'
+    '.github/workflows/scorecard.yml': []
+    '.github/workflows/secret-scanner.yml': []
     '.github/workflows/workflow-linter.yml':
         - 'actions/checkout@v7.0.1'
 dependencies:
