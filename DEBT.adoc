@@ -331,6 +331,44 @@ https://github.com/hyperpolymath/oikosbot/pull/61[#61] and CI now runs green
 Reusable-caller permissions fixed in
 https://github.com/hyperpolymath/oikosbot/pull/63[#63].
 
+| `BLOCKING` | *Four phantom required contexts block every pull request, so
+every merge needs `--admin`.* The `main` ruleset requires 27 status checks. All
+27 checks that *can* report do report and pass — but four of the required
+contexts never appear, so `mergeStateStatus` is permanently `BLOCKED`:
++
+[cols="2,3"]
+!===
+! Required context ! Why it never reports
+
+! `Build and push oikos image`
+! `publish-image.yml` triggers only on `push: branches: [main]`. It cannot run
+  on a pull request, so **no PR can ever satisfy it**. Structurally
+  unsatisfiable, not merely absent.
+
+! `Dependabot`
+! Reports only on Dependabot's own PRs. Unsatisfiable on any human PR.
+
+! `governance / Guix primary / Nix fallback policy`
+! The job was **renamed** to `governance / Guix packaging policy (Nix
+  retired)`. Renaming a job silently orphans the required context that names
+  it — the ruleset still waits for a name nothing emits.
+
+! `lint-workflows`
+! Declared as a job in `workflow-linter.yml` but did not report on the PR
+  measured; the governance-scoped `governance / Workflow security linter`
+  did. Looks like a duplicate/stale entry; needs confirmation.
+!===
++
+*Consequence, and it is worse than the inconvenience:* branch protection that
+can never be satisfied is not protection. It trains everyone to merge with
+`--admin`, which bypasses **all** the checks — including the 23 real ones — so
+the net effect of over-specifying the ruleset is *less* enforcement than
+specifying it correctly. *Fix:* drop the two structurally unsatisfiable
+contexts, rename the Guix one to match the job, and confirm the fourth.
++
+*Reproduce:*
+`comm -23 <(gh api repos/hyperpolymath/oikosbot/rules/branches/main -q '.[]|select(.type=="required_status_checks")|.parameters.required_status_checks[].context'|sort -u) <(gh pr checks <PR> | cut -f1 | sort -u)`
+
 | `STRUCTURAL` | *The consumer fleet is still dark.* Fifteen estate repos carry
 `.github/workflows/oikosbot.yml` pinned to `oikosbot@bb95ab50` (v0.1.0), all
 merged — but each needs its **own** Actions lockfile before its workflows can
