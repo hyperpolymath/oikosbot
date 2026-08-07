@@ -29,11 +29,55 @@ OikosBot is **online in CI/Action mode**. A repository can consume it in three w
 
 | CLI
 | `cargo build --release` → `oikosbot analyze\|check\|report\|compare`.
+
+| Estate CLI
+| `oikosbot estate collect\|analyse\|report` — organisation-scale analysis over
+  CI telemetry. Read-only; reports, does not gate.
 |===
 
 Findings reach GitHub's Security tab as SARIF 2.1.0, carrying `pareto_status`,
 `pareto_score`, `pareto_dominated_by`, `econ_score` and a `confidence` label on
 every result.
+
+=== The estate pipeline (newest, strongest evidence)
+
+Shipped 2026-08-03 (PR #60). Three crates — `oikosbot-telemetry`,
+`oikosbot-capability`, `oikosbot-dea` — plus the `estate` subcommand.
+
+It exists because *allocative efficiency is not a property of a single diff*:
+scarce resources flowing to their highest-valued competing use requires
+competing claims on a shared budget. So the unit of analysis is the whole
+estate, and the per-PR check becomes one projection of it.
+
+What makes it the strongest surface in the project:
+
+* *The inputs are measured, not modelled.* Wall-clock minutes come straight
+  from the GitHub API — the first genuinely `Measured` quantity anywhere in
+  OikosBot. No instrumentation is installed in the analysed repositories, and
+  history already recorded is available retroactively.
+* *The premise was falsified first.* If compute time had turned out to be a
+  proxy for code volume, the DEA inputs would have been one variable in
+  disguise. Measured across 381 repositories and 69,445 runs:
+  `pearson(wall_minutes, size_kb) = -0.049`. Independent.
+* *Output is verified capability, not activity* — does a workflow parse, can a
+  gate actually fail, do artefacts publish. A gate with many successes and no
+  failure in its whole history has never demonstrated it can fail.
+* *DEA gives an exemplar, not just a score.* Each off-frontier repository is
+  returned with its peer reference set — the frontier repositories it is
+  measured against — plus the LP duals, which are shadow prices derived from
+  the estate's own data.
+* *Analysis is deterministic:* two runs over the same staging produce
+  byte-identical `analysis.json`.
+
+Snapshots live in
+https://github.com/hyperpolymath/oikosbot-estate[`hyperpolymath/oikosbot-estate`]
+— data only, no code, one directory per collection run, so history is git
+history and OikosBot never silently measures a corpus containing itself.
+
+Round one deliberately does **not** gate. See link:../DEBT.adoc[`DEBT.adoc`]
+for its known rough edges (zero-run repositories are absent from the analysis;
+zero-output repositories score θ = 0 with empty peer sets, an artefact of
+flooring rather than a ranking).
 
 === The Pareto engine
 

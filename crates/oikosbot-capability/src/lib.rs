@@ -15,6 +15,13 @@ pub struct CapabilityRow {
     pub parse_dead_runs: u64,
     pub workflows_seen: u64,
     pub workflows_fallible: u64,
+    /// Workflow **paths** (not names) with N successes and zero failures in
+    /// their whole history. Grouping by path rather than the free-text
+    /// `workflow_name` matters: two different files can share a name (e.g.
+    /// two workflows both titled "CI"), and grouping by name would merge
+    /// their run counts, potentially hiding a fake-gate candidate behind a
+    /// same-named failing workflow. Paths are unique per file, so this is
+    /// also more precise for humans tracking down the offending file.
     pub infallible_gate_candidates: Vec<String>,
     pub verified_success_runs: u64,
     pub releases: u64,
@@ -33,6 +40,9 @@ pub fn assess(runs: &[RunRow], releases: &[ReleaseRow], min_n: u64) -> Vec<Capab
     by_repo
         .into_iter()
         .map(|(repo, rs)| {
+            // Keyed by workflow_path (unique per file), not workflow_name
+            // (free-text, non-unique — see the doc comment on
+            // `infallible_gate_candidates`).
             let mut wf: BTreeMap<&str, (u64, u64)> = BTreeMap::new(); // (successes, failures)
             let mut startup = 0u64;
             let mut parse_dead = 0u64;
@@ -43,7 +53,7 @@ pub fn assess(runs: &[RunRow], releases: &[ReleaseRow], min_n: u64) -> Vec<Capab
                 if r.workflow_name == r.workflow_path && !r.workflow_path.is_empty() {
                     parse_dead += 1;
                 }
-                let e = wf.entry(&r.workflow_name).or_default();
+                let e = wf.entry(&r.workflow_path).or_default();
                 match r.conclusion.as_str() {
                     "success" => e.0 += 1,
                     "failure" | "startup_failure" | "timed_out" => e.1 += 1,
@@ -120,8 +130,25 @@ mod tests {
         all.push(run("o/fake", "Real", "r.yml", "failure"));
         all.push(run("o/fake", "Real", "r.yml", "success"));
         let c = assess(&all, &[], 5);
-        assert_eq!(c[0].infallible_gate_candidates, vec!["Gate".to_string()]);
+        assert_eq!(c[0].infallible_gate_candidates, vec!["g.yml".to_string()]);
         assert_eq!(c[0].workflows_fallible, 1);
         assert_eq!(c[0].verified_success_runs, 1); // only Real's success counts
+    }
+
+    #[test]
+    fn same_workflow_name_different_paths_are_not_merged() {
+        // Regression: two workflows named "CI" but living at different
+        // paths must be assessed independently. Grouping by name (the old
+        // bug) would merge a.yml's 6 clean successes with b.yml's 1
+        // success + 1 failure into a single "CI" entry with a failure,
+        // hiding a.yml's fake-gate status entirely.
+        let mut all: Vec<_> = (0..6)
+            .map(|_| run("o/collide", "CI", "a.yml", "success"))
+            .collect();
+        all.push(run("o/collide", "CI", "b.yml", "success"));
+        all.push(run("o/collide", "CI", "b.yml", "failure"));
+        let c = assess(&all, &[], 5);
+        assert_eq!(c[0].infallible_gate_candidates, vec!["a.yml".to_string()]);
+        assert_eq!(c[0].verified_success_runs, 1); // only b.yml's success counts
     }
 }

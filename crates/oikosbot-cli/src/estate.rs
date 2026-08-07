@@ -228,6 +228,17 @@ fn repo_name(full_name: &str) -> &str {
     full_name.rsplit_once('/').map_or(full_name, |(_, n)| n)
 }
 
+/// Serialise `items` to pretty JSON and write to `path`. Errors are
+/// returned rather than logged so callers can decide whether a given
+/// staging write is fatal (the per-owner repo list, which nothing
+/// downstream can proceed without) or recoverable (a single repo's runs
+/// or releases, where one bad write must not abort the whole sweep).
+fn stage_json<T: serde::Serialize>(path: &Path, items: &[T]) -> Result<()> {
+    let json = serde_json::to_string_pretty(items)?;
+    fs::write(path, json).with_context(|| format!("write {}", path.display()))?;
+    Ok(())
+}
+
 /// Sweep `owners` via `gh`, writing staging JSON nested under one directory
 /// per owner (`<out>/<owner>/repos-<owner>.json`, `<out>/<owner>/runs-<repo
 /// name>.json`, `<out>/<owner>/releases-<repo name>.json`). Nesting by owner
@@ -236,8 +247,12 @@ fn repo_name(full_name: &str) -> &str {
 /// share a flattened string (e.g. owner "a-b" + repo "c" vs. owner "a" +
 /// repo "b-c") but never share a (directory, filename) pair, since a repo
 /// name alone cannot contain `/`. Resumable: any staging file that already
-/// exists is skipped. Per-repo/per-owner errors are logged to stderr and do
-/// not abort the sweep — one bad repo must not kill a 400-repo run.
+/// exists is skipped. Per-repo/per-owner errors — including a local
+/// serialise/write failure while staging a repo's runs or releases — are
+/// logged to stderr and do not abort the sweep; one bad repo must not kill
+/// a 400-repo run. The exception is the per-owner repo-list write itself
+/// (see `stage_json`'s doc comment): that one is fatal, since nothing
+/// downstream can proceed for the owner without it.
 fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) -> Result<()> {
     fs::create_dir_all(out).with_context(|| format!("create staging dir {}", out.display()))?;
 
@@ -256,9 +271,12 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
         } else {
             match list_repos(gh, owner) {
                 Ok(repos) => {
-                    let json = serde_json::to_string_pretty(&repos)?;
-                    fs::write(&repos_path, json)
-                        .with_context(|| format!("write {}", repos_path.display()))?;
+                    // Fatal (unlike the per-repo writes below): nothing
+                    // downstream can proceed for this owner without its
+                    // repo list, so a local write/serialise failure here
+                    // aborts the owner via `?` rather than being logged
+                    // and skipped.
+                    stage_json(&repos_path, &repos)?;
                     eprintln!(
                         "collected {} repos for owner {} -> {}",
                         repos.len(),
@@ -286,17 +304,15 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
                 eprintln!("skip (exists): {}", runs_path.display());
             } else {
                 match collect_runs(gh, &repo.repo, max_runs) {
-                    Ok(runs) => {
-                        let json = serde_json::to_string_pretty(&runs)?;
-                        fs::write(&runs_path, json)
-                            .with_context(|| format!("write {}", runs_path.display()))?;
-                        eprintln!(
+                    Ok(runs) => match stage_json(&runs_path, &runs) {
+                        Ok(()) => eprintln!(
                             "collected {} runs for {} -> {}",
                             runs.len(),
                             repo.repo,
                             runs_path.display()
-                        );
-                    }
+                        ),
+                        Err(e) => eprintln!("error: stage runs for {}: {e:#}", repo.repo),
+                    },
                     Err(e) => eprintln!("error: collect_runs({}): {e:#}", repo.repo),
                 }
             }
@@ -306,17 +322,15 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
                 eprintln!("skip (exists): {}", releases_path.display());
             } else {
                 match collect_releases(gh, &repo.repo) {
-                    Ok(releases) => {
-                        let json = serde_json::to_string_pretty(&releases)?;
-                        fs::write(&releases_path, json)
-                            .with_context(|| format!("write {}", releases_path.display()))?;
-                        eprintln!(
+                    Ok(releases) => match stage_json(&releases_path, &releases) {
+                        Ok(()) => eprintln!(
                             "collected {} releases for {} -> {}",
                             releases.len(),
                             repo.repo,
                             releases_path.display()
-                        );
-                    }
+                        ),
+                        Err(e) => eprintln!("error: stage releases for {}: {e:#}", repo.repo),
+                    },
                     Err(e) => eprintln!("error: collect_releases({}): {e:#}", repo.repo),
                 }
             }

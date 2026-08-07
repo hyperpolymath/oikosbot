@@ -43,8 +43,48 @@ Status legend: `done` | `in-progress` | `blocked` | `planned`
   access for this repo (`permission_denied: write_package`); fixed by owner
   grant, not by code — the Containerfile was verified sound via local podman
 
+=== Done (2026-08-03) — estate economics, round one
+
+* [x] *New unit of analysis: the estate.* Crates `oikosbot-telemetry`
+  (gh-API collector, Parquet snapshots, derived energy/carbon/cost with the
+  confidence ladder), `oikosbot-capability` (verified-capability output metrics
+  including fake-gate detection from run history), `oikosbot-dea` (Data
+  Envelopment Analysis — input-oriented CCR and BCC as paired
+  envelopment/multiplier LPs on `good_lp`+HiGHS, returning θ, peer reference
+  sets and dual weights). PR #60.
+* [x] `oikosbot estate collect|analyse|report` — resumable collection,
+  deterministic analysis, markdown/JSON reporting.
+* [x] Snapshot dataset repository
+  https://github.com/hyperpolymath/oikosbot-estate[`oikosbot-estate`].
+* [x] *First `Measured` data in the project's history* — wall-clock minutes
+  from the GitHub API.
+* [x] Premise falsified before building on it: `pearson(wall_minutes,
+  size_kb) = -0.049` across 381 repositories.
+* [x] CI unblocked — Actions workflow lockfile adopted (#61), reusable-caller
+  permissions fixed (#63).
+* [x] Debt register link:DEBT.adoc[`DEBT.adoc`] and a documentation pass
+  across README, STATUS, ARCHITECTURE, the a2ml set and the wiki.
+
 === Remaining
 
+*Round two is decided by evidence, not pre-committed.* The candidates are
+(A) export the DEA duals as shadow prices and wire Eclexia's currently-inert
+`@optimize` through a shared dominance crate; (B) enforcement — wire
+`calibration.rs` so `--check` can finally block (#48); (C) deepen the
+substrate — stock-flow-consistency identity checks, static capability signals,
+longer backfill. The decision criterion is reported by the pipeline itself:
+the independence matrix, dual stability across at least two snapshots, and
+telemetry coverage. **Requires snapshot #2.**
+
+* [ ] *Consumer lockfile sweep (P1)* — 15 estate repositories carry
+  `oikosbot.yml` merged and pinned, but each needs its own Actions lockfile
+  before the workflow can start. OikosBot is installed everywhere and running
+  nowhere; this is the highest-value follow-up.
+* [ ] *PR decoration (P2)* — a single updated-in-place comment with a verdict
+  header and honest estimated/measured counts. The one table stake every
+  comparable product has and OikosBot lacks; SARIF-to-code-scanning is not a
+  substitute, because it does not gate merges and reviewers do not open the
+  Security tab during review. Blocked on nothing.
 * [ ] Stabilize the analyzer request and response schema
 * [ ] Wire the AffineScript receiver to the analyzer service
 * [ ] Replace mock health reports with analyzer-backed reports
