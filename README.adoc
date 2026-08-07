@@ -8,10 +8,17 @@ v0.1.0-dev
 :icons: font
 :source-highlighter: rouge
 
-image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=opensourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://github.com/hyperpolymath/oikosbot"]
 image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
+image:https://img.shields.io/badge/status-alpha-orange.svg[Status: alpha]
 
-*A code-analysis GitHub/GitLab App that adds ecological and economic review to pull requests.*
+*Measures what software costs — in money, time, energy and carbon — and which
+repositories turn that spend into verified capability.*
+
+OikosBot analyses code and CI history through an *ecological and economic* lens.
+It is unusual in two ways: it treats the *economic* axes as seriously as the
+ecological ones, and it starts from *Pareto optimality* rather than a single
+score — a change is an improvement only if it dominates, and a trade-off is
+named as a trade-off.
 
 [NOTE]
 ====
@@ -36,23 +43,60 @@ toc::[]
 For a map of all documentation — grouped by audience (developer / maintainer /
 end-user) and by concept — see link:docs/README.adoc[`docs/README.adoc`].
 
+== Two units of analysis
+
+OikosBot works at two scales, and they have very different evidential strength.
+
+[cols="1,3,3"]
+|===
+| | *Per file* (`analyze` / `check` / `report` / `compare`) | *Per estate* (`estate collect` / `analyse` / `report`)
+
+| Question
+| Did this change dominate its base, or trade off?
+| Which repositories turn spend into verified capability — and which consume input and produce none?
+
+| Inputs
+| tree-sitter AST metrics
+| GitHub CI telemetry: billable minutes, wall-clock, runner class
+
+| Confidence
+| `Estimated` only
+| `Measured` money and time; `Calibrated` energy; `Estimated` carbon
+
+| Can it block?
+| No — see the caveat below
+| Not yet; round one is read-only by design
+|===
+
+The estate view exists because *allocative efficiency is not a property of a
+single change*. It means scarce resources flow to their highest-valued
+competing use; with one diff in front of you there is nothing to allocate
+between. Opportunity cost and marginal analysis need a portfolio, so the
+portfolio is the unit.
+
 == Status
 
-`v0.1.0` — **online in CI/Action mode**. Full picture:
-link:docs/STATUS.adoc[`docs/STATUS.adoc`] (human) and
-link:.machine_readable/6a2/STATE.a2ml[`STATE.a2ml`] (machine).
+`v0.1.0` — **online in CI/Action mode**; estate pipeline **shipped, read-only**.
+Full picture: link:docs/STATUS.adoc[`docs/STATUS.adoc`] (human),
+link:.machine_readable/6a2/STATE.a2ml[`STATE.a2ml`] (machine), and
+link:DEBT.adoc[`DEBT.adoc`] (what is owed).
 
-Working: the Pareto engine (`crates/oikosbot-pareto`), the published container
+Working: the Pareto engine (`crates/oikosbot-pareto`), the estate pipeline
+(`oikosbot-telemetry` / `-capability` / `-dea`), the published container
 `ghcr.io/hyperpolymath/oikos`, the composite GitHub Action, `.oikos.yml`
 configuration, and SARIF output that GitHub code scanning ingests.
 
 [IMPORTANT]
 ====
-**Every resource figure is a heuristic estimate and `--check` cannot block a
-merge.** Only `Measured`/`Calibrated` inputs may fail a run, and the analyzer
+**Per-file resource figures are heuristic estimates and `--check` cannot block a
+merge.** Only `Measured`/`Calibrated` inputs may fail a run, and the analyser
 emits only `Estimated` — calibration exists but is not yet wired in (issue
-\#48). OikosBot warns loudly rather than passing silently, but treat it as an
-advisor, not a regulator. See link:docs/STATUS.adoc[`docs/STATUS.adoc`].
+\#48). OikosBot warns loudly rather than passing silently, but treat the
+per-file verdict as an advisor, not a regulator.
+
+The *estate* path is the exception: `wall_minutes` comes straight from the
+GitHub API and is genuinely `Measured`. See link:DEBT.adoc[`DEBT.adoc`] for the
+full account of what is and is not earned.
 ====
 
 The Rust analysis workspace (`crates/oikosbot-*`: CLI, analysis engine, metrics,
@@ -80,9 +124,13 @@ The Haskell analyzer scaffold (`analyzers/code-haskell/`) builds independently.
 ----
 oikosbot/
 |-- crates/                  # Rust workspace (oikosbot-* analysis engine + CLI)
-|   |-- oikosbot-cli/        #   `oikosbot` binary (analyze / check / report)
+|   |-- oikosbot-cli/        #   `oikosbot` binary (analyze/check/report/compare/estate)
 |   |-- oikosbot-analysis/   #   tree-sitter analysis + eco/econ heuristics
-|   |-- oikosbot-metrics/    #   shared metric/result types
+|   |-- oikosbot-metrics/    #   shared metric/result types + confidence ladder
+|   |-- oikosbot-pareto/     #   epsilon-tolerant dominance, frontier, verdicts
+|   |-- oikosbot-telemetry/  #   estate: gh-API collector, parquet snapshots, derived metrics
+|   |-- oikosbot-capability/ #   estate: verified-capability output metrics
+|   |-- oikosbot-dea/        #   estate: Data Envelopment Analysis (CCR/BCC LPs)
 |   |-- oikosbot-sarif/      #   SARIF report generation
 |   |-- oikosbot-eclexia/    #   Eclexia (.ecl) policy evaluation
 |   `-- oikosbot-fleet/      #   OPTIONAL gitbot-fleet bridge (excluded by default)
@@ -94,8 +142,9 @@ oikosbot/
 |-- databases/ontology/      # eco.ttl — VeriSimDB semantic-witness ontology seed
 |-- examples/                # Example CI integration
 |-- fuzz/                    # cargo-fuzz targets (excluded from the workspace)
-|-- docs/                    # GITHUB_APP_SETUP.adoc, tech-debt audit
-|-- ARCHITECTURE.adoc        # Platform architecture (target design)
+|-- docs/                    # documentation map, status, setup guides, specs
+|-- ARCHITECTURE.adoc        # Platform architecture (TARGET design — see DEBT.adoc)
+|-- DEBT.adoc                # Debt register: licence / docs / code / proof / CI-CD
 |-- DISAMBIGUATION.adoc      # oikos vs OikosBot vs sustainabot
 |-- QUICKSTART.adoc          # CLI quickstart
 `-- DEPLOY.adoc              # Deployment status and runbook notes
@@ -160,6 +209,50 @@ link:examples/oikosbot-ci.yml[`examples/oikosbot-ci.yml`].
 
 How OikosBot relates to the nearest Marketplace neighbour:
 link:docs/COMPARISON-climate-warrior.adoc[OikosBot vs Climate Warrior].
+
+== Estate analysis
+
+Treats a whole GitHub organisation as a portfolio competing for one budget of
+minutes, money, energy and carbon.
+
+[source,shell]
+----
+oikosbot estate collect  --owner <org> --out <staging> [--max-runs 200]
+oikosbot estate analyse  --staging <staging> --snapshot <dir>
+oikosbot estate report   --snapshot <dir> [--format md|json] [-o FILE]
+----
+
+`collect` reads CI run history through the authenticated `gh` CLI — no
+instrumentation in the measured repos, and it works retroactively. It is
+resumable: a staging file that already exists is skipped, so an interrupted
+sweep can simply be re-run.
+
+`analyse` derives per-repo cost and capability, then runs *Data Envelopment
+Analysis* — input-oriented CCR and BCC solved as linear programs. DEA compares
+units with multiple incommensurable inputs *and* outputs, needs no prices, and
+returns three things: an efficiency score, the *peer set* (which frontier repos
+this one is measured against — an exemplar, not just a number), and the LP
+*duals*, which are shadow prices derived from the estate's own data.
+
+The output measure is *verified capability*, not activity: does a workflow
+parse, can a gate actually fail, do artefacts publish. That reframes a familiar
+pathology as an economic one — a repository burning CI minutes on a gate with
+hundreds of successes and no failure in its entire history is consuming real
+input for no verified output.
+
+Snapshots are versioned Parquet committed to a separate dataset repository,
+https://github.com/hyperpolymath/oikosbot-estate[`hyperpolymath/oikosbot-estate`],
+so history is git history and the analysis never silently measures a corpus
+containing itself. Two `analyse` runs over the same staging produce
+byte-identical output.
+
+[NOTE]
+====
+Round one is deliberately *read-only*: it reports, it does not gate. The
+premise was checked before anything was built on it — measured correlation
+between compute time and code volume across 381 repositories is −0.049, i.e.
+the axes really are independent rather than one variable in disguise.
+====
 
 == GitHub App
 

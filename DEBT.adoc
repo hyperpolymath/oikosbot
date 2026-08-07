@@ -1,0 +1,417 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot — Debt Register
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+:toc: preamble
+:toclevels: 2
+
+Audited 2026-08-07. Supersedes link:docs/tech-debt-2026-05-26.adoc[`docs/tech-debt-2026-05-26.adoc`].
+
+A tool that prices other repositories' waste has no business hiding its own.
+Every entry below is evidenced with a file reference or a command whose output
+can be reproduced; nothing is asserted from memory. Where a claim could not be
+verified, it says so.
+
+Severity is about *consequence*, not effort:
+
+[cols="1,4"]
+|===
+| `BLOCKING` | Something advertised does not work. A user relying on it is misled.
+| `STRUCTURAL` | Sound today, but the design will not carry the next increment.
+| `HYGIENE` | Real, bounded, no blast radius.
+|===
+
+== Summary
+
+[cols="1,1,4"]
+|===
+| Area | Worst | One-line
+
+| <<licence>> | HYGIENE | One orphaned licence text; one doc missing its SPDX header.
+| <<docs>> | STRUCTURAL | Two boilerplate files describe a directory layout this repo does not have; `ARCHITECTURE.adoc` specifies components that were never built.
+| <<code>> | BLOCKING | The per-file analyser derives every resource axis from one integer, so its Pareto frontier is a one-dimensional sort.
+| <<proof>> | BLOCKING | The Datalog policy engine has never executed; the Eclexia policy backend matches on filenames and never reads the files.
+| <<cicd>> | HYGIENE | Repo CI is green; the consumer fleet cannot run until each repo ships a lockfile.
+|===
+
+[#licence]
+== Licence debt
+
+The scheme itself is sound and consistently applied: **MPL-2.0 for code,
+CC-BY-SA-4.0 for documentation**, 78 and 29 declarations respectively
+(`grep -rhoP "SPDX-License-Identifier: \K[A-Za-z0-9.+-]+"`).
+
+[cols="1,4"]
+|===
+| `HYGIENE` | *`LICENSES/AGPL-3.0-or-later.txt` is orphaned.* No file in the
+repository declares `SPDX-License-Identifier: AGPL-3.0-or-later`; the only
+textual occurrence of "AGPL" outside `LICENSES/` is a *quotation of another
+repo's* header inside `docs/superpowers/specs/`. A REUSE-conformant tree
+carries licence texts only for licences actually in use, so this reads as an
+unused licence. *Fix:* delete the file. *Risk if wrong:* if a future file
+genuinely needs AGPL, re-add it then.
+
+| `HYGIENE` | *`GOVERNANCE.md` carries no SPDX header at all* — see
+<<docs>>, where it is slated for deletion as boilerplate. Every other document
+in the tree has one.
+
+| `HYGIENE` | *`docs/README.adoc` was mis-licensed by a duplicated header.* It
+carried **two** conflicting identifiers — `MPL-2.0` on line 1 and
+`CC-BY-SA-4.0` on line 2. Because the linter reads `head -1`, the documentation
+map was being licensed as code. *Fixed in this audit* by removing the stray
+MPL-2.0 line; the CC-BY-SA-4.0 identifier is now line 1. Worth noting as a
+class: a *duplicated* header is more dangerous than a missing one, because it
+passes the presence check while asserting the wrong licence.
+
+| `HYGIENE` | *SPDX headers must be on line 1.* The estate's linter greps
+`head -1` only, so a header on line 3 reads as *missing*. Verified compliant
+across the round-one crates (`oikosbot-telemetry`, `-capability`, `-dea`,
+`oikosbot-cli/src/estate.rs`). Recorded here because the failure mode is
+invisible: a correct header in the wrong position silently fails the gate.
+|===
+
+[#docs]
+== Documentation debt
+
+[cols="1,4"]
+|===
+| `STRUCTURAL` | *`ARCHITECTURE.md` is generic boilerplate that contradicts the
+repository.* It documents a `src/ tests/ scripts/ config/` layout; this repo is
+a Cargo workspace whose code lives in `crates/`. It has no SPDX header, and it
+shadows the real 33 KB `ARCHITECTURE.adoc` — a reader who opens the `.md`
+learns nothing true. *Fix:* delete. Template rot, not authored content.
+
+| `STRUCTURAL` | *`GOVERNANCE.md` is the same defect* — generic prose
+("governed by the following principles and structures") duplicating the real,
+SPDX-headed `GOVERNANCE.adoc`. *Fix:* delete.
+
+| `STRUCTURAL` | *`ARCHITECTURE.adoc` specifies components that do not exist.*
+Measured against the tree:
++
+* §196 specifies an *OCaml documentation analyzer* at `/analyzers/docs-ocaml/`.
+  `analyzers/` contains only `code-haskell`.
+* §424 lists the policy engine as *"Python + Datalog"*. Python is banned by the
+  language policy, and the 2026-07-28 ruling retargeted the engine to Scallop
+  (Rust). The document was never updated.
+* §29 describes four bot roles — *consultant, advisor, regulator, and policy
+  developer*. `crates/oikosbot-cli/src/config.rs` implements three; there is no
+  `policy developer` mode.
+* §121–§358 describe a *Praxis Loop* and DeepProbLog inference that are not
+  implemented.
++
+*Fix:* mark it explicitly as *target design, not current state*, and annotate
+each unbuilt component inline — the cheapest honest option, given it is a real
+design document rather than rot.
+
+| `BLOCKING` | *The README carried an unearned OpenSSF Best Practices badge.*
+A hardcoded green `shields.io` image asserting "OpenSSF Best Practices", linked
+to `bestpractices.dev/en/projects/**new**?repo_url=…` — the *registration*
+form, not an earned listing. Querying the OpenSSF API
+(`bestpractices.dev/projects.json?url=…/oikosbot`) returns an **empty result**:
+the project is not registered, holds no badge, and has passed no criteria.
+A green compliance badge nobody awarded is a claim about security posture that
+the project cannot support. *Removed in this audit.* This matches a documented
+estate-wide template-drift pattern; other repos should be grepped for the same
+badge block.
+
+| `STRUCTURAL` | *The wiki is a one-line stub* ("Welcome to the oikosbot
+wiki!"). It is enabled and indexed, so it is a discoverable dead end.
+
+| `HYGIENE` | *Taxonomy vocabulary collision* (issue
+https://github.com/hyperpolymath/oikosbot/issues/12[#12]):
+`META.a2ml [maintenance-axes]` and `NEUROSYM.a2ml [finding-taxonomy]` define
+overlapping-but-different vocabularies for the same concept. Unreconciled.
+
+| `HYGIENE` | *`config/oikos.yaml` advertises capabilities that do not exist* —
+PR comments, a dashboard on `:8080`, OTel export, Slack/email notification, a
+praxis loop. The loader parses and silently discards them. Mitigated in
+https://github.com/hyperpolymath/oikosbot/pull/59[#59] by marking each block
+`ASPIRATIONAL`; the blocks themselves remain.
+
+| `HYGIENE` | *Open docs issues*
+https://github.com/hyperpolymath/oikosbot/issues/16[#16] (split README into a
+docs tree) and https://github.com/hyperpolymath/oikosbot/issues/17[#17]
+(end-user guide: interpreting findings, SARIF, policy customisation) remain
+open and are only partly addressed by `docs/README.adoc`.
+|===
+
+[#code]
+== Code debt
+
+=== The collinearity problem (the important one)
+
+[cols="1,4"]
+|===
+| `BLOCKING` | *Every resource axis in the per-file analyser is a scalar
+multiple of one integer.* `Analyzer::estimate_resources()`
+(`crates/oikosbot-analysis/src/analyzer.rs:199`) derives all four axes from
+`complexity`, a raw AST **node count**:
++
+[source,rust]
+----
+let energy   = Energy::joules(complexity as f64 * 0.1);
+let duration = Duration::milliseconds(complexity as f64 * 0.5);
+let carbon   = estimate_carbon(energy);          // energy × 1.319e-4
+let memory   = Memory::kilobytes(complexity * 2);
+----
++
+A Pareto frontier over collinear axes collapses to a one-dimensional sort. The
+dominance mathematics in `crates/oikosbot-pareto` is correct — ε-tolerant,
+min-max normalised before any distance is taken, weights inside the metric —
+but the inputs make it nearly vacuous. The same root cause makes the EconScore
+terms non-independent: `Alloc` reduces to roughly `0.35 × complexity`
+rank-inverted, and `Debt` is `100 − 0.5 × complexity`.
++
+*Status:* solved at **estate** level by round one (telemetry gives money, time,
+energy and carbon as mutually independent axes — measured
+`wall_minutes ~ size_kb` correlation is −0.049). *Unsolved at file level.*
+
+| `BLOCKING` | *`calibration.rs` has zero callers* (issue
+https://github.com/hyperpolymath/oikosbot/issues/48[#48]). The module is
+written in full — `OperationKind`, `ResourceRange`, pattern multipliers — and
+nothing calls `calibrated_estimate()` or `estimate_operation()`. Verified:
+`grep -rn "calibrated_estimate\|estimate_operation" crates/` matches only the
+defining file.
+
+| `BLOCKING` | *Consequence: `compare --check` cannot block.* Only
+`Measured`/`Calibrated` inputs may fail a run; the analyser emits only
+`Estimated`, so `assess().actionable` is always false. Since
+https://github.com/hyperpolymath/oikosbot/pull/47[#47] it refuses *loudly*
+rather than passing silently — the honest handling of a gate that cannot yet
+gate, but the gate still cannot gate.
++
+*Round one changed this partially:* `Confidence::Measured` is now produced for
+the first time, at `crates/oikosbot-telemetry/src/derive.rs:99`, for
+`wall_minutes`. The estate path has Measured data; the per-file path does not.
+
+| `STRUCTURAL` | *`aggregate_point` sums resources but averages quality*
+(`crates/oikosbot-pareto`), so a `compare` verdict is sensitive to file
+*count*: adding files raises summed carbon even when per-unit efficiency
+improved.
+
+| `STRUCTURAL` | *Epsilon and objective weights are compile-time constants.*
+`DEFAULT_EPSILON` is not configurable, and `result_objectives()` hardcodes the
+weights, while `config/oikos.yaml` advertises a `weights:` block that the
+loader discards.
+
+| `STRUCTURAL` | *`standard_objectives()` is dead code* — seven axes declared
+per `ARCHITECTURE.adoc`, never called. The live set is `result_objectives()`
+(five axes, no coverage or debt axis).
+|===
+
+=== Language and detection coverage
+
+[cols="1,4"]
+|===
+| `STRUCTURAL` | *TypeScript is parsed with the JavaScript grammar*
+(`crates/oikosbot-analysis/src/language.rs`), so TS-specific syntax
+mis-parses. Worse, `config.rs::language_extension` maps only `rs`/`js`/`py`, so
+`.ts` files are reachable via `analyze <file>` but **never** via `check`/`report`
+directory scans.
+
+| `STRUCTURAL` | *The estate this tool serves is Zig- and Idris-heavy*, and the
+analyser supports Rust, JavaScript and Python only. Round one sidesteps this
+(CI telemetry is language-agnostic — which is why the Zig/Idris repos are
+measurable at all), but per-file analysis cannot see most of the estate.
+
+| `HYGIENE` | *Pattern detection is Rust-idiom-biased.* `detect_patterns`
+combines AST-kind matching with **substring search on node source text**,
+producing false negatives on JS and Python.
+
+| `HYGIENE` | *Detected patterns never affect the estimate.* `impact_multiplier`
+is computed and attached to findings but is never applied in `analyzer.rs`; the
+multiplier logic lives only in the unwired calibration path — and the two
+multiplier tables (`patterns.rs` and `calibration.rs`) are duplicated with no
+shared source of truth.
+|===
+
+=== Round-one pipeline (`oikosbot-telemetry` / `-capability` / `-dea`)
+
+[cols="1,4"]
+|===
+| `STRUCTURAL` | *Zero-run repos silently vanish from the analysis.*
+`derive_per_repo` only emits repos with ≥1 run, so a repo present in the
+snapshot with no CI history appears in no `derived`, `capability`, or `dea`
+array. Documented in the `run_analysis` doc comment; not surfaced in the report.
+
+| `STRUCTURAL` | *DEA scores zero-output units at θ = 0.0 with empty peer
+sets.* Mathematically consistent with the `1e-6` output flooring, but it reads
+oddly and gives no actionable peer. The X-inefficiency class (real input, zero
+verified output) should be reported separately from the efficiency frontier
+rather than scored on it.
+
+| `HYGIENE` | *`dea()` aborts the whole batch if one LP fails*, rather than
+returning partial results. Deliberate for round one — loud failure beats silent
+partial data — but at ~400 DMUs one degenerate unit takes down every score in
+the call.
+
+| `HYGIENE` | *`floored()` is computed twice per DMU* (once for inputs, once for
+outputs), discarding half the work each time.
+
+| `HYGIENE` | *Snapshot schema drift is silent.* `ParquetRecordReader` requires
+`Default` and backfills missing columns rather than erroring, so reading an old
+snapshot against a newer struct yields zeros instead of a diagnostic. Harmless
+at one schema version; a trap at two. Needs a schema version field before
+snapshot #2 introduces a second shape.
+
+| `HYGIENE` | *`collect_runs` fetches one avoidable empty page per repo* — the
+loop breaks on an empty page rather than a short one.
+
+| `HYGIENE` | *No CI coverage for the estate pipeline.* `collect` needs network
+and `gh` auth, so it is exercised only locally. `analyse`/`report` are
+deterministic and could be tested against a committed fixture snapshot; they
+are not.
+|===
+
+[#proof]
+== Proof and policy debt
+
+This is the area where the gap between what the repository *claims* and what it
+*executes* is widest.
+
+[cols="1,4"]
+|===
+| `BLOCKING` | *`policy-engine/datalog/eco_rules.dl` has never executed.* It is
+Souffle-dialect Datalog defining the eco/econ/Pareto/allocation/debt rule set.
+Nothing in the repository invokes it: no Souffle call in `Justfile`, any
+`.just` file, or any workflow (`grep -rn souffle Justfile *.just
+.github/workflows/*.yml` → no matches).
++
+Sharpening the point: **Souffle *is* declared as a dependency** in
+`guix/manifest.scm` and `guix/oikos.scm`. The toolchain is packaged, the rules
+are written, and the two are never connected. `docs/STATUS.adoc` states this
+honestly — the file is "a specification, kept as the reference the Rust
+dominance code conforms to" — and the Rust conformance is a hand-written test,
+not an execution.
++
+*Consequence:* the allocation-waste and technical-debt rules declared in the
+Datalog have **no Rust counterpart at all**. The `Alloc` and `Debt` terms in
+EconScore are unrelated stand-ins, not implementations of those rules.
+
+| `BLOCKING` | *The Eclexia policy backend is a fake gate.* `oikosbot-eclexia`
+has three backends; the one that runs by default, `evaluate_builtin`,
+dispatches on the `.ecl` **file stem** and applies hardcoded Rust thresholds.
+*The file's contents are never read.* The thresholds contradict the files they
+claim to implement: `policies/energy_threshold.ecl` declares `> 50.0 J` **per
+function**; the builtin fires at `> 1000 J` **total**.
++
+*Mitigated, not fixed*, in https://github.com/hyperpolymath/oikosbot/pull/59[#59]:
+every builtin evaluation now emits `::warning::… file contents NOT parsed`. It
+is loud, and still fake.
+
+| `STRUCTURAL` | *The `eclexia-native` backend cannot compile.* It is gated
+behind a feature whose crates (`eclexia_parser`, `eclexia_interp`) are not
+declared dependencies, so the cfg branch is unbuildable — a seam, not an
+implementation.
+
+| `HYGIENE` | *`policy-engine/deepproblog/eco_problog.pl` is dead by ruling*
+(2026-07-28: policy engine → Scallop, Python DeepProbLog retired with no
+exemption) but the asset is still in the tree.
+
+| `HYGIENE` | *DEA correctness is verified against self-authored analytic cases*
+— closed-form single-input/output, a strictly-dominated unit, and a strong-duality
+assertion (`|θ_env − θ_mult| < 1e-5`, genuinely strong evidence). It has *not*
+been validated against a published worked example with a citation, which is the
+standard that would make the implementation externally defensible.
+|===
+
+[#cicd]
+== CI/CD debt
+
+The picture improved sharply in the last few days; what remains is mostly
+downstream.
+
+[cols="1,4"]
+|===
+| — | *Resolved:* the estate-wide `startup_failure` epidemic (GitHub's Actions
+workflow-lockfile enforcement) is cured for this repo —
+`.github/workflows/actions.lock` shipped in
+https://github.com/hyperpolymath/oikosbot/pull/61[#61] and CI now runs green
+(Hypatia, Secret Scanner, Governance, Language Policy, CodeQL all `success`).
+Reusable-caller permissions fixed in
+https://github.com/hyperpolymath/oikosbot/pull/63[#63].
+
+| `BLOCKING` | *Four phantom required contexts block every pull request, so
+every merge needs `--admin`.* The `main` ruleset requires 27 status checks. All
+27 checks that *can* report do report and pass — but four of the required
+contexts never appear, so `mergeStateStatus` is permanently `BLOCKED`:
++
+[cols="2,3"]
+!===
+! Required context ! Why it never reports
+
+! `Build and push oikos image`
+! `publish-image.yml` triggers only on `push: branches: [main]`. It cannot run
+  on a pull request, so **no PR can ever satisfy it**. Structurally
+  unsatisfiable, not merely absent.
+
+! `Dependabot`
+! Reports only on Dependabot's own PRs. Unsatisfiable on any human PR.
+
+! `governance / Guix primary / Nix fallback policy`
+! The job was **renamed** to `governance / Guix packaging policy (Nix
+  retired)`. Renaming a job silently orphans the required context that names
+  it — the ruleset still waits for a name nothing emits.
+
+! `lint-workflows`
+! Declared as a job in `workflow-linter.yml` but did not report on the PR
+  measured; the governance-scoped `governance / Workflow security linter`
+  did. Looks like a duplicate/stale entry; needs confirmation.
+!===
++
+*Consequence, and it is worse than the inconvenience:* branch protection that
+can never be satisfied is not protection. It trains everyone to merge with
+`--admin`, which bypasses **all** the checks — including the 23 real ones — so
+the net effect of over-specifying the ruleset is *less* enforcement than
+specifying it correctly. *Fix:* drop the two structurally unsatisfiable
+contexts, rename the Guix one to match the job, and confirm the fourth.
++
+*Reproduce:*
+`comm -23 <(gh api repos/hyperpolymath/oikosbot/rules/branches/main -q '.[]|select(.type=="required_status_checks")|.parameters.required_status_checks[].context'|sort -u) <(gh pr checks <PR> | cut -f1 | sort -u)`
+
+| `STRUCTURAL` | *The consumer fleet is still dark.* Fifteen estate repos carry
+`.github/workflows/oikosbot.yml` pinned to `oikosbot@bb95ab50` (v0.1.0), all
+merged — but each needs its **own** Actions lockfile before its workflows can
+start. Until then OikosBot is installed everywhere and running nowhere. This is
+the single highest-value follow-up.
+
+| `HYGIENE` | *`scorecard.yml` runs per-push*; making it periodic is open as
+https://github.com/hyperpolymath/oikosbot/pull/64[#64].
+
+| `HYGIENE` | *`instant-sync.yml` is disabled* (`disabled_manually`) and
+undocumented — neither retired nor explained.
+
+| `HYGIENE` | *`push-email-notify.yml` is dormant by design* but remains in the
+tree; the estate's dual-use ruling calls for removing push-email workflows
+except where explicitly exempted.
+|===
+
+== What is *not* debt
+
+Recorded so it is not re-litigated:
+
+* *The dominance engine* (`crates/oikosbot-pareto`) is correct work: ε-tolerant
+  comparison, min-max normalisation before distance, weights participating in
+  the metric, total functions, and property-flavoured tests including a
+  conformance test against the Datalog semantics.
+* *The confidence ladder* is a genuine honesty mechanism, not decoration. Only
+  `Measured`/`Calibrated` may block; carbon is never labelled better than
+  `Estimated` because the runner's region is unknown; and a test asserts the
+  ladder rather than trusting convention.
+* *SARIF output* is schema-valid and demonstrably ingestible — 101 results
+  accepted by GitHub code scanning on the `enaction-engine` pilot. The
+  schema-invalid `fixes[]` block that had made *every* prior upload rejected was
+  removed in https://github.com/hyperpolymath/oikosbot/pull/45[#45], with a
+  regression test.
+* *Snapshot analysis is deterministic* — two independent `analyse` runs over
+  frozen staging produce byte-identical `analysis.json`.
+
+== Method
+
+Compiled by direct inspection on 2026-08-07: `grep`/`find` over the working
+tree at `fix/path-keyed-gate-detection`, `gh` queries against the live
+repository for CI and issue state, and `jq` over
+`snapshots/2026-08-03/analysis.json` in
+https://github.com/hyperpolymath/oikosbot-estate[`hyperpolymath/oikosbot-estate`].
+Claims sourced from earlier sessions were re-verified before being repeated
+here; anything that could not be re-verified was dropped rather than restated.
