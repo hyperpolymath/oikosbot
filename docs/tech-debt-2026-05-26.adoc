@@ -2,6 +2,14 @@
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = Tech-Debt Audit — oikos — 2026-05-26
 
+[WARNING]
+====
+*Superseded 2026-08-07 by link:../DEBT.adoc[`DEBT.adoc`].* Kept for the
+historical record — it is a point-in-time snapshot of an automated estate scan,
+and several of its findings have since been fixed or overtaken. Do not use it
+to judge current state.
+====
+
 *Source:* estate-wide automated scan 2026-05-26.
 *Companion:* https://github.com/hyperpolymath/standards/tree/main/docs/audits[`hyperpolymath/standards` 2026-05-26-estate-*-debt audits].
 *Combined severity:* `MEDIUM`.

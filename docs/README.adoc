@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MPL-2.0
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = OikosBot Documentation Map
@@ -13,7 +12,14 @@ fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
 
 * link:../README.adoc[README] — what OikosBot is, and the repo layout.
 * link:../EXPLAINME.adoc[EXPLAINME] — what is *actually built* vs in-flight. Read this to calibrate expectations.
-* link:../ARCHITECTURE.adoc[ARCHITECTURE] — the target platform design, scoring model, and tech stack.
+* link:../DEBT.adoc[DEBT] — the debt register: licence, docs, code, proof and CI/CD, each item evidenced. Read alongside EXPLAINME; between them they are the honest account of the project.
+* link:../ARCHITECTURE.adoc[ARCHITECTURE] — the *target* platform design, scoring model, and tech stack. Several components in it were never built; the document now flags which.
+
+== The estate pipeline (newest surface)
+
+* link:superpowers/specs/2026-08-03-estate-economics-design.md[Design spec] — why the unit of analysis is the estate rather than the diff, and how DEA supplies allocative and productive efficiency.
+* link:superpowers/notes/2026-08-03-round-one-verification.md[Verification record] — the six checks round one had to pass, with results, including the falsifier that would have sunk the premise.
+* https://github.com/hyperpolymath/oikosbot-estate[`oikosbot-estate`] — the snapshot dataset repository (Parquet + `analysis.json` + rendered report).
 
 == For developers
 

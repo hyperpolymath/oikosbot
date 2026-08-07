@@ -4,6 +4,29 @@
 
 = Oikos Bot: Ecological & Economic Code Analysis Platform
 
+[WARNING]
+====
+*This is the TARGET design, not the current state.* Read it as intent. Several
+components specified below were never built, and one contradicts a later
+ruling:
+
+* *§"OCaml Documentation Analyzer" (`/analyzers/docs-ocaml/`)* — does not
+  exist. `analyzers/` contains only `code-haskell`.
+* *§"Policy Engine (Datalog + DeepProbLog)" and the tech-stack table's "Python
+  + Datalog"* — superseded. Python is banned by the language policy, and the
+  2026-07-28 ruling retargets the engine to *Scallop* (Rust). The Datalog rules
+  in `policy-engine/datalog/eco_rules.dl` have never executed.
+* *Four bot roles ("consultant, advisor, regulator, and policy developer")* —
+  `crates/oikosbot-cli/src/config.rs` implements three. There is no `policy
+  developer` mode.
+* *The Praxis Loop and DeepProbLog inference* — not implemented.
+
+It also predates the *estate* pipeline (`oikosbot-telemetry` / `-capability` /
+`-dea`), which is the newest and most evidentially solid surface. For what is
+actually built, see link:docs/STATUS.adoc[`docs/STATUS.adoc`],
+link:EXPLAINME.adoc[`EXPLAINME.adoc`] and link:DEBT.adoc[`DEBT.adoc`].
+====
+
 [NOTE]
 ====
 *Note — which product is this?*
