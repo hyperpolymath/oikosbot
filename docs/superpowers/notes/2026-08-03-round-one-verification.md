@@ -17,7 +17,7 @@ From `snapshots/2026-08-03/analysis.json` → `independence`:
 | pair | pearson r |
 |---|---|
 | `wall_minutes ~ size_kb` | **-0.0486** |
-| `wall_minutes ~ verified_success_runs` | 0.1520 |
+| `wall_minutes ~ verified_success_runs` | 0.1060 |
 
 **Verdict: premise HOLDS.** The falsifier pair, `wall_minutes ~ size_kb`, is
 essentially zero (-0.0486) — measured compute (the DEA input, `wall_minutes`)
@@ -107,8 +107,21 @@ running them through CCR at all), per Task 13's own concern note.
 
 ## 4. Ground truth
 
-Cited from Task 13's report (`task-13-report.md`, Step 3, "ALL PASS"),
-verified against the staged raw JSON:
+> **Re-run 2026-08-04 against the shipping code — and the first run's method
+> was wrong.** The original gate check grouped runs by `(repo, workflow_path)`
+> in an ad-hoc `jq` query, but the code that shipped grouped by
+> `workflow_name`. Those are not the same key: `workflow_name` is free text
+> and two different files can share one (two workflows both titled "CI"),
+> so name-grouping merges their run counts and can hide a fake-gate
+> candidate behind a same-named *failing* workflow. The final whole-branch
+> review caught the mismatch; `assess()` now groups by `workflow_path`
+> (unique per file) and reports paths rather than names, and the gates below
+> were re-run against that shipping code. The figures moved accordingly and
+> the direction confirms the defect was real: by path, **1,482 candidates
+> across 313 repos**, i.e. **212 more** than the by-name run found — those
+> were the ones name-merging had been concealing.
+
+Verified against the regenerated `snapshots/2026-08-03/analysis.json`:
 
 1. **`hyperpolymath/oikosbot` heavy `startup_failure` since 2026-07-30** —
    137/200 runs (68.5%) are `startup_failure`; earliest timestamp
@@ -117,24 +130,24 @@ verified against the staged raw JSON:
 2. **echidna / kitchenspeak dominated by `startup_failure`** — echidna:
    186/200 (93%); kitchenspeak: 136/200 (68%, remaining 64 plain
    `failure`).
-3. **≥1 infallible-gate candidate, far exceeded** — grouping all 69,445
-   runs by `(repo, workflow_path)`, filtered to groups with ≥5 runs and
-   100% `success`: **1,270 candidate workflows**. Lowest-duration examples
-   (7-12s average) include `rhodibot.yml`, `wellknown-enforcement.yml`,
-   `guix-policy.yml`, `sonarqube.yml`, `secret-scanner.yml`,
-   `runtime-policy.yml` — several matching already-documented pathologies
-   (Guix gate presence-only, proof gates that cannot fail).
-4. **38 X-inefficiency repos** — `report.md`'s X-inefficiency table:
-   `wall_minutes > 0` with `verified_success_runs = 0`. Largest consumers:
-   `hyperpolymath/live-files` (23,281.35 wall-min),
-   `hyperpolymath/nextgen-language-evangeliser` (5,917.75),
-   `hyperpolymath/JuliaPackage-Reuse-Audit.jl` (6,163.82),
-   `hyperpolymath/road-skate` (4,456.92),
-   `hyperpolymath/php-aegis` (4,100.50). Smallest non-zero: several
-   `hpm-*-rsr` repos and `a2ml-estate-normalizer` at 0.05 wall-min each —
-   real input consumed, zero verified output, regardless of scale.
+3. **≥1 infallible-gate candidate, far exceeded** — the shipping `assess()`
+   groups runs by `workflow_path` and flags paths with ≥5 runs and zero
+   failures ever: **1,482 candidate workflows across 313 repos**. Named
+   examples span already-documented pathologies (`guix-policy.yml` —
+   presence-only gate; `secret-scanner.yml`; proof gates that cannot fail).
+   A candidate is *not* a proven fake gate: it is a workflow that has never
+   demonstrated it can fail, which is the honest claim telemetry alone
+   supports.
+4. **15 X-inefficiency repos** — `report.md`'s X-inefficiency table:
+   `wall_minutes > 0` with `verified_success_runs = 0`, i.e. real input
+   consumed and zero verified output. The count fell from the pre-fix 38
+   because `verified_success_runs` is now computed per *path*: repos whose
+   successes had been attributed to a name-merged group are now correctly
+   credited, so they are no longer counted as producing nothing. The
+   remaining 15 are the repos where that genuinely holds.
 
-All four gates PASS.
+All four gates PASS against the shipping code. Frontier: 8 repos at
+θ_CCR = 1.0 (pre-fix: 9).
 
 ## 5. Confidence labelling
 
