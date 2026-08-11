@@ -185,7 +185,7 @@ fn has_busy_wait(source: &str, node: &tree_sitter::Node) -> bool {
     };
 
     // If the loop body contains any blocking/yielding call, it's not a busy wait
-    let has_yield = text.contains("sleep")
+    let has_blocking = text.contains("sleep")
         || text.contains("await")
         || text.contains("yield")
         || text.contains("recv")
@@ -193,17 +193,47 @@ fn has_busy_wait(source: &str, node: &tree_sitter::Node) -> bool {
         || text.contains("wait")
         || text.contains(".await");
 
-    !has_yield
+    // Also check for I/O operations that naturally block (not busy-waiting)
+    let has_io = text.contains(".read(")
+        || text.contains(".write(")
+        || text.contains("File::")
+        || text.contains("BufReader")
+        || text.contains("BufWriter")
+        || text.contains("std::io::")
+        || text.contains("std::fs::");
+
+    // Check for common non-busy-wait loop patterns
+    let has_iteration = text.contains("args") && text.contains("match")  // Command-line parsing
+        || text.contains(".iter(") || text.contains(".into_iter(")  // Iterator-based loops
+        || text.contains(".lines(") || text.contains(".split(")  // Line/string processing
+        || text.contains("WalkDir::") || text.contains(".entries(")  // Directory traversal
+        || text.contains(".chars(") || text.contains(".bytes(");  // Character/byte processing
+
+    // It's a busy wait only if there's no blocking/yielding, no I/O, AND no legitimate iteration
+    !(has_blocking || has_io || has_iteration)
 }
 
 /// Check if any loop body contains string concatenation
 fn has_string_concat_in_loop(source: &str, node: &tree_sitter::Node) -> bool {
     find_in_loop_body(
         node,
-        |child, _src| {
-            // Look for binary_expression with "+" operator on strings
-            // or format! macro calls
-            child.kind() == "binary_expression" || child.kind() == "macro_invocation"
+        |child, src| {
+            // Look for binary_expression with "+" or "+=" operator that appears to be string concatenation
+            if child.kind() == "binary_expression" {
+                if let Ok(text) = child.utf8_text(src.as_bytes()) {
+                    // Check if this looks like string concatenation:
+                    // - Contains + or += operator
+                    // - Contains string literals (quotes) or String type references
+                    let has_plus = text.contains("+") || text.contains("+=");
+                    let has_strings = text.contains('"') || text.contains("String::");
+                    return has_plus && has_strings;
+                }
+                return false;
+            }
+            // Note: We no longer flag macro_invocation (like format!) as these are typically
+            // used for logging and don't cause the O(n²) string building problem.
+            // The actual problem is binary expressions like s = s + "text" in loops.
+            false
         },
         source,
     )
@@ -233,7 +263,31 @@ fn has_unbuffered_io(source: &str, node: &tree_sitter::Node) -> bool {
     };
 
     let has_file_io = text.contains("File::open") || text.contains("File::create");
+    
+    if !has_file_io {
+        return false;
+    }
+
     let has_buffering = text.contains("BufReader") || text.contains("BufWriter");
+
+    // If there's buffering in the same node (same expression), it's fine
+    if has_buffering {
+        return false;
+    }
+
+    // Check if the File is immediately wrapped with BufReader/BufWriter in a parent expression
+    // e.g., BufReader::new(File::open(...))
+    // We check if there's a call_expression or method_call_expression parent that contains buffering
+    let mut cursor = node.walk();
+    if cursor.goto_parent() {
+        let parent_text = match cursor.node().utf8_text(source.as_bytes()) {
+            Ok(t) => t,
+            Err(_) => return has_file_io && !has_buffering,
+        };
+        if parent_text.contains("BufReader") || parent_text.contains("BufWriter") {
+            return false;
+        }
+    }
 
     has_file_io && !has_buffering
 }
@@ -261,6 +315,7 @@ fn has_large_allocation(source: &str, node: &tree_sitter::Node) -> bool {
 }
 
 /// Check for .to_string() or .to_owned() calls that may be redundant
+/// Only flags functions with 5+ allocations to reduce false positives
 fn has_redundant_to_string(source: &str, node: &tree_sitter::Node) -> bool {
     let text = match node.utf8_text(source.as_bytes()) {
         Ok(t) => t,
@@ -268,6 +323,7 @@ fn has_redundant_to_string(source: &str, node: &tree_sitter::Node) -> bool {
     };
 
     // Count occurrences as a heuristic — many .to_string() in one function is suspicious
+    // Using a higher threshold to reduce false positives
     let to_string_count = text.matches(".to_string()").count();
     let to_owned_count = text.matches(".to_owned()").count();
 
