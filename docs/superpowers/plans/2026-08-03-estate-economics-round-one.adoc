@@ -1,106 +1,156 @@
-# Estate Economics Round One — Implementation Plan
+== Estate Economics Round One — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+____
+*For agentic workers:* REQUIRED SUB-SKILL: Use
+superpowers:subagent-driven-development (recommended) or
+superpowers:executing-plans to implement this plan task-by-task. Steps
+use checkbox (`+- [ ]+`) syntax for tracking.
+____
 
-**Goal:** Land the Part 0 repairs, then build the read-only estate pipeline: telemetry collector → snapshot → derived metrics → DEA frontier → report.
+*Goal:* Land the Part 0 repairs, then build the read-only estate
+pipeline: telemetry collector → snapshot → derived metrics → DEA
+frontier → report.
 
-**Architecture:** Three new library crates in the existing `oikosbot` Cargo workspace plus an `estate` CLI subcommand. Collection shells out to the authenticated `gh` CLI (no auth code, resumable). Snapshots are Parquet files committed to a new `oikosbot-estate` dataset repo. DEA is solved natively as paired envelopment/multiplier LPs on `good_lp`+HiGHS, giving θ, peer sets, and dual weights with a built-in strong-duality cross-check. Nothing blocks, nothing is enforced.
+*Architecture:* Three new library crates in the existing `+oikosbot+`
+Cargo workspace plus an `+estate+` CLI subcommand. Collection shells out
+to the authenticated `+gh+` CLI (no auth code, resumable). Snapshots are
+Parquet files committed to a new `+oikosbot-estate+` dataset repo. DEA
+is solved natively as paired envelopment/multiplier LPs on
+`+good_lp+`+HiGHS, giving θ, peer sets, and dual weights with a built-in
+strong-duality cross-check. Nothing blocks, nothing is enforced.
 
-**Tech Stack:** Rust (existing workspace), `good_lp` (HiGHS backend, MIT), `parquet`/`parquet_derive`, `serde_json`, `anyhow`, `gh` CLI subprocess.
+*Tech Stack:* Rust (existing workspace), `+good_lp+` (HiGHS backend,
+MIT), `+parquet+`/`+parquet_derive+`, `+serde_json+`, `+anyhow+`, `+gh+`
+CLI subprocess.
 
-**Spec:** `docs/superpowers/specs/2026-08-03-estate-economics-design.md` (committed in Task 1 from `~/.claude/plans/oikosbot-sitrep-effervescent-crescent.md`).
+*Spec:* `+docs/superpowers/specs/2026-08-03-estate-economics-design.md+`
+(committed in Task 1 from
+`+~/.claude/plans/oikosbot-sitrep-effervescent-crescent.md+`).
 
-## Global Constraints
+=== Global Constraints
 
-- Workspace root: `/home/hyperpolymath/developer/hyper-repos/_EXTENSIONS _SET/oikosbot` — **path contains spaces; always quote**. Use `OIKOSBOT="/home/hyperpolymath/developer/hyper-repos/_EXTENSIONS _SET/oikosbot"` in every shell step.
-- Crate naming: new crates are `oikosbot-*` (NOT `oikos-*` — that prefix belongs to the accounting DSL per `DISAMBIGUATION.adoc`). The dataset repo is `oikosbot-estate` for the same reason.
-- Every new source file starts with `// SPDX-License-Identifier: MPL-2.0` (YAML/MD files: `# SPDX-License-Identifier: MPL-2.0` where the format allows comments).
-- `good_lp` MUST be `default-features = false, features = ["highs"]` (the CBC default is EPL-licensed and stale).
-- No Python anywhere. No new GitHub Actions in this round (estate Actions are dead pending the owner's lockfile fix; verification is local).
-- `cargo fmt --all` and `cargo clippy --workspace --all-targets -- -D warnings` must pass before every commit.
-- Confidence labels are load-bearing: money-from-declared-rate and energy are at best `Calibrated`; carbon is at most `Estimated`; only API-sourced quantities are `Measured`. A test asserts this (Task 10).
-- Do not touch the uncommitted `.editorconfig`/`.gitignore` edits in the checkout — they are the owner's.
-- CI cannot run (estate-wide `startup_failure`); PRs are created but verified by file inspection and local tests. Do not claim CI-green anywhere.
+* Workspace root:
+`+/home/hyperpolymath/developer/hyper-repos/_EXTENSIONS _SET/oikosbot+`
+— *path contains spaces; always quote*. Use
+`+OIKOSBOT="/home/hyperpolymath/developer/hyper-repos/_EXTENSIONS _SET/oikosbot"+`
+in every shell step.
+* Crate naming: new crates are `+oikosbot-*+` (NOT `+oikos-*+` — that
+prefix belongs to the accounting DSL per `+DISAMBIGUATION.adoc+`). The
+dataset repo is `+oikosbot-estate+` for the same reason.
+* Every new source file starts with
+`+// SPDX-License-Identifier: MPL-2.0+` (YAML/MD files:
+`+# SPDX-License-Identifier: MPL-2.0+` where the format allows
+comments).
+* `+good_lp+` MUST be `+default-features = false, features = ["highs"]+`
+(the CBC default is EPL-licensed and stale).
+* No Python anywhere. No new GitHub Actions in this round (estate
+Actions are dead pending the owner’s lockfile fix; verification is
+local).
+* `+cargo fmt --all+` and
+`+cargo clippy --workspace --all-targets -- -D warnings+` must pass
+before every commit.
+* Confidence labels are load-bearing: money-from-declared-rate and
+energy are at best `+Calibrated+`; carbon is at most `+Estimated+`; only
+API-sourced quantities are `+Measured+`. A test asserts this (Task 10).
+* Do not touch the uncommitted `+.editorconfig+`/`+.gitignore+` edits in
+the checkout — they are the owner’s.
+* CI cannot run (estate-wide `+startup_failure+`); PRs are created but
+verified by file inspection and local tests. Do not claim CI-green
+anywhere.
 
----
+'''''
 
-## Phase A — Part 0 repairs
+=== Phase A — Part 0 repairs
 
-### Task 1: Sync checkout and commit the design spec
+==== Task 1: Sync checkout and commit the design spec
 
-**Files:**
-- Create: `docs/superpowers/specs/2026-08-03-estate-economics-design.md` (copy of the approved plan file)
-- Create: `docs/superpowers/plans/2026-08-03-estate-economics-round-one.md` (this file)
+*Files:* - Create:
+`+docs/superpowers/specs/2026-08-03-estate-economics-design.md+` (copy
+of the approved plan file) - Create:
+`+docs/superpowers/plans/2026-08-03-estate-economics-round-one.md+`
+(this file)
 
-**Interfaces:**
-- Consumes: approved design at `~/.claude/plans/oikosbot-sitrep-effervescent-crescent.md`
-- Produces: branch `feat/estate-round-one` carrying the spec; local `main` in sync with `origin/main` at `7e73ddf` (#57)
+*Interfaces:* - Consumes: approved design at
+`+~/.claude/plans/oikosbot-sitrep-effervescent-crescent.md+` - Produces:
+branch `+feat/estate-round-one+` carrying the spec; local `+main+` in
+sync with `+origin/main+` at `+7e73ddf+` (#57)
 
-- [ ] **Step 1: Sync main (leave the owner's dirty files alone)**
+* [ ] *Step 1: Sync main (leave the owner’s dirty files alone)*
 
-```bash
+[source,bash]
+----
 OIKOSBOT="/home/hyperpolymath/developer/hyper-repos/_EXTENSIONS _SET/oikosbot"
 git -C "$OIKOSBOT" fetch origin
 git -C "$OIKOSBOT" status -sb          # expect only .editorconfig/.gitignore dirty
 git -C "$OIKOSBOT" merge --ff-only origin/main
 git -C "$OIKOSBOT" log --oneline -1    # expect 7e73ddf (#57)
-```
+----
 
-If `merge --ff-only` fails because the dirty files conflict, STOP and report — do not stash or discard the owner's edits.
+If `+merge --ff-only+` fails because the dirty files conflict, STOP and
+report — do not stash or discard the owner’s edits.
 
-- [ ] **Step 2: Create the round-one branch and commit spec + plan**
+* [ ] *Step 2: Create the round-one branch and commit spec + plan*
 
-```bash
+[source,bash]
+----
 git -C "$OIKOSBOT" switch -c feat/estate-round-one origin/main
 mkdir -p "$OIKOSBOT/docs/superpowers/specs" "$OIKOSBOT/docs/superpowers/plans"
 cp ~/.claude/plans/oikosbot-sitrep-effervescent-crescent.md \
    "$OIKOSBOT/docs/superpowers/specs/2026-08-03-estate-economics-design.md"
 git -C "$OIKOSBOT" add docs/superpowers
 git -C "$OIKOSBOT" commit -m "docs: estate-economics design spec + round-one implementation plan"
-```
+----
 
-### Task 2: Fix the two parse-dead workflows (illegal `timeout-minutes` on `uses:` jobs)
+==== Task 2: Fix the two parse-dead workflows (illegal `+timeout-minutes+` on `+uses:+` jobs)
 
-**Files:**
-- Modify: `.github/workflows/mirror.yml` (remove one line)
-- Modify: `.github/workflows/secret-scanner.yml` (remove one line)
+*Files:* - Modify: `+.github/workflows/mirror.yml+` (remove one line) -
+Modify: `+.github/workflows/secret-scanner.yml+` (remove one line)
 
-**Interfaces:**
-- Produces: PR `fix/uses-job-timeout` against `main`. Merge is the owner's call or post-verification (estate doctrine: Claude merges once verified — but CI cannot verify until the lockfile fix, so leave the PR open with that stated).
+*Interfaces:* - Produces: PR `+fix/uses-job-timeout+` against `+main+`.
+Merge is the owner’s call or post-verification (estate doctrine: Claude
+merges once verified — but CI cannot verify until the lockfile fix, so
+leave the PR open with that stated).
 
-- [ ] **Step 1: Branch from origin/main**
+* [ ] *Step 1: Branch from origin/main*
 
-```bash
+[source,bash]
+----
 git -C "$OIKOSBOT" switch -c fix/uses-job-timeout origin/main
-```
+----
 
-- [ ] **Step 2: Remove the illegal key from both files**
+* [ ] *Step 2: Remove the illegal key from both files*
 
-In `.github/workflows/mirror.yml`, the job currently reads:
+In `+.github/workflows/mirror.yml+`, the job currently reads:
 
-```yaml
+[source,yaml]
+----
 jobs:
   mirror:
     uses: hyperpolymath/standards/.github/workflows/mirror-reusable.yml@d135b05bfc647d0c0fbfedc7e80f37ea50f49236
     timeout-minutes: 10
     secrets: inherit
-```
+----
 
-Delete the `timeout-minutes: 10` line (a job whose body is `uses:` may not carry it; its presence invalidates the whole file — the same defect PR #56 fixed in `scorecard.yml`). Repeat for the `scan:` job in `.github/workflows/secret-scanner.yml`.
+Delete the `+timeout-minutes: 10+` line (a job whose body is `+uses:+`
+may not carry it; its presence invalidates the whole file — the same
+defect PR #56 fixed in `+scorecard.yml+`). Repeat for the `+scan:+` job
+in `+.github/workflows/secret-scanner.yml+`.
 
-- [ ] **Step 3: Verify no workflow retains the defect**
+* [ ] *Step 3: Verify no workflow retains the defect*
 
-```bash
+[source,bash]
+----
 for f in "$OIKOSBOT"/.github/workflows/*.yml; do
   awk '/^    uses:/{u=1} /^    timeout-minutes:/{if(u) print FILENAME": job-level timeout-minutes after uses:"} /^  [a-z]/{u=0}' "$f"
 done
-```
+----
 
 Expected: no output.
 
-- [ ] **Step 4: Commit and open the PR**
+* [ ] *Step 4: Commit and open the PR*
 
-```bash
+[source,bash]
+----
 git -C "$OIKOSBOT" add .github/workflows/mirror.yml .github/workflows/secret-scanner.yml
 git -C "$OIKOSBOT" commit -m "fix(ci): drop illegal timeout-minutes on reusable-workflow jobs
 
@@ -111,36 +161,45 @@ git -C "$OIKOSBOT" push -u origin fix/uses-job-timeout
 gh pr create -R hyperpolymath/oikosbot --head fix/uses-job-timeout \
   --title "fix(ci): drop illegal timeout-minutes on uses: jobs (mirror, secret-scanner)" \
   --body "Same defect class as #56, which missed these two files. NOTE: repo-wide startup_failure (GitHub lockfile enforcement) means no checks will run on this PR; verified by file inspection. Merge after the owner's gh-actions-lock fix, or on inspection."
-```
+----
 
-### Task 3: Un-gate the proven pilot (enaction-engine)
+==== Task 3: Un-gate the proven pilot (enaction-engine)
 
-**Files:**
-- Modify (in a fresh clone): `metadatastician/enaction-engine` → `.github/workflows/oikosbot.yml`
+*Files:* - Modify (in a fresh clone):
+`+metadatastician/enaction-engine+` → `+.github/workflows/oikosbot.yml+`
 
-**Interfaces:**
-- Produces: PR to `metadatastician/enaction-engine` removing `if: vars.OIKOSBOT_ENABLED == 'true'` and its stale justification comment.
+*Interfaces:* - Produces: PR to `+metadatastician/enaction-engine+`
+removing `+if: vars.OIKOSBOT_ENABLED == 'true'+` and its stale
+justification comment.
 
-- [ ] **Step 1: Clone into the job tmp dir**
+* [ ] *Step 1: Clone into the job tmp dir*
 
-```bash
+[source,bash]
+----
 TMP="$CLAUDE_JOB_DIR/tmp"
 git clone --depth 1 git@github.com:metadatastician/enaction-engine.git "$TMP/enaction-engine"
 cd "$TMP/enaction-engine" && git switch -c fix/ungate-oikosbot
-```
+----
 
-- [ ] **Step 2: Remove the gate and the stale comment**
+* [ ] *Step 2: Remove the gate and the stale comment*
 
-In `.github/workflows/oikosbot.yml`: delete the `if: vars.OIKOSBOT_ENABLED == 'true'` line and the multi-line comment block above it that claims the image "has never been published" (stale: publish-image went green 2026-07-28; the image is podman-verified and the job already uses the composite action, not the container pull the comment describes). Replace the comment with:
+In `+.github/workflows/oikosbot.yml+`: delete the
+`+if: vars.OIKOSBOT_ENABLED == 'true'+` line and the multi-line comment
+block above it that claims the image "`has never been published`"
+(stale: publish-image went green 2026-07-28; the image is
+podman-verified and the job already uses the composite action, not the
+container pull the comment describes). Replace the comment with:
 
-```yaml
+[source,yaml]
+----
     # Runs the published composite action (hyperpolymath/oikosbot@v0.1.0).
     # This repo is the proven pilot: 101 SARIF results ingested on PR #21.
-```
+----
 
-- [ ] **Step 3: Commit and open the PR**
+* [ ] *Step 3: Commit and open the PR*
 
-```bash
+[source,bash]
+----
 git add .github/workflows/oikosbot.yml
 git commit -m "fix(ci): remove stale OIKOSBOT_ENABLED gate
 
@@ -151,19 +210,23 @@ git push -u origin fix/ungate-oikosbot
 gh pr create -R metadatastician/enaction-engine --head fix/ungate-oikosbot \
   --title "fix(ci): remove stale OIKOSBOT_ENABLED gate on the oikosbot job" \
   --body "Premise ('image has never been published') stale since 2026-07-28. This repo is the proven pilot (101 results ingested, PR #21); the gate turned it off. NOTE: estate-wide startup_failure means checks will not run here until the lockfile fix."
-```
+----
 
-### Task 4: Trace the two unresolvable consumer repos
+==== Task 4: Trace the two unresolvable consumer repos
 
-**Files:**
-- Create: `docs/superpowers/notes/2026-08-03-consumer-repo-trace.md` (on `feat/estate-round-one`)
+*Files:* - Create:
+`+docs/superpowers/notes/2026-08-03-consumer-repo-trace.md+` (on
+`+feat/estate-round-one+`)
 
-**Interfaces:**
-- Produces: written disposition for `hyperpolymath/boj-server-mk2` and `hyperpolymath/idaptik-ums` (renamed → new name; deleted; or transferred), so the consumer list is accurate for later sweeps.
+*Interfaces:* - Produces: written disposition for
+`+hyperpolymath/boj-server-mk2+` and `+hyperpolymath/idaptik-ums+`
+(renamed → new name; deleted; or transferred), so the consumer list is
+accurate for later sweeps.
 
-- [ ] **Step 1: Probe both names and likely successors**
+* [ ] *Step 1: Probe both names and likely successors*
 
-```bash
+[source,bash]
+----
 for r in hyperpolymath/boj-server-mk2 metadatastician/boj-server-mk2 hyperpolymath/boj-server metadatastician/boj-server \
          hyperpolymath/idaptik-ums metadatastician/idaptik-ums metadatastician/canonical-ums hyperpolymath/canonical-ums; do
   echo "== $r"; gh repo view "$r" --json name,owner,isArchived,url -q '"\(.owner.login)/\(.name) archived=\(.isArchived)"' 2>&1
@@ -171,41 +234,49 @@ done
 # Renames follow redirects on the API; also check:
 gh api repos/hyperpolymath/boj-server-mk2 -q .full_name 2>&1
 gh api repos/hyperpolymath/idaptik-ums   -q .full_name 2>&1
-```
+----
 
-- [ ] **Step 2: Search the owners' repo lists for near-names**
+* [ ] *Step 2: Search the owners’ repo lists for near-names*
 
-```bash
+[source,bash]
+----
 gh repo list hyperpolymath  --limit 400 --json name -q '.[].name' | grep -iE 'boj|ums|idaptik'
 gh repo list metadatastician --limit 400 --json name -q '.[].name' | grep -iE 'boj|ums|idaptik'
-```
+----
 
-- [ ] **Step 3: Record findings and commit**
+* [ ] *Step 3: Record findings and commit*
 
-Write the disposition table (old name → found-at / not-found, evidence commands) to `docs/superpowers/notes/2026-08-03-consumer-repo-trace.md`, then:
+Write the disposition table (old name → found-at / not-found, evidence
+commands) to
+`+docs/superpowers/notes/2026-08-03-consumer-repo-trace.md+`, then:
 
-```bash
+[source,bash]
+----
 git -C "$OIKOSBOT" switch feat/estate-round-one
 git -C "$OIKOSBOT" add docs/superpowers/notes
 git -C "$OIKOSBOT" commit -m "docs: trace unresolvable oikosbot consumer repos"
-```
+----
 
-### Task 5: Make the Eclexia builtin backend loud, and annotate the over-promising config
+==== Task 5: Make the Eclexia builtin backend loud, and annotate the over-promising config
 
-**Files:**
-- Modify: `crates/oikosbot-eclexia/src/lib.rs` (the `evaluate_builtin` path)
-- Modify: `config/oikos.yaml` (comment annotations only)
-- Test: `crates/oikosbot-eclexia/src/lib.rs` (unit test in-module)
+*Files:* - Modify: `+crates/oikosbot-eclexia/src/lib.rs+` (the
+`+evaluate_builtin+` path) - Modify: `+config/oikos.yaml+` (comment
+annotations only) - Test: `+crates/oikosbot-eclexia/src/lib.rs+` (unit
+test in-module)
 
-**Interfaces:**
-- Consumes: existing `evaluate_policies(dir, results)` flow; existing `evaluate_builtin` dispatch-by-file-stem.
-- Produces: a `::warning::` on stderr every time the builtin path is used, naming the file and stating that its contents were not parsed; a pub fn `builtin_warning(policy_stem: &str) -> String` so the text is testable.
+*Interfaces:* - Consumes: existing `+evaluate_policies(dir, results)+`
+flow; existing `+evaluate_builtin+` dispatch-by-file-stem. - Produces: a
+`+::warning::+` on stderr every time the builtin path is used, naming
+the file and stating that its contents were not parsed; a pub fn
+`+builtin_warning(policy_stem: &str) -> String+` so the text is
+testable.
 
-- [ ] **Step 1: Write the failing test**
+* [ ] *Step 1: Write the failing test*
 
-In `crates/oikosbot-eclexia/src/lib.rs` tests module:
+In `+crates/oikosbot-eclexia/src/lib.rs+` tests module:
 
-```rust
+[source,rust]
+----
 #[test]
 fn builtin_warning_names_file_and_admits_not_parsing() {
     let w = builtin_warning("energy_threshold");
@@ -213,19 +284,21 @@ fn builtin_warning_names_file_and_admits_not_parsing() {
     assert!(w.contains("NOT parsed"));
     assert!(w.starts_with("::warning::"));
 }
-```
+----
 
-- [ ] **Step 2: Run it to make sure it fails**
+* [ ] *Step 2: Run it to make sure it fails*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-eclexia builtin_warning -- --nocapture
-```
+----
 
-Expected: FAIL (`builtin_warning` not found).
+Expected: FAIL (`+builtin_warning+` not found).
 
-- [ ] **Step 3: Implement**
+* [ ] *Step 3: Implement*
 
-```rust
+[source,rust]
+----
 /// The builtin backend matches policies by FILE STEM and applies hardcoded
 /// thresholds; the .ecl contents are never read. Until the eclexia parser is
 /// wired (round two), every builtin evaluation must say so out loud.
@@ -236,34 +309,42 @@ pub fn builtin_warning(policy_stem: &str) -> String {
          with the .ecl text). Install `eclexia` or await the native backend."
     )
 }
-```
+----
 
-In `evaluate_builtin`, before returning its decision, add:
+In `+evaluate_builtin+`, before returning its decision, add:
 
-```rust
+[source,rust]
+----
 eprintln!("{}", builtin_warning(stem));
-```
+----
 
-- [ ] **Step 4: Run test, fmt, clippy**
+* [ ] *Step 4: Run test, fmt, clippy*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-eclexia && cargo fmt --all && cargo clippy -p oikosbot-eclexia --all-targets -- -D warnings
-```
+----
 
 Expected: PASS, clean.
 
-- [ ] **Step 5: Annotate `config/oikos.yaml`**
+* [ ] *Step 5: Annotate `+config/oikos.yaml+`*
 
-Above each block the loader parses-and-discards (`integrations:`, `ai_assistants:`, `praxis:`, `reporting:`, `notifications:`, `logging:`, `databases:`, `weights:`, `analysis.carbon:`, `analysis.energy:`, `analysis.complexity:`, `thresholds.eco_standard/eco_excellence`), insert:
+Above each block the loader parses-and-discards (`+integrations:+`,
+`+ai_assistants:+`, `+praxis:+`, `+reporting:+`, `+notifications:+`,
+`+logging:+`, `+databases:+`, `+weights:+`, `+analysis.carbon:+`,
+`+analysis.energy:+`, `+analysis.complexity:+`,
+`+thresholds.eco_standard/eco_excellence+`), insert:
 
-```yaml
+[source,yaml]
+----
 # ASPIRATIONAL — parsed and DISCARDED by the current loader (config.rs).
 # Documented for the target design; nothing below this line takes effect yet.
-```
+----
 
-- [ ] **Step 6: Commit and open the honesty PR**
+* [ ] *Step 6: Commit and open the honesty PR*
 
-```bash
+[source,bash]
+----
 git -C "$OIKOSBOT" switch -c fix/honesty-punchlist origin/main
 git -C "$OIKOSBOT" add crates/oikosbot-eclexia config/oikos.yaml
 git -C "$OIKOSBOT" commit -m "fix: loud builtin-policy warning; mark aspirational config blocks
@@ -276,69 +357,87 @@ git -C "$OIKOSBOT" push -u origin fix/honesty-punchlist
 gh pr create -R hyperpolymath/oikosbot --head fix/honesty-punchlist \
   --title "fix: loud builtin-policy warning; label aspirational config" \
   --body "Part 0 items 4 and 6 of the estate-economics design. No behaviour change beyond stderr. CI dead estate-wide; verified by local cargo test."
-```
+----
 
----
+'''''
 
-## Phase B — Round one pipeline
+=== Phase B — Round one pipeline
 
-All Phase B work happens on `feat/estate-round-one`. Run `git -C "$OIKOSBOT" switch feat/estate-round-one` before each task.
+All Phase B work happens on `+feat/estate-round-one+`. Run
+`+git -C "$OIKOSBOT" switch feat/estate-round-one+` before each task.
 
-### Task 6: Scaffold the three crates
+==== Task 6: Scaffold the three crates
 
-**Files:**
-- Create: `crates/oikosbot-telemetry/Cargo.toml`, `crates/oikosbot-telemetry/src/lib.rs`
-- Create: `crates/oikosbot-capability/Cargo.toml`, `crates/oikosbot-capability/src/lib.rs`
-- Create: `crates/oikosbot-dea/Cargo.toml`, `crates/oikosbot-dea/src/lib.rs`
-- Modify: root `Cargo.toml` ONLY if `members` is an explicit list (check first; if it globs `crates/*`, no change)
+*Files:* - Create: `+crates/oikosbot-telemetry/Cargo.toml+`,
+`+crates/oikosbot-telemetry/src/lib.rs+` - Create:
+`+crates/oikosbot-capability/Cargo.toml+`,
+`+crates/oikosbot-capability/src/lib.rs+` - Create:
+`+crates/oikosbot-dea/Cargo.toml+`, `+crates/oikosbot-dea/src/lib.rs+` -
+Modify: root `+Cargo.toml+` ONLY if `+members+` is an explicit list
+(check first; if it globs `+crates/*+`, no change)
 
-**Interfaces:**
-- Produces: three empty compiling library crates in the workspace.
+*Interfaces:* - Produces: three empty compiling library crates in the
+workspace.
 
-- [ ] **Step 1: Check workspace membership style**
+* [ ] *Step 1: Check workspace membership style*
 
-```bash
+[source,bash]
+----
 grep -A5 '^\[workspace\]' "$OIKOSBOT/Cargo.toml"
-```
+----
 
-If `members` lists crates explicitly, the three new paths must be appended; if it uses `"crates/*"`, skip.
+If `+members+` lists crates explicitly, the three new paths must be
+appended; if it uses `+"crates/*"+`, skip.
 
-- [ ] **Step 2: Create the crates (mirror an existing crate's edition/metadata)**
+* [ ] *Step 2: Create the crates (mirror an existing crate’s
+edition/metadata)*
 
-Each `Cargo.toml` copies the `[package]` metadata style of `crates/oikosbot-pareto/Cargo.toml` (same edition, license MPL-2.0, version 0.1.0). Dependencies:
+Each `+Cargo.toml+` copies the `+[package]+` metadata style of
+`+crates/oikosbot-pareto/Cargo.toml+` (same edition, license MPL-2.0,
+version 0.1.0). Dependencies:
 
-`oikosbot-telemetry`: `serde = { version = "1", features = ["derive"] }`, `serde_json = "1"`, `anyhow = "1"`, `parquet = "56"`, `parquet_derive = "56"`, and `oikosbot-metrics = { path = "../oikosbot-metrics" }`. (Run `cargo add parquet parquet_derive` to resolve the current compatible pair rather than trusting "56"; they must be the same version.)
+`+oikosbot-telemetry+`:
+`+serde = { version = "1", features = ["derive"] }+`,
+`+serde_json = "1"+`, `+anyhow = "1"+`, `+parquet = "56"+`,
+`+parquet_derive = "56"+`, and
+`+oikosbot-metrics = { path = "../oikosbot-metrics" }+`. (Run
+`+cargo add parquet parquet_derive+` to resolve the current compatible
+pair rather than trusting "`56`"; they must be the same version.)
 
-`oikosbot-capability`: `serde`, `serde_json`, `anyhow`, `oikosbot-telemetry = { path = "../oikosbot-telemetry" }`.
+`+oikosbot-capability+`: `+serde+`, `+serde_json+`, `+anyhow+`,
+`+oikosbot-telemetry = { path = "../oikosbot-telemetry" }+`.
 
-`oikosbot-dea`: `anyhow`, `good_lp = { version = "1.15", default-features = false, features = ["highs"] }`.
+`+oikosbot-dea+`: `+anyhow+`,
+`+good_lp = { version = "1.15", default-features = false, features = ["highs"] }+`.
 
-Each `src/lib.rs` starts as:
+Each `+src/lib.rs+` starts as:
 
-```rust
+[source,rust]
+----
 // SPDX-License-Identifier: MPL-2.0
 //! (one-line purpose)
-```
+----
 
-- [ ] **Step 3: Verify the workspace builds and commit**
+* [ ] *Step 3: Verify the workspace builds and commit*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo check --workspace
 git add crates/oikosbot-telemetry crates/oikosbot-capability crates/oikosbot-dea Cargo.toml Cargo.lock
 git commit -m "chore: scaffold oikosbot-telemetry, oikosbot-capability, oikosbot-dea"
-```
+----
 
-### Task 7: Telemetry row types + Parquet snapshot round-trip
+==== Task 7: Telemetry row types + Parquet snapshot round-trip
 
-**Files:**
-- Create: `crates/oikosbot-telemetry/src/rows.rs`
-- Create: `crates/oikosbot-telemetry/src/snapshot.rs`
-- Modify: `crates/oikosbot-telemetry/src/lib.rs` (`pub mod rows; pub mod snapshot;`)
+*Files:* - Create: `+crates/oikosbot-telemetry/src/rows.rs+` - Create:
+`+crates/oikosbot-telemetry/src/snapshot.rs+` - Modify:
+`+crates/oikosbot-telemetry/src/lib.rs+`
+(`+pub mod rows; pub mod snapshot;+`)
 
-**Interfaces:**
-- Produces (relied on by Tasks 8–13):
+*Interfaces:* - Produces (relied on by Tasks 8–13):
 
-```rust
+[source,rust]
+----
 pub struct RunRow { pub repo: String, pub run_id: i64, pub workflow_name: String,
     pub workflow_path: String, pub event: String, pub conclusion: String,
     pub started_at: String, pub updated_at: String, pub duration_s: i64 }
@@ -348,13 +447,14 @@ pub struct ReleaseRow { pub repo: String, pub tag: String, pub published_at: Str
 // snapshot module:
 pub fn write_runs(path: &Path, rows: &[RunRow]) -> anyhow::Result<()>
 pub fn read_runs(path: &Path) -> anyhow::Result<Vec<RunRow>>   // same pairs for RepoRow, ReleaseRow
-```
+----
 
-- [ ] **Step 1: Write the failing round-trip test**
+* [ ] *Step 1: Write the failing round-trip test*
 
-In `snapshot.rs`:
+In `+snapshot.rs+`:
 
-```rust
+[source,rust]
+----
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -376,23 +476,27 @@ mod tests {
         assert_eq!(back[0].duration_s, 300);
     }
 }
-```
+----
 
-- [ ] **Step 2: Run it to make sure it fails**
+* [ ] *Step 2: Run it to make sure it fails*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-telemetry parquet_roundtrip
-```
+----
 
 Expected: FAIL (types/functions not defined).
 
-- [ ] **Step 3: Implement rows and snapshot**
+* [ ] *Step 3: Implement rows and snapshot*
 
-`rows.rs`: the three structs above, each `#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, parquet_derive::ParquetRecordWriter)]`.
+`+rows.rs+`: the three structs above, each
+`+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, parquet_derive::ParquetRecordWriter)]+`.
 
-`snapshot.rs` — write via `parquet_derive`, read via the stable `RowAccessor` API with column indices matching struct field order:
+`+snapshot.rs+` — write via `+parquet_derive+`, read via the stable
+`+RowAccessor+` API with column indices matching struct field order:
 
-```rust
+[source,rust]
+----
 use anyhow::{Context, Result};
 use parquet::file::properties::WriterProperties;
 use parquet::file::reader::{FileReader, SerializedFileReader};
@@ -431,39 +535,45 @@ pub fn read_runs(path: &Path) -> Result<Vec<RunRow>> {
     }
     Ok(out)
 }
-```
+----
 
-Repeat `write_/read_` pairs for `RepoRow` (bool via `r.get_bool`, size via `get_long`) and `ReleaseRow`. If the `parquet` version's derive/RowAccessor API differs from the above (it moves between majors), adapt to the installed version — the round-trip test is the contract, not this exact code.
+Repeat `+write_/read_+` pairs for `+RepoRow+` (bool via `+r.get_bool+`,
+size via `+get_long+`) and `+ReleaseRow+`. If the `+parquet+` version’s
+derive/RowAccessor API differs from the above (it moves between majors),
+adapt to the installed version — the round-trip test is the contract,
+not this exact code.
 
-- [ ] **Step 4: Run tests, fmt, clippy; commit**
+* [ ] *Step 4: Run tests, fmt, clippy; commit*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-telemetry && cargo fmt --all && cargo clippy -p oikosbot-telemetry --all-targets -- -D warnings
 git add crates/oikosbot-telemetry && git commit -m "feat(telemetry): row types and parquet snapshot round-trip"
-```
+----
 
-### Task 8: Collector over the `gh` CLI (resumable, capped)
+==== Task 8: Collector over the `+gh+` CLI (resumable, capped)
 
-**Files:**
-- Create: `crates/oikosbot-telemetry/src/collect.rs`
-- Modify: `crates/oikosbot-telemetry/src/lib.rs` (`pub mod collect;`)
+*Files:* - Create: `+crates/oikosbot-telemetry/src/collect.rs+` -
+Modify: `+crates/oikosbot-telemetry/src/lib.rs+` (`+pub mod collect;+`)
 
-**Interfaces:**
-- Produces:
+*Interfaces:* - Produces:
 
-```rust
+[source,rust]
+----
 pub trait GhRunner { fn api(&self, path: &str) -> anyhow::Result<serde_json::Value>; }
 pub struct GhCli;                      // shells out: gh api <path>
 pub fn list_repos(gh: &dyn GhRunner, owner: &str) -> anyhow::Result<Vec<RepoRow>>
 pub fn collect_runs(gh: &dyn GhRunner, repo: &str, max_runs: usize) -> anyhow::Result<Vec<RunRow>>
 pub fn collect_releases(gh: &dyn GhRunner, repo: &str) -> anyhow::Result<Vec<ReleaseRow>>
-```
+----
 
-Resumability lives one level up (Task 12): the CLI writes one staging JSON per repo and skips repos whose file already exists.
+Resumability lives one level up (Task 12): the CLI writes one staging
+JSON per repo and skips repos whose file already exists.
 
-- [ ] **Step 1: Write the failing tests with a fake runner**
+* [ ] *Step 1: Write the failing tests with a fake runner*
 
-```rust
+[source,rust]
+----
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -490,19 +600,21 @@ mod tests {
         assert_eq!(repos[0].size_kb, 906);
     }
 }
-```
+----
 
-- [ ] **Step 2: Run to verify failure**
+* [ ] *Step 2: Run to verify failure*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-telemetry collect_
-```
+----
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement**
+* [ ] *Step 3: Implement*
 
-```rust
+[source,rust]
+----
 use anyhow::{bail, Context, Result};
 use crate::rows::{ReleaseRow, RepoRow, RunRow};
 
@@ -592,28 +704,30 @@ pub fn collect_releases(gh: &dyn GhRunner, repo: &str) -> Result<Vec<ReleaseRow>
         published_at: r["published_at"].as_str().unwrap_or("").to_string(),
     }).collect())
 }
-```
+----
 
-Add a unit test for `iso_to_epoch` against a known pair: `iso_to_epoch("2026-08-01T00:05:00Z") - iso_to_epoch("2026-08-01T00:00:00Z") == 300`, and `iso_to_epoch("1970-01-01T00:00:00Z") == 0`.
+Add a unit test for `+iso_to_epoch+` against a known pair:
+`+iso_to_epoch("2026-08-01T00:05:00Z") - iso_to_epoch("2026-08-01T00:00:00Z") == 300+`,
+and `+iso_to_epoch("1970-01-01T00:00:00Z") == 0+`.
 
-- [ ] **Step 4: Tests, lint, commit**
+* [ ] *Step 4: Tests, lint, commit*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-telemetry && cargo fmt --all && cargo clippy -p oikosbot-telemetry --all-targets -- -D warnings
 git add crates/oikosbot-telemetry && git commit -m "feat(telemetry): gh-cli collector for runs, repos, releases"
-```
+----
 
-### Task 9: Derived metrics with honest confidence labels
+==== Task 9: Derived metrics with honest confidence labels
 
-**Files:**
-- Create: `crates/oikosbot-telemetry/src/derive.rs`
-- Modify: `crates/oikosbot-telemetry/src/lib.rs` (`pub mod derive;`)
+*Files:* - Create: `+crates/oikosbot-telemetry/src/derive.rs+` - Modify:
+`+crates/oikosbot-telemetry/src/lib.rs+` (`+pub mod derive;+`)
 
-**Interfaces:**
-- Consumes: `RunRow`, `oikosbot_metrics::Confidence`.
+*Interfaces:* - Consumes: `+RunRow+`, `+oikosbot_metrics::Confidence+`.
 - Produces:
 
-```rust
+[source,rust]
+----
 pub struct Assumptions { pub power_w: f64, pub pue: f64,
     pub grid_gco2_per_kwh: f64, pub usd_per_minute: f64 }
 impl Default for Assumptions { /* documented constants, sources in comments */ }
@@ -621,11 +735,13 @@ pub struct DerivedRepo { pub repo: String, pub wall_minutes: f64,
     pub energy_kwh: f64, pub carbon_g: f64, pub imputed_cost_usd: f64 }
 pub fn derive_per_repo(runs: &[RunRow], a: &Assumptions) -> Vec<DerivedRepo>
 pub fn confidence_of(metric: &str) -> oikosbot_metrics::Confidence
-```
+----
 
-- [ ] **Step 1: Write the failing tests — including the honesty assertions from the spec**
+* [ ] *Step 1: Write the failing tests — including the honesty
+assertions from the spec*
 
-```rust
+[source,rust]
+----
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -648,13 +764,14 @@ mod tests {
         assert_eq!(confidence_of("imputed_cost_usd"), Confidence::Calibrated);
     }
 }
-```
+----
 
-- [ ] **Step 2: Verify failure** — `cargo test -p oikosbot-telemetry derive` → FAIL.
+* [ ] *Step 2: Verify failure* —
+`+cargo test -p oikosbot-telemetry derive+` → FAIL.
+* [ ] *Step 3: Implement*
 
-- [ ] **Step 3: Implement**
-
-```rust
+[source,rust]
+----
 use crate::rows::RunRow;
 use oikosbot_metrics::Confidence;
 use std::collections::BTreeMap;
@@ -713,27 +830,31 @@ pub fn confidence_of(metric: &str) -> Confidence {
         _ => Confidence::Unknown,
     }
 }
-```
+----
 
-(If `Confidence` lacks `PartialEq`, add `#[derive(PartialEq, Eq)]` to it in `oikosbot-metrics` — check first; the pareto crate already compares confidences via `confidence_rank`, so it likely has what's needed.)
+(If `+Confidence+` lacks `+PartialEq+`, add `+#[derive(PartialEq, Eq)]+`
+to it in `+oikosbot-metrics+` — check first; the pareto crate already
+compares confidences via `+confidence_rank+`, so it likely has what’s
+needed.)
 
-- [ ] **Step 4: Tests, lint, commit**
+* [ ] *Step 4: Tests, lint, commit*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-telemetry && cargo fmt --all && cargo clippy -p oikosbot-telemetry --all-targets -- -D warnings
 git add crates/oikosbot-telemetry && git commit -m "feat(telemetry): derived energy/carbon/cost with honest confidence ladder"
-```
+----
 
-### Task 10: Capability metrics (the output side)
+==== Task 10: Capability metrics (the output side)
 
-**Files:**
-- Create: `crates/oikosbot-capability/src/lib.rs` (replace scaffold)
+*Files:* - Create: `+crates/oikosbot-capability/src/lib.rs+` (replace
+scaffold)
 
-**Interfaces:**
-- Consumes: `oikosbot_telemetry::rows::{RunRow, ReleaseRow}`.
-- Produces:
+*Interfaces:* - Consumes:
+`+oikosbot_telemetry::rows::{RunRow, ReleaseRow}+`. - Produces:
 
-```rust
+[source,rust]
+----
 pub struct CapabilityRow {
     pub repo: String,
     pub runs_total: u64,
@@ -746,11 +867,13 @@ pub struct CapabilityRow {
     pub releases: u64,
 }
 pub fn assess(runs: &[RunRow], releases: &[ReleaseRow], min_n: u64) -> Vec<CapabilityRow>
-```
+----
 
-- [ ] **Step 1: Write the failing tests — ground truth from the estate's documented pathologies**
+* [ ] *Step 1: Write the failing tests — ground truth from the estate’s
+documented pathologies*
 
-```rust
+[source,rust]
+----
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -784,13 +907,14 @@ mod tests {
         assert_eq!(c[0].verified_success_runs, 1); // only Real's success counts
     }
 }
-```
+----
 
-- [ ] **Step 2: Verify failure** — `cargo test -p oikosbot-capability` → FAIL.
+* [ ] *Step 2: Verify failure* — `+cargo test -p oikosbot-capability+` →
+FAIL.
+* [ ] *Step 3: Implement*
 
-- [ ] **Step 3: Implement**
-
-```rust
+[source,rust]
+----
 // SPDX-License-Identifier: MPL-2.0
 //! Verified capability: output metrics derived from run history alone.
 //! A gate with N successes and zero failures in its whole history cannot
@@ -839,24 +963,24 @@ pub fn assess(runs: &[RunRow], releases: &[ReleaseRow], min_n: u64) -> Vec<Capab
         }
     }).collect()
 }
-```
+----
 
-- [ ] **Step 4: Tests, lint, commit**
+* [ ] *Step 4: Tests, lint, commit*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-capability && cargo fmt --all && cargo clippy -p oikosbot-capability --all-targets -- -D warnings
 git add crates/oikosbot-capability && git commit -m "feat(capability): verified-capability metrics from run history"
-```
+----
 
-### Task 11: DEA — CCR/BCC with paired envelopment/multiplier LPs
+==== Task 11: DEA — CCR/BCC with paired envelopment/multiplier LPs
 
-**Files:**
-- Create: `crates/oikosbot-dea/src/lib.rs` (replace scaffold)
+*Files:* - Create: `+crates/oikosbot-dea/src/lib.rs+` (replace scaffold)
 
-**Interfaces:**
-- Produces:
+*Interfaces:* - Produces:
 
-```rust
+[source,rust]
+----
 pub struct Dmu { pub name: String, pub inputs: Vec<f64>, pub outputs: Vec<f64> }
 pub struct DeaScore {
     pub name: String,
@@ -868,15 +992,19 @@ pub struct DeaScore {
     pub output_weights: Vec<f64>,        // u_r from multiplier form
 }
 pub fn dea(dmus: &[Dmu]) -> anyhow::Result<Vec<DeaScore>>
-```
+----
 
-Inputs/outputs are floored at `1e-6` inside `dea()` (zero inputs/outputs are common in the estate — dead repos — and break LP feasibility).
+Inputs/outputs are floored at `+1e-6+` inside `+dea()+` (zero
+inputs/outputs are common in the estate — dead repos — and break LP
+feasibility).
 
-- [ ] **Step 1: Write the failing analytic tests**
+* [ ] *Step 1: Write the failing analytic tests*
 
-Single-input single-output CRS has a closed form: θ_j = (y_j/x_j) / max_k(y_k/x_k).
+Single-input single-output CRS has a closed form: θ_j = (y_j/x_j) /
+max_k(y_k/x_k).
 
-```rust
+[source,rust]
+----
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -917,13 +1045,13 @@ mod tests {
         assert!((d.theta_ccr - 0.5).abs() < 1e-6);
     }
 }
-```
+----
 
-- [ ] **Step 2: Verify failure** — `cargo test -p oikosbot-dea` → FAIL.
+* [ ] *Step 2: Verify failure* — `+cargo test -p oikosbot-dea+` → FAIL.
+* [ ] *Step 3: Implement*
 
-- [ ] **Step 3: Implement**
-
-```rust
+[source,rust]
+----
 // SPDX-License-Identifier: MPL-2.0
 //! Data Envelopment Analysis: input-oriented CCR and BCC, solved as plain
 //! LPs. Envelopment form yields θ and the peer reference set; the multiplier
@@ -1002,42 +1130,53 @@ pub fn dea(dmus: &[Dmu]) -> Result<Vec<DeaScore>> {
                       peers, input_weights: vw, output_weights: uw })
     }).collect()
 }
-```
+----
 
-(If the installed `good_lp` exposes the HiGHS solver under a different path than `good_lp::solvers::highs::highs`, use what `cargo doc` shows — the solver import is the only unstable point; the LP formulations are the contract.)
+(If the installed `+good_lp+` exposes the HiGHS solver under a different
+path than `+good_lp::solvers::highs::highs+`, use what `+cargo doc+`
+shows — the solver import is the only unstable point; the LP
+formulations are the contract.)
 
-- [ ] **Step 4: Tests, lint, commit**
+* [ ] *Step 4: Tests, lint, commit*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test -p oikosbot-dea && cargo fmt --all && cargo clippy -p oikosbot-dea --all-targets -- -D warnings
 git add crates/oikosbot-dea && git commit -m "feat(dea): CCR/BCC via paired envelopment+multiplier LPs on HiGHS"
-```
+----
 
-### Task 12: `estate` CLI subcommand (collect / analyse / report)
+==== Task 12: `+estate+` CLI subcommand (collect / analyse / report)
 
-**Files:**
-- Create: `crates/oikosbot-cli/src/estate.rs`
-- Modify: `crates/oikosbot-cli/src/main.rs` (add `Estate` variant to the clap enum; `mod estate;`)
-- Modify: `crates/oikosbot-cli/Cargo.toml` (add path deps on the three new crates)
+*Files:* - Create: `+crates/oikosbot-cli/src/estate.rs+` - Modify:
+`+crates/oikosbot-cli/src/main.rs+` (add `+Estate+` variant to the clap
+enum; `+mod estate;+`) - Modify: `+crates/oikosbot-cli/Cargo.toml+` (add
+path deps on the three new crates)
 
-**Interfaces:**
-- Consumes: everything produced in Tasks 7–11.
-- Produces CLI:
+*Interfaces:* - Consumes: everything produced in Tasks 7–11. - Produces
+CLI:
 
-```
+....
 oikosbot estate collect --owner hyperpolymath --owner metadatastician \
     --out <staging-dir> [--max-runs 200]
 oikosbot estate analyse --staging <staging-dir> --snapshot <snapshot-dir>
 oikosbot estate report  --snapshot <snapshot-dir> [--format md|json] [-o file]
-```
+....
 
-`collect` writes one `<staging>/runs-<owner>-<repo>.json` (serde_json of `Vec<RunRow>`) plus `repos-<owner>.json` and `releases-<owner>-<repo>.json` per repo, **skipping any file that already exists** (resumability). `analyse` reads staging, writes `runs.parquet`/`repos.parquet`/`releases.parquet` + `analysis.json` (derived + capability + DEA + independence) into the snapshot dir. `report` renders `analysis.json`.
+`+collect+` writes one `+<staging>/runs-<owner>-<repo>.json+`
+(serde_json of `+Vec<RunRow>+`) plus `+repos-<owner>.json+` and
+`+releases-<owner>-<repo>.json+` per repo, *skipping any file that
+already exists* (resumability). `+analyse+` reads staging, writes
+`+runs.parquet+`/`+repos.parquet+`/`+releases.parquet+` +
+`+analysis.json+` (derived + capability + DEA + independence) into the
+snapshot dir. `+report+` renders `+analysis.json+`.
 
-- [ ] **Step 1: Write the failing test for the analyse core (pure function)**
+* [ ] *Step 1: Write the failing test for the analyse core (pure
+function)*
 
-In `estate.rs`:
+In `+estate.rs+`:
 
-```rust
+[source,rust]
+----
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1061,15 +1200,17 @@ mod tests {
         assert!(a.independence.iter().any(|(pair, _)| pair == "wall_minutes~size_kb"));
     }
 }
-```
+----
 
-- [ ] **Step 2: Verify failure** — `cargo test -p oikosbot-cli analysis_produces` → FAIL.
+* [ ] *Step 2: Verify failure* —
+`+cargo test -p oikosbot-cli analysis_produces+` → FAIL.
+* [ ] *Step 3: Implement `+estate.rs+`*
 
-- [ ] **Step 3: Implement `estate.rs`**
+Core pieces (clap wiring mirrors the existing subcommand style in
+`+main.rs+`):
 
-Core pieces (clap wiring mirrors the existing subcommand style in `main.rs`):
-
-```rust
+[source,rust]
+----
 // SPDX-License-Identifier: MPL-2.0
 use anyhow::Result;
 use oikosbot_capability::{assess, CapabilityRow};
@@ -1131,41 +1272,60 @@ pub fn run_analysis(runs: &[RunRow], repos: &[RepoRow], releases: &[ReleaseRow],
         .iter().map(|m| (m.to_string(), format!("{:?}", confidence_of(m)))).collect();
     Ok(Analysis { /* map crate types into the *Out mirrors */ })
 }
-```
+----
 
-`collect` (in the same file) loops `list_repos` per owner, then per non-archived repo calls `collect_runs`/`collect_releases`, writing each result to its staging JSON and printing progress; a pre-existing staging file is skipped with a log line (this is the resumability contract). `analyse` loads staging JSONs, writes the three Parquet files via `snapshot::write_*`, runs `run_analysis`, writes `analysis.json`. `report` renders markdown: frontier table (θ=1 repos), worst-20 off-frontier with their peers, X-inefficiency list — the design's headline — as repos with `wall_minutes > 0 && verified_success_runs == 0` under a heading that states plainly: *"X-inefficiency here is our own framing (Leibenstein has no software-engineering literature): real input consumed, zero verified output produced."* End with the independence pairs and the confidence counts, Infracost-style.
+`+collect+` (in the same file) loops `+list_repos+` per owner, then per
+non-archived repo calls `+collect_runs+`/`+collect_releases+`, writing
+each result to its staging JSON and printing progress; a pre-existing
+staging file is skipped with a log line (this is the resumability
+contract). `+analyse+` loads staging JSONs, writes the three Parquet
+files via `+snapshot::write_*+`, runs `+run_analysis+`, writes
+`+analysis.json+`. `+report+` renders markdown: frontier table (θ=1
+repos), worst-20 off-frontier with their peers, X-inefficiency list —
+the design’s headline — as repos with
+`+wall_minutes > 0 && verified_success_runs == 0+` under a heading that
+states plainly: _"`X-inefficiency here is our own framing (Leibenstein
+has no software-engineering literature): real input consumed, zero
+verified output produced.`"_ End with the independence pairs and the
+confidence counts, Infracost-style.
 
-- [ ] **Step 4: Wire clap** — add to the existing `Commands` enum in `main.rs`:
+* [ ] *Step 4: Wire clap* — add to the existing `+Commands+` enum in
+`+main.rs+`:
 
-```rust
+[source,rust]
+----
 /// Estate-level telemetry, capability and DEA analysis (read-only)
 Estate {
     #[command(subcommand)]
     cmd: estate::EstateCmd,
 },
-```
+----
 
-with `EstateCmd { Collect{..}, Analyse{..}, Report{..} }` defined in `estate.rs` carrying the flags from the interface block.
+with `+EstateCmd { Collect{..}, Analyse{..}, Report{..} }+` defined in
+`+estate.rs+` carrying the flags from the interface block.
 
-- [ ] **Step 5: Tests, lint, commit**
+* [ ] *Step 5: Tests, lint, commit*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test --workspace && cargo fmt --all && cargo clippy --workspace --all-targets -- -D warnings
 git add crates/oikosbot-cli && git commit -m "feat(cli): estate collect/analyse/report subcommands"
-```
+----
 
-### Task 13: Create the `oikosbot-estate` dataset repo and take snapshot #1
+==== Task 13: Create the `+oikosbot-estate+` dataset repo and take snapshot #1
 
-**Files:**
-- Create (new repo, outside the workspace): `~/developer/oikosbot-estate/README.adoc`, `SCHEMA.adoc`, `snapshots/<date>/…`
+*Files:* - Create (new repo, outside the workspace):
+`+~/developer/oikosbot-estate/README.adoc+`, `+SCHEMA.adoc+`,
+`+snapshots/<date>/…+`
 
-**Interfaces:**
-- Consumes: the `oikosbot estate` CLI from Task 12.
-- Produces: `hyperpolymath/oikosbot-estate` on GitHub with the first committed snapshot.
+*Interfaces:* - Consumes: the `+oikosbot estate+` CLI from Task 12. -
+Produces: `+hyperpolymath/oikosbot-estate+` on GitHub with the first
+committed snapshot.
 
-- [ ] **Step 1: Initialise the repo**
+* [ ] *Step 1: Initialise the repo*
 
-```bash
+[source,bash]
+----
 mkdir -p ~/developer/oikosbot-estate/snapshots && cd ~/developer/oikosbot-estate
 git init -b main
 cat > README.adoc <<'EOF'
@@ -1178,13 +1338,19 @@ History is git history; dynamic-efficiency analysis reads consecutive
 snapshots. Named `oikosbot-estate` (not `oikos-*`, which is the accounting
 DSL's prefix — see oikosbot's DISAMBIGUATION.adoc).
 EOF
-```
+----
 
-`SCHEMA.adoc`: one table per Parquet file listing column name/type/meaning, copied from the `rows.rs` doc comments, plus the ledger note: flows (minutes, energy, carbon, cost per snapshot period) and stocks (cumulative totals) reconcile per the SFC discipline — the reconciliation check itself lands with multi-snapshot support in round two, and this file says so explicitly.
+`+SCHEMA.adoc+`: one table per Parquet file listing column
+name/type/meaning, copied from the `+rows.rs+` doc comments, plus the
+ledger note: flows (minutes, energy, carbon, cost per snapshot period)
+and stocks (cumulative totals) reconcile per the SFC discipline — the
+reconciliation check itself lands with multi-snapshot support in round
+two, and this file says so explicitly.
 
-- [ ] **Step 2: Run the first collection (small scope first, then full)**
+* [ ] *Step 2: Run the first collection (small scope first, then full)*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT"
 cargo run -p oikosbot-cli -- estate collect --owner hyperpolymath --out ~/developer/oikosbot-estate/.staging --max-runs 200
 cargo run -p oikosbot-cli -- estate collect --owner metadatastician --out ~/developer/oikosbot-estate/.staging --max-runs 200
@@ -1193,66 +1359,89 @@ cargo run -p oikosbot-cli -- estate analyse --staging ~/developer/oikosbot-estat
   --snapshot ~/developer/oikosbot-estate/snapshots/$DATE
 cargo run -p oikosbot-cli -- estate report --snapshot ~/developer/oikosbot-estate/snapshots/$DATE \
   --format md -o ~/developer/oikosbot-estate/snapshots/$DATE/report.md
-```
+----
 
-(Interrupt/re-run `collect` at least once mid-way to exercise resumability; the second run must skip already-collected repos.)
+(Interrupt/re-run `+collect+` at least once mid-way to exercise
+resumability; the second run must skip already-collected repos.)
 
-- [ ] **Step 3: Verify against ground truth before committing**
+* [ ] *Step 3: Verify against ground truth before committing*
 
-The report MUST show, or the pipeline is wrong (spec §Verification 4):
-- `hyperpolymath/oikosbot` with heavy `startup_failure` counts since 07-30;
-- known-dead repos (echidna, kitchenspeak) dominated by startup failures;
-- at least one infallible-gate candidate somewhere in the estate (documented pathology).
+The report MUST show, or the pipeline is wrong (spec §Verification 4): -
+`+hyperpolymath/oikosbot+` with heavy `+startup_failure+` counts since
+07-30; - known-dead repos (echidna, kitchenspeak) dominated by startup
+failures; - at least one infallible-gate candidate somewhere in the
+estate (documented pathology).
 
-Also confirm `.staging/` is NOT committed (add to `.gitignore`).
+Also confirm `+.staging/+` is NOT committed (add to `+.gitignore+`).
 
-- [ ] **Step 4: Create the GitHub repo and push**
+* [ ] *Step 4: Create the GitHub repo and push*
 
-```bash
+[source,bash]
+----
 cd ~/developer/oikosbot-estate
 echo ".staging/" > .gitignore
 git add -A && git commit -m "snapshot: first estate telemetry collection ($DATE)"
 gh repo create hyperpolymath/oikosbot-estate --public --source . --push \
   --description "Estate telemetry snapshots for OikosBot's economics pipeline (data only)"
-```
+----
 
-### Task 14: Reproducibility + end-to-end verification, PR
+==== Task 14: Reproducibility + end-to-end verification, PR
 
-**Files:**
-- Create: `docs/superpowers/notes/2026-08-03-round-one-verification.md` (results record)
+*Files:* - Create:
+`+docs/superpowers/notes/2026-08-03-round-one-verification.md+` (results
+record)
 
-**Interfaces:**
-- Consumes: snapshot #1; the full workspace.
-- Produces: the round-one PR with the verification record; the spec's six verification items each answered with evidence.
+*Interfaces:* - Consumes: snapshot #1; the full workspace. - Produces:
+the round-one PR with the verification record; the spec’s six
+verification items each answered with evidence.
 
-- [ ] **Step 1: Determinism of analyse**
+* [ ] *Step 1: Determinism of analyse*
 
-```bash
+[source,bash]
+----
 cargo run -p oikosbot-cli -- estate analyse --staging ~/developer/oikosbot-estate/.staging --snapshot /tmp/snap-b
 diff <(jq -S . ~/developer/oikosbot-estate/snapshots/$DATE/analysis.json) <(jq -S . /tmp/snap-b/analysis.json)
-```
+----
 
-Expected: empty diff. (Collection reproducibility over a shifting live window cannot be byte-exact; record instead that two collects within minutes agree on all closed runs — check a sample repo's run set.)
+Expected: empty diff. (Collection reproducibility over a shifting live
+window cannot be byte-exact; record instead that two collects within
+minutes agree on all closed runs — check a sample repo’s run set.)
 
-- [ ] **Step 2: Record the six verification answers**
+* [ ] *Step 2: Record the six verification answers*
 
-Write `2026-08-03-round-one-verification.md` answering each spec item with the actual evidence: (1) the independence coefficients from `analysis.json` — state plainly whether `wall_minutes~size_kb` is low (premise holds) or high (premise fails; say so, do not soften); (2) the determinism diff; (3) the DEA analytic tests + duality-gap assertion; (4) the ground-truth detections from Task 13 step 3; (5) the confidence-ladder test; (6) Part 0 status (PRs open, CI-unverifiable, why).
+Write `+2026-08-03-round-one-verification.md+` answering each spec item
+with the actual evidence: (1) the independence coefficients from
+`+analysis.json+` — state plainly whether `+wall_minutes~size_kb+` is
+low (premise holds) or high (premise fails; say so, do not soften); (2)
+the determinism diff; (3) the DEA analytic tests + duality-gap
+assertion; (4) the ground-truth detections from Task 13 step 3; (5) the
+confidence-ladder test; (6) Part 0 status (PRs open, CI-unverifiable,
+why).
 
-- [ ] **Step 3: Full workspace gate and PR**
+* [ ] *Step 3: Full workspace gate and PR*
 
-```bash
+[source,bash]
+----
 cd "$OIKOSBOT" && cargo test --workspace && cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings
 git add docs/superpowers/notes && git commit -m "docs: round-one verification record"
 git push -u origin feat/estate-round-one
 gh pr create -R hyperpolymath/oikosbot --head feat/estate-round-one \
   --title "feat: estate economics round one — telemetry, capability, DEA (read-only)" \
   --body "Implements the approved design (docs/superpowers/specs/2026-08-03-estate-economics-design.md): oikosbot-telemetry / oikosbot-capability / oikosbot-dea crates + 'oikosbot estate' CLI. Read-only; nothing blocks. First snapshot at hyperpolymath/oikosbot-estate. Verification record in docs/superpowers/notes/. CI dead estate-wide (lockfile enforcement); verified locally: cargo test --workspace green."
-```
+----
 
----
+'''''
 
-## Self-Review (done at write time)
+=== Self-Review (done at write time)
 
-- **Spec coverage:** Part 0 items 1–6 → Tasks 2,3,4,5(×2),1; collector/capability/DEA/CLI/dataset-repo/verification → Tasks 7–14. Deferred per spec: SFC reconciliation check (needs ≥2 snapshots — noted in SCHEMA.adoc), static capability signals, PR decoration, Eclexia join, enforcement.
-- **Known API risk, stated:** exact `parquet_derive`/`good_lp` item paths move between versions; the tests are the contract and Steps say adapt to the installed version.
-- **Type consistency:** `RunRow`/`RepoRow`/`ReleaseRow` field lists identical in Tasks 7, 8, 10, 12; `Confidence` variants match `oikosbot-metrics`; DEA field names consistent between Task 11 and 12.
+* *Spec coverage:* Part 0 items 1–6 → Tasks 2,3,4,5(×2),1;
+collector/capability/DEA/CLI/dataset-repo/verification → Tasks 7–14.
+Deferred per spec: SFC reconciliation check (needs ≥2 snapshots — noted
+in SCHEMA.adoc), static capability signals, PR decoration, Eclexia join,
+enforcement.
+* *Known API risk, stated:* exact `+parquet_derive+`/`+good_lp+` item
+paths move between versions; the tests are the contract and Steps say
+adapt to the installed version.
+* *Type consistency:* `+RunRow+`/`+RepoRow+`/`+ReleaseRow+` field lists
+identical in Tasks 7, 8, 10, 12; `+Confidence+` variants match
+`+oikosbot-metrics+`; DEA field names consistent between Task 11 and 12.
