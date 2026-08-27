@@ -48,6 +48,7 @@ The following files in `.machine_readable/6a2/` contain structured project metad
 | Banned | Replacement |
 |--------|-------------|
 | TypeScript | AffineScript (for OikosBot) / Rust (for DSL) |
+| ReScript | AffineScript (for OikosBot) / Rust (for DSL) |
 | **ReScript** (new files) | **AffineScript** — the legacy `bot-integration/` ReScript was removed 2026-05-28 (oikos#41) |
 | JavaScript (new files) | AffineScript |
 | Deno | Bun |
@@ -75,7 +76,7 @@ Both are FOSS with independent governance (no Big Tech).
 1. **No new TypeScript files** - Write new code in AffineScript
 2. **No new ReScript files** - Legacy `bot-integration/` ReScript was retired 2026-05-28 (oikos#41); the AS port lives at `bot-integration-affine/`
 3. **Use `package.json` + `bun.lock` for JS runtime deps** - Bun is npm-compatible; a manifest is REQUIRED
-4. **`bun install --production` for production deps** - resolved from `package.json`, pinned via `bun.lock`
+4. **`bun install --production --frozen-lockfile` for production deps** - resolved from `package.json` and pinned via `bun.lock`; `--frozen-lockfile` makes a lockfile mismatch a build failure rather than a silent re-resolve
 5. **No Go code** - Use Rust instead
 6. **No Python anywhere** - Use Julia for data/batch, Rust for systems
 7. **No Kotlin/Swift for mobile** - Use Tauri 2.0+ or Dioxus
