@@ -32,7 +32,7 @@ The following files in `.machine_readable/6a2/` contain structured project metad
 | **Rust** | OikosBot analysis workspace (`crates/oikosbot-*`) | Repo root; performance-critical. NOT the `oikos-*` DSL (separate repo). |
 | **AffineScript** (`.affine`) | OikosBot (`bot-integration-affine/`) | Affine types, dependent types, row polymorphism, extensible effects |
 | **Haskell** | OikosBot analyser backend (`analyzers/`) | Existing surface; pure analysis |
-| **Deno** | Runtime & package management | Replaces Node/npm/bun |
+| **Bun** | JS runtime & package management (tier 1) | Default for all new work. Runs compiled ESM/JS directly — no bundler step. Uses an npm-compatible `package.json` plus `bun.lock` — both are expected, not anti-patterns. |
 | **Tauri 2.0+** | Mobile apps (iOS/Android) | Rust backend + web UI |
 | **Dioxus** | Mobile apps (native UI) | Pure Rust, React-like |
 | **Gleam** | Backend services | Runs on BEAM or compiles to JS |
@@ -48,12 +48,13 @@ The following files in `.machine_readable/6a2/` contain structured project metad
 | Banned | Replacement |
 |--------|-------------|
 | TypeScript | AffineScript (for OikosBot) / Rust (for DSL) |
+| ReScript | AffineScript (for OikosBot) / Rust (for DSL) |
 | **ReScript** (new files) | **AffineScript** — the legacy `bot-integration/` ReScript was removed 2026-05-28 (oikos#41) |
 | JavaScript (new files) | AffineScript |
-| Node.js | Deno |
-| npm | Deno |
-| Bun | Deno |
-| pnpm/yarn | Deno |
+| Deno | Bun |
+| Node.js | Bun |
+| npm | Bun |
+| pnpm/yarn | Bun |
 | Go | Rust |
 | Python | Julia/Rust/AffineScript |
 | Java/Kotlin | Rust/Tauri/Dioxus |
@@ -74,8 +75,8 @@ Both are FOSS with independent governance (no Big Tech).
 
 1. **No new TypeScript files** - Write new code in AffineScript
 2. **No new ReScript files** - Legacy `bot-integration/` ReScript was retired 2026-05-28 (oikos#41); the AS port lives at `bot-integration-affine/`
-3. **No package.json - use deno.json deps** - Use deno.json imports
-4. **No node_modules in production** - Deno caches deps automatically
+3. **Use `package.json` + `bun.lock` for JS runtime deps** - Bun is npm-compatible; a manifest is REQUIRED
+4. **`bun install --production --frozen-lockfile` for production deps** - resolved from `package.json` and pinned via `bun.lock`; `--frozen-lockfile` makes a lockfile mismatch a build failure rather than a silent re-resolve
 5. **No Go code** - Use Rust instead
 6. **No Python anywhere** - Use Julia for data/batch, Rust for systems
 7. **No Kotlin/Swift for mobile** - Use Tauri 2.0+ or Dioxus
@@ -85,7 +86,7 @@ Both are FOSS with independent governance (no Big Tech).
 
 - **Primary**: Guix (guix.scm)
 - **Fallback**: Nix (flake.nix)
-- **JS deps**: Deno (deno.json imports)
+- **JS deps**: Bun (`package.json` + `bun.lock`). Declare tooling as a devDependency and run `bunx --no-install --bun <tool>` — a bare `bunx <tool>` can fetch an unpinned package and may start Node via its shebang.
 
 ### Security Requirements
 
