@@ -60,7 +60,7 @@ inputs:
   image:
     description: 'Container image to run'
     required: false
-    default: 'ghcr.io/hyperpolymath/oikos:latest'
+    default: 'ghcr.io/hyperpolymath/oikos:0.1.3'
 
 outputs:
   output-file:

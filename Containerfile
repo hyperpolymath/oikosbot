@@ -10,7 +10,7 @@
 # Multi-stage, glibc-consistent (rust:slim builder -> debian:slim runtime),
 # non-root. The oikosbot-fleet bridge is excluded from the default workspace,
 # so this builds standalone with no gitbot-fleet dependency.
-FROM rust:1.86-slim AS builder
+FROM rust:1.88-slim AS builder
 WORKDIR /build
 COPY . .
 # Build only the CLI crate (binary name: oikosbot). --locked honours the

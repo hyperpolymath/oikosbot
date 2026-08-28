@@ -11,6 +11,7 @@ name: Publish Image
 on:
   push:
     branches: [main]
+    tags: ['v*']
     paths:
       - 'crates/**'
       - 'Cargo.toml'
@@ -49,6 +50,7 @@ jobs:
           images: ghcr.io/hyperpolymath/oikos
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
             type=sha
       - name: Build and push
         id: push
