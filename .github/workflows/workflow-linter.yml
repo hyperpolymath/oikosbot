@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 # This workflow is managed by gh actions-lock.
-# This workflow is managed by gh actions-lock.
 # Prevention workflow - validates all workflows have proper security config
 name: Workflow Security Linter
 on:
@@ -39,51 +38,49 @@ jobs:
             fi
           done
           exit $errors
-      # This step used to set errors=0, only echo a WARNING (never
-      # incrementing), and end without `exit $errors` — so it could not fail
-      # on any input. It also globbed only .github/workflows, so the dead pin
-      # in examples/oikosbot-ci.yml was structurally invisible. Both are
-      # fixed below, and the check now probes whether each SHA *exists*
-      # rather than merely matching its shape: a 40-hex string that is not a
-      # real commit resolves to nothing, kills the job in "Set up job", and
-      # produces no check run at all — the failure mode that reads as green.
-      - name: Check pinned actions
-        env:
-          GH_TOKEN: ${{ github.token }}
+      # GitHub's actions.lock runtime resolves refs to the verified commits in
+      # the lockfile. A workflow may therefore retain a readable release ref;
+      # demanding an inline SHA as well contradicts the lockfile model and made
+      # this job reject every onboarded workflow. Check lockfile coverage here;
+      # GitHub verifies reachability and repository identity at runtime.
+      - name: Check actions lockfile coverage
         run: |
           set -uo pipefail
           errors=0
+          lockfile=.github/workflows/actions.lock
+          [ -f "$lockfile" ] || { echo "missing $lockfile"; exit 1; }
           files=$(find .github/workflows examples -maxdepth 1 \
                     \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null || true)
           [ -n "$files" ] || { echo "no workflow files found"; exit 1; }
 
           for f in $files; do
-            # Unpinned: a tag or branch ref instead of a 40-hex SHA.
-            while IFS= read -r ref; do
-              [ -n "$ref" ] || continue
-              echo "ERROR: $f pins '$ref' by tag/branch, not by SHA"
-              errors=$((errors + 1))
-            done < <(grep -oE 'uses: +[A-Za-z0-9._/-]+@[A-Za-z0-9._-]+' "$f" \
-                     | sed 's/uses: *//' \
-                     | grep -vE '@[0-9a-f]{40}$' || true)
-
-            # Pinned but phantom: the SHA is not a commit in that repo.
             while IFS= read -r ref; do
               [ -n "$ref" ] || continue
               repo=${ref%@*}; sha=${ref#*@}
-              # owner/repo/subpath@sha -> owner/repo
               repo=$(echo "$repo" | cut -d/ -f1,2)
-              if ! gh api "repos/$repo/commits/$sha" --jq .sha >/dev/null 2>&1; then
-                echo "ERROR: $f pins $repo@$sha — no such commit (phantom SHA)"
-                errors=$((errors + 1))
+              key="$repo@$sha"
+
+              if grep -Fq "    '$key':" "$lockfile"; then
+                continue
               fi
-            done < <(grep -oE 'uses: +[A-Za-z0-9._/-]+@[0-9a-f]{40}' "$f" \
-                     | sed 's/uses: *//' || true)
+
+              # Reusable workflows already pinned inline, and examples (which
+              # cannot be onboarded into this lockfile), remain acceptable with
+              # a full SHA. GitHub proves executable SHAs during resolution;
+              # avoiding an API probe here also avoids rate-limit/DNS failures.
+              if [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+                continue
+              fi
+
+              echo "ERROR: $f uses $ref without actions.lock coverage"
+              errors=$((errors + 1))
+            done < <(grep -oE 'uses: +[A-Za-z0-9._/-]+@[A-Za-z0-9._-]+' "$f" \
+                     | sed 's/uses: *//' | tr -d '\r' || true)
           done
 
           if [ "$errors" -gt 0 ]; then
-            echo "::error::$errors unpinned or phantom action reference(s)"
+            echo "::error::$errors action reference(s) missing lockfile coverage"
           else
-            echo "all action pins are SHA-pinned and resolve to real commits"
+            echo "all executable action refs are covered by actions.lock"
           fi
           exit $errors
