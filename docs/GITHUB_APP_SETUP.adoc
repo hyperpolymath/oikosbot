@@ -95,12 +95,11 @@ metadata:
   name: oikos-bot
 type: Opaque
 stringData:
-  GITHUB_APP_ID: "123456"
-  GITHUB_PRIVATE_KEY: |
-    -----BEGIN PRIVATE KEY-----
-    ...
-    -----END PRIVATE KEY-----
-  GITHUB_WEBHOOK_SECRET: "your-webhook-secret"
+  # Illustrative keys only. Inject all three values at deployment time from
+  # your secrets manager; do not commit even example-shaped credentials.
+  GITHUB_APP_ID: "<inject-at-deploy-time>"
+  GITHUB_PRIVATE_KEY: "<inject-at-deploy-time>"
+  GITHUB_WEBHOOK_SECRET: "<inject-at-deploy-time>"
 ----
 
 == Step 5: Install the App
@@ -127,7 +126,7 @@ Create a test PR to verify the bot posts analysis comments.
 === "GitHub App credentials not configured"
 
 * Verify `GITHUB_APP_ID` and `GITHUB_PRIVATE_KEY` are set
-* Check private key is in PKCS#8 format (starts with `-----BEGIN PRIVATE KEY-----`)
+* Check that the private key has a PKCS#8 PEM header, rather than a PKCS#1 header
 
 === "No installation ID in payload"
 
