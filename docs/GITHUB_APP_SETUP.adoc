@@ -85,21 +85,16 @@ export BOT_MODE="advisor"  # advisor, consultant, or regulator
 export PORT="3000"
 ----
 
-For production, use a secrets manager. For Kubernetes:
+For production, use a secrets manager. In Kubernetes, create an `oikos-bot`
+Secret containing `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and
+`GITHUB_WEBHOOK_SECRET` outside version control, then reference the whole
+Secret from the workload:
 
 [source,yaml]
 ----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: oikos-bot
-type: Opaque
-stringData:
-  # Illustrative keys only. Inject all three values at deployment time from
-  # your secrets manager; do not commit even example-shaped credentials.
-  GITHUB_APP_ID: "<inject-at-deploy-time>"
-  GITHUB_PRIVATE_KEY: "<inject-at-deploy-time>"
-  GITHUB_WEBHOOK_SECRET: "<inject-at-deploy-time>"
+envFrom:
+  - secretRef:
+      name: oikos-bot
 ----
 
 == Step 5: Install the App
