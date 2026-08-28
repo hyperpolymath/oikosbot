@@ -58,9 +58,10 @@ rebuilt natively when OikosBot is deployable.
 
 ==== Fixed
 
-* fix(release): restore GHCR publication with a Rust 1.88 builder, publish
-versioned image tags for release tags, and make the Action default to the
-matching `+0.1.3+` image instead of the mutable `+latest+` tag.
+* fix(release): restore GHCR publication with a Rust 1.88 builder and the
+CMake/C++ toolchain required by `+highs-sys+`, publish versioned image tags for
+release tags, and make the Action default to the matching `+0.1.3+` image
+instead of the mutable `+latest+` tag.
 * fix(docs): purge stale post-extraction identity references —
 `+SECURITY.md+` carried two dead project names (`+SustainaBot+` ×3 and a
 `+scarcity-bot+` GitLab vuln-reporting URL, plus `+SCARCITY_API_KEY+`),
