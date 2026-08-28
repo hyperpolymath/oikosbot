@@ -22,6 +22,9 @@ on:
   workflow_dispatch: {}
 permissions:
   contents: read
+concurrency:
+  group: publish-image-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   build-push:
     name: Build and push oikos image
