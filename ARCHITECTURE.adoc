@@ -44,7 +44,7 @@ and *sustainabot* is a reserved member slot of
 https://github.com/hyperpolymath/gitbot-fleet[`hyperpolymath/gitbot-fleet`]
 (`bots/sustainabot/`), not OikosBot. They share the οἶκος root but are
 otherwise unrelated.
-This document describes the *target* platform architecture; for current implementation status see link:README.adoc[README.adoc], link:EXPLAINME.adoc[EXPLAINME.adoc] and link:.machine_readable/6a2/STATE.a2ml[STATE.a2ml].
+This document describes the *target* platform architecture; for current implementation status see link:README.adoc[README.adoc], link:EXPLAINME.adoc[EXPLAINME.adoc] and link:.machine_readable/descriptiles/STATE.a2ml[STATE.a2ml].
 ====
 
 == Vision

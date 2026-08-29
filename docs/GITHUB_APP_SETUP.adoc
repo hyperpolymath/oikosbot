@@ -71,19 +71,11 @@ On the App settings page, note the *App ID* (a number like `123456`).
 
 Set the following environment variables:
 
-[source,bash]
-----
-# Required for GitHub App authentication
-export GITHUB_APP_ID="123456"
-export GITHUB_PRIVATE_KEY="$(cat your-app-key-pkcs8.pem)"
-
-# Required for webhook signature verification
-export GITHUB_WEBHOOK_SECRET="your-webhook-secret"
-
-# Optional
-export BOT_MODE="advisor"  # advisor, consultant, or regulator
-export PORT="3000"
-----
+Provide `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and
+`GITHUB_WEBHOOK_SECRET` through the deployment platform's secret store; do not
+paste credential-shaped placeholder values into committed files. The optional
+non-secret settings are `BOT_MODE` (`advisor`, `consultant`, or `regulator`)
+and `PORT`.
 
 For production, use a secrets manager. In Kubernetes, create an `oikos-bot`
 Secret containing `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and

@@ -13,4 +13,10 @@ permissions:
 
 jobs:
   scorecard:
+    permissions:
+      contents: read
+      # Publishes Scorecard SARIF findings to this repository's code scanning UI.
+      security-events: write
+      # Lets the reusable workflow request an OIDC token for signed provenance.
+      id-token: write
     uses: hyperpolymath/standards/.github/workflows/scorecard-reusable.yml@bd0df9ead7faf0cdfe0e13e7966d91e28d0101d4

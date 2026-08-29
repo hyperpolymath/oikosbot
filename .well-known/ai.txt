@@ -22,7 +22,7 @@ Attribution: required
 # ---------------------------------------------------------------------------
 # Notes for coding agents working IN this repository
 # ---------------------------------------------------------------------------
-# - Read .claude/CLAUDE.md and .machine_readable/6a2/ (STATE/META/ECOSYSTEM/
+# - Read .claude/CLAUDE.md and .machine_readable/descriptiles/ (STATE/META/ECOSYSTEM/
 #   AGENTIC/NEUROSYM/PLAYBOOK) before editing; entry point: 0-AI-MANIFEST.a2ml.
 # - Language policy: AffineScript / Rust / Haskell (+ Deno, Nickel, A2ML).
 #   TypeScript, ReScript (new), JavaScript (new), Go, Python, Node.js are banned

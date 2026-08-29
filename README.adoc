@@ -78,7 +78,7 @@ portfolio is the unit.
 
 `v0.1.0` — **online in CI/Action mode**; estate pipeline **shipped, read-only**.
 Full picture: link:docs/STATUS.adoc[`docs/STATUS.adoc`] (human),
-link:.machine_readable/6a2/STATE.a2ml[`STATE.a2ml`] (machine), and
+link:.machine_readable/descriptiles/STATE.a2ml[`STATE.a2ml`] (machine), and
 link:DEBT.adoc[`DEBT.adoc`] (what is owed).
 
 Working: the Pareto engine (`crates/oikosbot-pareto`), the estate pipeline

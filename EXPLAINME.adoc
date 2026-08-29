@@ -163,7 +163,7 @@ gated on VeriSimDB maturing and on the AffineScript transport (affinescript
 | https://github.com/hyperpolymath/verisimdb[verisimdb]
 
 | A2ML machine-readable estate spec
-| `.machine_readable/6a2/*.a2ml` + `.machine_readable/contractiles/`
+| `.machine_readable/descriptiles/*.a2ml` + `.machine_readable/contractiles/`
 | estate-wide (the `a2ml` standard)
 
 | SARIF code-scanning output

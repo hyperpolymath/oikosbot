@@ -104,7 +104,7 @@ https://github.com/hyperpolymath/verisimdb[VeriSimDB] identity-consonance store.
 One identity is an octad of modal witnesses; the graph + document witnesses
 subsume ArangoDB and the semantic witness subsumes Virtuoso/RDF (see
 link:ARCHITECTURE.adoc[ARCHITECTURE.adoc] and
-link:.machine_readable/6a2/META.a2ml[META.a2ml] ADR-001).
+link:.machine_readable/descriptiles/META.a2ml[META.a2ml] ADR-001).
 
 === Done
 

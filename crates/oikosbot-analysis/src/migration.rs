@@ -173,14 +173,10 @@ impl MigrationHealthTracker {
             return 0.0;
         }
 
-        let total_delta = snapshots
-            .last()
-            .expect("snapshots non-empty: len >= 2 checked above")
-            .health_score
-            - snapshots
-                .first()
-                .expect("snapshots non-empty: len >= 2 checked above")
-                .health_score;
+        // The length guard above proves both indices are in bounds. Indexing here
+        // makes that invariant explicit without introducing panic-only `expect`
+        // branches into this frequently called calculation.
+        let total_delta = snapshots[snapshots.len() - 1].health_score - snapshots[0].health_score;
         total_delta / (snapshots.len() - 1) as f64
     }
 
