@@ -207,7 +207,7 @@ fn has_busy_wait(source: &str, node: &tree_sitter::Node) -> bool {
         || text.contains(".iter(") || text.contains(".into_iter(")  // Iterator-based loops
         || text.contains(".lines(") || text.contains(".split(")  // Line/string processing
         || text.contains("WalkDir::") || text.contains(".entries(")  // Directory traversal
-        || text.contains(".chars(") || text.contains(".bytes(");  // Character/byte processing
+        || text.contains(".chars(") || text.contains(".bytes("); // Character/byte processing
 
     // It's a busy wait only if there's no blocking/yielding, no I/O, AND no legitimate iteration
     !(has_blocking || has_io || has_iteration)
@@ -263,7 +263,7 @@ fn has_unbuffered_io(source: &str, node: &tree_sitter::Node) -> bool {
     };
 
     let has_file_io = text.contains("File::open") || text.contains("File::create");
-    
+
     if !has_file_io {
         return false;
     }

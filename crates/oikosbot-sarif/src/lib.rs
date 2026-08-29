@@ -189,12 +189,6 @@ pub struct Invocation {
 fn builtin_rules() -> Vec<ReportingDescriptor> {
     vec![
         rule(
-            "oikosbot/general",
-            "General sustainability finding",
-            "Code unit analyzed for ecological and economic efficiency.",
-            SarifLevel::Note,
-        ),
-        rule(
             "oikosbot/nested-loops",
             "Deeply nested loops",
             "Deeply nested loops create O(n^k) complexity, wasting CPU and energy.",
@@ -276,8 +270,12 @@ pub fn to_sarif(results: &[AnalysisResult], version: &str) -> SarifLog {
     let rules = builtin_rules();
     let rule_ids: Vec<&str> = rules.iter().map(|r| r.id.as_str()).collect();
 
+    // `oikosbot/general` records are per-function measurement telemetry, not
+    // defects. Keep them in JSON/text reports, but do not turn every analyzed
+    // function into a persistent GitHub code-scanning alert.
     let sarif_results: Vec<SarifResult> = results
         .iter()
+        .filter(|r| r.rule_id != "oikosbot/general")
         .map(|r| convert_result(r, &rule_ids))
         .collect();
 
@@ -427,7 +425,7 @@ mod tests {
             },
             health: HealthIndex::compute(EcoScore::new(75.0), EconScore::new(80.0), 85.0),
             recommendations: vec!["Code looks efficient".to_string()],
-            rule_id: "oikosbot/general".to_string(),
+            rule_id: "oikosbot/nested-loops".to_string(),
             suggestion: None,
             end_location: Some((25, 2)),
             confidence: Confidence::Estimated,
@@ -445,6 +443,24 @@ mod tests {
         assert_eq!(log.runs[0].tool.driver.name, "oikosbot");
         assert!(!log.runs[0].tool.driver.rules.is_empty());
         assert_eq!(log.runs[0].results.len(), 1);
+    }
+
+    #[test]
+    fn telemetry_only_general_records_do_not_become_code_scanning_alerts() {
+        let mut telemetry = sample_result();
+        telemetry.rule_id = "oikosbot/general".to_string();
+        let finding = sample_result();
+
+        let log = to_sarif(&[telemetry, finding], "0.1.0");
+
+        assert_eq!(log.runs[0].results.len(), 1);
+        assert_eq!(log.runs[0].results[0].rule_id, "oikosbot/nested-loops");
+        assert!(log.runs[0]
+            .tool
+            .driver
+            .rules
+            .iter()
+            .all(|rule| rule.id != "oikosbot/general"));
     }
 
     #[test]
