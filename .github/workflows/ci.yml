@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 # This workflow is managed by gh actions-lock.
-# This workflow is managed by gh actions-lock.
 # SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 #
 # OikosBot - Continuous Integration
@@ -103,7 +102,7 @@ jobs:
           output: "trivy-results.sarif"
         continue-on-error: true
       - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v4.37.7
+        uses: github/codeql-action/upload-sarif@v4.37.9
         with:
           sarif_file: "trivy-results.sarif"
         continue-on-error: true

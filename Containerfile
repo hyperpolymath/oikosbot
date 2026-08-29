@@ -10,12 +10,16 @@
 # Multi-stage, glibc-consistent (rust:slim builder -> debian:slim runtime),
 # non-root. The oikosbot-fleet bridge is excluded from the default workspace,
 # so this builds standalone with no gitbot-fleet dependency.
-FROM rust:1.86-slim AS builder
+FROM rust:1.88-slim AS builder
 WORKDIR /build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends cmake g++ libclang-dev make \
+    && rm -rf /var/lib/apt/lists/*
 COPY . .
 # Build only the CLI crate (binary name: oikosbot). --locked honours the
-# committed Cargo.lock (matches CI). tree-sitter grammars compile via the
-# C toolchain bundled in the official rust image.
+# committed Cargo.lock (matches CI). tree-sitter needs C; highs-sys needs
+# CMake, C++, libclang, and Make, installed explicitly above because
+# rust:slim omits the native HiGHS/bindgen build toolchain.
 RUN cargo build --release --locked -p oikosbot-cli
 
 FROM debian:bookworm-slim
