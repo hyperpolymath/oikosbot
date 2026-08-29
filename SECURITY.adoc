@@ -24,8 +24,8 @@ ____
 === Reporting a Vulnerability
 
 *Do not report vulnerabilities publicly* (e.g., GitHub/GitLab Issues).
-Use this repository's GitHub *Security → Report a vulnerability* form. If that
-form is unavailable, report privately by email to *j.d.a.jewell@open.ac.uk*.
+Use this repository's GitHub *Security → Report a vulnerability* form; private
+vulnerability reporting is enabled for this repository.
 
 '''''
 

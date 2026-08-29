@@ -8,8 +8,8 @@ the current `main` branch receive security fixes.
 ## Reporting a vulnerability
 
 Do not open a public issue. Report suspected vulnerabilities privately through
-GitHub's **Security → Report a vulnerability** form for this repository. If that
-form is unavailable, email `j.d.a.jewell@open.ac.uk`.
+GitHub's **Security → Report a vulnerability** form for this repository. Private
+vulnerability reporting is enabled for this repository.
 
 Include the affected version or commit, component and file paths, reproduction
 steps, likely impact, and a minimal proof of concept where it is safe to do so.
