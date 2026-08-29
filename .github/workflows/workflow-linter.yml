@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check SPDX headers
         run: |
           errors=0
@@ -45,42 +45,58 @@ jobs:
       # GitHub verifies reachability and repository identity at runtime.
       - name: Check actions lockfile coverage
         run: |
-          set -uo pipefail
-          errors=0
+          set -euo pipefail
           lockfile=.github/workflows/actions.lock
           [ -f "$lockfile" ] || { echo "missing $lockfile"; exit 1; }
-          files=$(find .github/workflows examples -maxdepth 1 \
-                    \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null || true)
-          [ -n "$files" ] || { echo "no workflow files found"; exit 1; }
+          mapfile -t files < <(find .github/workflows examples -maxdepth 1 \
+                    \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null)
+          [ "${#files[@]}" -gt 0 ] || { echo "no workflow files found"; exit 1; }
+          python3 - "$lockfile" "${files[@]}" <<'PY'
+          import re
+          import sys
+          import yaml
 
-          for f in $files; do
-            while IFS= read -r ref; do
-              [ -n "$ref" ] || continue
-              repo=${ref%@*}; sha=${ref#*@}
-              repo=$(echo "$repo" | cut -d/ -f1,2)
-              key="$repo@$sha"
+          lock_path, *workflow_paths = sys.argv[1:]
+          with open(lock_path, encoding="utf-8") as stream:
+              lock = yaml.safe_load(stream)
+          dependencies = (lock or {}).get("dependencies", {})
+          if not isinstance(dependencies, dict):
+              raise SystemExit(f"{lock_path}: dependencies must be a mapping")
 
-              if grep -Fq "    '$key':" "$lockfile"; then
-                continue
-              fi
+          errors = []
 
-              # Reusable workflows already pinned inline, and examples (which
-              # cannot be onboarded into this lockfile), remain acceptable with
-              # a full SHA. GitHub proves executable SHAs during resolution;
-              # avoiding an API probe here also avoids rate-limit/DNS failures.
-              if [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
-                continue
-              fi
+          def check_node(node, path):
+              if isinstance(node, dict):
+                  for key, value in node.items():
+                      if key == "uses":
+                          if not isinstance(value, str):
+                              errors.append(f"ERROR: {path} has a non-string uses value")
+                          else:
+                              check_ref(value.strip(), path)
+                      check_node(value, path)
+              elif isinstance(node, list):
+                  for value in node:
+                      check_node(value, path)
 
-              echo "ERROR: $f uses $ref without actions.lock coverage"
-              errors=$((errors + 1))
-            done < <(grep -oE 'uses: +[A-Za-z0-9._/-]+@[A-Za-z0-9._-]+' "$f" \
-                     | sed 's/uses: *//' | tr -d '\r' || true)
-          done
+          def check_ref(ref, path):
+              if ref.startswith("./") or ref.startswith("docker://"):
+                  return
+              if "@" not in ref:
+                  errors.append(f"ERROR: {path} has malformed action reference {ref}")
+                  return
+              target, revision = ref.rsplit("@", 1)
+              repository = "/".join(target.split("/")[:2])
+              lock_key = f"{repository}@{revision}"
+              if lock_key in dependencies or re.fullmatch(r"[0-9a-f]{40}", revision):
+                  return
+              errors.append(f"ERROR: {path} uses {ref} without actions.lock coverage")
 
-          if [ "$errors" -gt 0 ]; then
-            echo "::error::$errors action reference(s) missing lockfile coverage"
-          else
-            echo "all executable action refs are covered by actions.lock"
-          fi
-          exit $errors
+          for path in workflow_paths:
+              with open(path, encoding="utf-8") as stream:
+                  check_node(yaml.safe_load(stream), path)
+
+          if errors:
+              print("\n".join(errors))
+              raise SystemExit(f"::error::{len(errors)} action reference(s) missing lockfile coverage")
+          print("all executable action refs are covered by parsed actions.lock data")
+          PY
