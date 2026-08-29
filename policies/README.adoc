@@ -22,7 +22,7 @@ link:../crates/oikosbot-eclexia[`crates/oikosbot-eclexia`].
 `finding_taxonomy.ecl` is not a sustainability threshold; it classifies *every*
 finding on three orthogonal axes, layered intent -> action -> outcome. The
 canonical, machine-readable definition is
-link:../.machine_readable/6a2/NEUROSYM.a2ml[`NEUROSYM.a2ml` `[finding-taxonomy]`].
+link:../.machine_readable/descriptiles/NEUROSYM.a2ml[`NEUROSYM.a2ml` `[finding-taxonomy]`].
 
 [cols="1,2,4"]
 |===

@@ -4,7 +4,7 @@
 // OikosBot classifies every finding on three orthogonal axes, layered
 // intent -> action -> outcome. The canonical definition (all three axes and
 // their allowed values) lives in
-// .machine_readable/6a2/NEUROSYM.a2ml [finding-taxonomy]:
+// .machine_readable/descriptiles/NEUROSYM.a2ml [finding-taxonomy]:
 //
 //   1. intent       must | intend | wish
 //   2. maintenance  corrective | adaptive | perfective | preventive

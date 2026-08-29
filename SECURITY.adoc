@@ -70,6 +70,6 @@ unless *explicitly logged for reversibility*. - *Hashing*: All logs use
 
 ==== Integration Security
 
-* *Environment Variables*: ```bash # Example: .env
-OIKOSBOT_API_KEY="`x`" # Never commit this! GITHUB_TOKEN="`y`" # Use
-GitLab CI variables or encrypted secrets.
+* *Environment Variables*: Supply runtime credentials through the hosting
+platform's encrypted secret store. Never place credential values in source,
+documentation examples, shell history, or committed environment files.

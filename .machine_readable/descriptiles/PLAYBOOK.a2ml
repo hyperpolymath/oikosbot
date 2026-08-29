@@ -31,7 +31,7 @@ integration = ".machine_readable/integrations/verisimdb.a2ml"
 
 [incident-response]
 steps = [
-  "Check .machine_readable/6a2/STATE.a2ml for current status, blockers, and critical-next-actions.",
+  "Check .machine_readable/descriptiles/STATE.a2ml for current status, blockers, and critical-next-actions.",
   "Review recent commits and CI results (.github/workflows/: ci, governance, hypatia-scan, language-policy, codeql, scorecard).",
   "Run `just validate` / `just security` where available to check compliance + audit for vulnerabilities.",
   "For webhook-security concerns, confirm GITHUB_WEBHOOK_SECRET is set and OIKOS_ALLOW_UNVERIFIED_WEBHOOKS is NOT set (it is a dev-only HMAC bypass)."

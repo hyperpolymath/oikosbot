@@ -34,7 +34,7 @@ fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
 
 * link:../GOVERNANCE.adoc[GOVERNANCE] + link:../MAINTAINERS.adoc[MAINTAINERS] — governance model and roles.
 * link:../ROADMAP.adoc[ROADMAP] — phases and milestones.
-* link:../.machine_readable/6a2/README.adoc[.machine_readable/6a2] — the machine-readable state/runbook (see below).
+* link:../.machine_readable/descriptiles/README.adoc[.machine_readable/descriptiles] — the machine-readable state/runbook (see below).
 * _Planned (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): CI/workflow runbook, `just`-target reference, pre-release checklist._
 
 == For end users
@@ -45,7 +45,7 @@ fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
 
 == Machine-readable docs (A2ML)
 
-The canonical project state and decisions live in `.machine_readable/6a2/`:
+The canonical project state and decisions live in `.machine_readable/descriptiles/`:
 
 * `STATE.a2ml` — current status, milestones, blockers, next actions.
 * `META.a2ml` — architecture decisions (ADRs).

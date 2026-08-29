@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MPL-2.0
 # This workflow is managed by gh actions-lock.
+# SPDX-License-Identifier: MPL-2.0
 # Instant Forge Sync - Triggers propagation to all forges on push/release
 name: Instant Sync
 on:
@@ -14,7 +14,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Check propagation credential presence
+        id: credential
+        env:
+          FARM_DISPATCH_TOKEN: ${{ secrets.FARM_DISPATCH_TOKEN }}
+        run: |
+          if [ -n "$FARM_DISPATCH_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::FARM_DISPATCH_TOKEN is unavailable; propagation is skipped"
+          fi
       - name: Trigger Propagation
+        if: steps.credential.outputs.available == 'true'
         uses: peter-evans/repository-dispatch@v4.0.1
         with:
           token: ${{ secrets.FARM_DISPATCH_TOKEN }}
@@ -28,4 +40,5 @@ jobs:
               "forges": ""
             }
       - name: Confirm
+        if: steps.credential.outputs.available == 'true'
         run: echo "::notice::Propagation triggered for ${{ github.event.repository.name }}"

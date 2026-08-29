@@ -5,7 +5,7 @@
 :icons: font
 
 _Point-in-time status, 2026-07-28 (generation 1). Machine-readable counterpart:
-link:../.machine_readable/6a2/STATE.a2ml[`STATE.a2ml`]. Everything asserted here
+link:../.machine_readable/descriptiles/STATE.a2ml[`STATE.a2ml`]. Everything asserted here
 was measured, not inferred — see <<how-we-know>>._
 
 toc::[]
