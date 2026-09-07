@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MPL-2.0
+
+# The scanner only recognises JS/Elixir/ReScript test suffixes or a root test
+# directory. Rust inline #[test] modules live under crates/*/src; CI executes
+# cargo test --locked --workspace and the Eclexia all-features tests.
+# Reviewed against the passing Rust Workspace job in PR #86 (2026-09-07).
+honest_completion/no_tests:.
