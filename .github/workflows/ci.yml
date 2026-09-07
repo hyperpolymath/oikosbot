@@ -68,6 +68,8 @@ jobs:
         run: cargo build --workspace --locked
       - name: Test (standalone workspace)
         run: cargo test --workspace --locked
+      - name: Eclexia adapter feature and rejection checks
+        run: bash tests/test-eclexia-adapter.sh
       - name: Clippy (informational)
         run: cargo clippy --workspace
         continue-on-error: true

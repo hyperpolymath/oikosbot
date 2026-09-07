@@ -3,11 +3,10 @@
 
 //! # OikosBot-Eclexia Integration
 //!
-//! Policy engine integration with two backends:
-//! - **Default**: shells out to `eclexia` binary (works without eclexia repo on disk)
-//! - **Native** (`eclexia-native` feature): direct library integration via eclexia-interp
-//!
-//! Both backends implement the same `PolicyEngine` trait.
+//! Experimental policy adapter. The binary protocol still requires upstream
+//! integration; the builtin fallback uses hardcoded rules, not `.ecl` source.
+//! The reserved `eclexia-native` feature reports an explicit unavailable error.
+//! No backend currently provides measured policy-evaluation resource costs.
 
 #![forbid(unsafe_code)]
 use anyhow::{Context, Result};
@@ -58,8 +57,10 @@ pub fn evaluate_policies(
     let entries = std::fs::read_dir(policy_dir)
         .with_context(|| format!("Failed to read policy dir: {}", policy_dir.display()))?;
 
-    for entry in entries.flatten() {
-        let path = entry.path();
+    for entry in entries {
+        let path = entry
+            .context("Failed to enumerate policy directory entry")?
+            .path();
         if path.extension().and_then(|e| e.to_str()) == Some("ecl") {
             let policy_name = path
                 .file_stem()
@@ -145,7 +146,7 @@ fn evaluate_binary(
 
             if output.status.success() {
                 let stdout = String::from_utf8_lossy(&output.stdout);
-                let result: bool = serde_json::from_str(stdout.trim()).unwrap_or(false);
+                let result = parse_binary_verdict(stdout.trim())?;
 
                 Ok(PolicyDecision {
                     outcome: if result {
@@ -155,7 +156,7 @@ fn evaluate_binary(
                     },
                     message: format!("Policy '{}' evaluated via eclexia binary", policy_name),
                     suggestion: None,
-                    evaluation_cost: Some(placeholder_cost()),
+                    evaluation_cost: None,
                     policy_name: policy_name.to_string(),
                 })
             } else {
@@ -170,63 +171,22 @@ fn evaluate_binary(
     }
 }
 
-/// Native backend: direct eclexia-interp library integration
+/// Decode only the documented boolean protocol. Empty output, diagnostics,
+/// structured JSON, and trailing data are evaluation errors, never passes.
+#[cfg(any(test, not(feature = "eclexia-native")))]
+fn parse_binary_verdict(stdout: &str) -> Result<bool> {
+    serde_json::from_str(stdout).context("Invalid Eclexia policy output: expected a JSON boolean")
+}
+
+/// Reserved feature: no native parser/interpreter dependencies are linked yet.
+/// Failing explicitly prevents a successful build from claiming integration.
 #[cfg(feature = "eclexia-native")]
 fn evaluate_native(
-    policy_path: &Path,
-    results: &[AnalysisResult],
-    policy_name: &str,
+    _policy_path: &Path,
+    _results: &[AnalysisResult],
+    _policy_name: &str,
 ) -> Result<PolicyDecision> {
-    let source = std::fs::read_to_string(policy_path)
-        .with_context(|| format!("Failed to read policy: {}", policy_path.display()))?;
-
-    let (ast, errors) = eclexia_parser::parse(&source);
-
-    if !errors.is_empty() {
-        let error_msgs: Vec<String> = errors.iter().map(|e| format!("{:?}", e)).collect();
-        anyhow::bail!(
-            "Policy parse errors in {}: {}",
-            policy_name,
-            error_msgs.join("; ")
-        );
-    }
-
-    // Run the policy through the interpreter
-    let mut interp = eclexia_interp::Interpreter::new();
-    // Set a tight budget for policy evaluation itself (dogfooding!)
-    interp.set_energy_budget(1.0); // 1 Joule max for policy eval
-    interp.set_carbon_budget(0.001); // 0.001g CO2e max
-
-    match eclexia_interp::run(&ast) {
-        Ok(value) => {
-            let should_warn = value.is_truthy();
-
-            Ok(PolicyDecision {
-                outcome: if should_warn {
-                    PolicyOutcome::Warn
-                } else {
-                    PolicyOutcome::Pass
-                },
-                message: format!(
-                    "Policy '{}' evaluated natively: result={:?}",
-                    policy_name, value
-                ),
-                suggestion: None,
-                evaluation_cost: Some(placeholder_cost()),
-                policy_name: policy_name.to_string(),
-            })
-        }
-        Err(e) => {
-            // Runtime error — treat as warning
-            Ok(PolicyDecision {
-                outcome: PolicyOutcome::Warn,
-                message: format!("Policy '{}' runtime error: {:?}", policy_name, e),
-                suggestion: Some("Check policy syntax and logic".to_string()),
-                evaluation_cost: None,
-                policy_name: policy_name.to_string(),
-            })
-        }
-    }
+    anyhow::bail!("Eclexia native evaluation is unavailable: input binding, interpreter budgets, and result protocol are not integrated")
 }
 
 /// The builtin backend matches policies by FILE STEM and applies hardcoded
@@ -338,7 +298,7 @@ fn evaluate_builtin(results: &[AnalysisResult], policy_name: &str) -> Result<Pol
         outcome,
         message,
         suggestion,
-        evaluation_cost: Some(placeholder_cost()),
+        evaluation_cost: None,
         policy_name: format!("{} (builtin)", policy_name),
     })
 }
@@ -379,15 +339,6 @@ fn shellexpand(path: &str) -> String {
         }
     }
     path.to_string()
-}
-
-fn placeholder_cost() -> ResourceProfile {
-    ResourceProfile {
-        energy: oikosbot_metrics::Energy::joules(0.05),
-        duration: oikosbot_metrics::Duration::milliseconds(1.0),
-        carbon: oikosbot_metrics::Carbon::grams_co2e(0.000007),
-        memory: oikosbot_metrics::Memory::kilobytes(50),
-    }
 }
 
 /// Example policy in Eclexia (to be written to policies/ directory)
@@ -466,6 +417,39 @@ pub fn decisions_to_results(decisions: &[PolicyDecision]) -> Vec<AnalysisResult>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn binary_protocol_rejects_invalid_output() {
+        for output in [
+            "",
+            "null",
+            "0",
+            "{}",
+            "[]",
+            "\"false\"",
+            "false true",
+            "diagnostic\nfalse",
+        ] {
+            assert!(parse_binary_verdict(output).is_err(), "accepted {output:?}");
+        }
+        assert!(!parse_binary_verdict("false").unwrap());
+        assert!(parse_binary_verdict("true\n").unwrap());
+    }
+
+    #[cfg(feature = "eclexia-native")]
+    #[test]
+    fn native_feature_cannot_claim_policy_execution() {
+        let error = evaluate_native(Path::new("unused.ecl"), &[], "unused").unwrap_err();
+        assert!(error.to_string().contains("unavailable"));
+    }
+
+    #[test]
+    fn builtin_does_not_invent_evaluation_measurements() {
+        assert!(evaluate_builtin(&[], "energy_threshold")
+            .unwrap()
+            .evaluation_cost
+            .is_none());
+    }
 
     #[test]
     fn test_example_policy_syntax() {

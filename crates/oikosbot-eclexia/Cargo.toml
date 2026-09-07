@@ -12,11 +12,10 @@ description = "Eclexia policy engine integration for oikosbot"
 
 [features]
 default = []
-# Native Eclexia compiler integration. The upstream `eclexia` compiler crates
-# (a separate hyperpolymath repo) were decoupled when OikosBot was extracted
-# from gitbot-fleet so this crate builds standalone; the feature is retained as
-# a no-op seam to be re-wired (path or git dep) when native evaluation is added.
-# Until then the crate ships its lightweight built-in `.ecl` policy evaluator.
+# Reserved native integration feature. Enabling it builds successfully but
+# evaluation returns an explicit unavailable error until real dependencies,
+# input binding, budgets, and the result protocol are integrated.
+# The default builtin fallback does not parse or execute .ecl source.
 eclexia-native = []
 
 [dependencies]
