@@ -76,3 +76,8 @@ facts = [
 last-run-utc = "2026-07-28T18:30:00Z"
 last-result = "pass"  # unknown | pass | warn | fail
 notes = "main green across CI, CodeQL, Governance, Hypatia, Language Policy, Scorecard, Secret Scanner, Workflow Security Linter, Publish Image and GitHub Pages. Zero open PRs."
+
+[language-portfolio-audit-20260907]
+policy-adapter = "Malformed binary verdicts now error; native feature explicitly unavailable; placeholder evaluation measurements removed"
+validation = "Default and all-features adapter regression tests; CI feature check added"
+remaining = "Real Eclexia input/result protocol, bound execution, source-policy evaluation and measured evaluation cost remain unimplemented"

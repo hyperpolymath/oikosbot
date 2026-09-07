@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: MPL-2.0
 # This workflow is managed by gh actions-lock.
+# SPDX-License-Identifier: MPL-2.0
 # SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 #
 # OikosBot - Continuous Integration
@@ -68,6 +68,8 @@ jobs:
         run: cargo build --workspace --locked
       - name: Test (standalone workspace)
         run: cargo test --workspace --locked
+      - name: Eclexia adapter feature and rejection checks
+        run: cargo test --locked -p oikosbot-eclexia --all-features
       - name: Clippy (informational)
         run: cargo clippy --workspace
         continue-on-error: true
