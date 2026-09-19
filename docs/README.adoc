@@ -27,7 +27,7 @@ fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
 * link:../ARCHITECTURE.adoc[ARCHITECTURE] — components, analyzers, policy engine, data layer.
 * link:../policies/README.adoc[policies/README] — Eclexia (`.ecl`) policies and the finding taxonomy.
 * link:../bot-integration-affine/README.adoc[bot-integration-affine] — the AffineScript webhook receiver (scaffold).
-* link:../CONTRIBUTING.md[CONTRIBUTING] — fork / branch / PR flow.
+* link:../.github/CONTRIBUTING.md[CONTRIBUTING] — fork / branch / PR flow.
 * _Planned (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): per-crate READMEs, the Haskell analyzer guide, an end-to-end build walkthrough._
 
 == For maintainers
