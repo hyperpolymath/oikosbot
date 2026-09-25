@@ -100,18 +100,19 @@ policy-engine/ — Datalog and DeepProbLog policy rules; policies/ — Eclexia
 ____
 
 How this is implemented::
-`policy-engine/datalog/eco_rules.dl` holds the deterministic rules and
-`policy-engine/deepproblog/eco_problog.pl` the probabilistic (learned) rules.
+`policy-engine/datalog/eco_rules.dl` holds the deterministic rule set
+(link:#proof[see below] for why it has never executed). The probabilistic
+(learned) layer that used to live in `policy-engine/deepproblog/eco_problog.pl`
+was retired by owner ruling on 2026-07-28: the policy engine's learning backend
+is Scallop, and Python DeepProbLog assets are no longer part of the tree.
 The Eclexia resource policies in link:policies/[`policies/`]
 (`carbon_budget.ecl`, `energy_threshold.ecl`, `memory_efficiency.ecl`,
 `security_sustainability.ecl`) are evaluated by the `oikosbot-eclexia` crate.
 
 Caveat::
-The DeepProbLog rules and the praxis (learning) loop are design-stage: the
-probabilistic predicates and neural-predicate declarations exist as logic, but
-there is no trained model or live feedback ingestion wired in. The knowledge-graph
-bindings in `eco_problog.pl` were retargeted from SPARQL-over-Virtuoso to
-VCL-over-VeriSimDB at the comment/binding level only (no rule logic changed).
+The learning (probabilistic) layer is design-stage: the deterministic rules
+exist as logic, but there is no trained model and no live feedback ingestion
+wired in.
 
 == "Single data layer: VeriSimDB"
 

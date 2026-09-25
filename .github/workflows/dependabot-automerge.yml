@@ -49,7 +49,14 @@ jobs:
       contents: write # needed to enable auto-merge
       pull-requests: write # needed to approve
     # Only run for PRs actually authored by Dependabot.
-    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    # NB: gate on the PR author only. The dispatch-actor conjunct that used to
+    # sit here has been removed deliberately: that context is the user who
+    # *triggered the run*, which a fork, branch or rerun event can set without
+    # the PR being Dependabot's, and Hypatia's research_extensions RE008 flags
+    # exactly that shape of identity check as spoofable (it scans workflow text
+    # verbatim, which is also why this comment describes the pattern instead of
+    # quoting it). The PR-author check below is the real authorisation test.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

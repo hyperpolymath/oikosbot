@@ -73,20 +73,6 @@ impl Objective {
     }
 }
 
-/// The seven standard OikosBot objectives, as specified in
-/// `Eco.Pareto.standardObjectives` (ARCHITECTURE.adoc).
-pub fn standard_objectives() -> Vec<Objective> {
-    vec![
-        Objective::new("carbon_intensity", Direction::Minimize, 0.20),
-        Objective::new("energy_consumption", Direction::Minimize, 0.15),
-        Objective::new("execution_time", Direction::Minimize, 0.15),
-        Objective::new("memory_usage", Direction::Minimize, 0.10),
-        Objective::new("maintainability", Direction::Maximize, 0.15),
-        Objective::new("test_coverage", Direction::Maximize, 0.10),
-        Objective::new("technical_debt", Direction::Minimize, 0.15),
-    ]
-}
-
 /// The objective set used when treating per-unit [`AnalysisResult`]s as points
 /// in objective space. Only axes the Rust analyzer actually measures today:
 /// the four `ResourceProfile` axes (minimize) plus the quality score

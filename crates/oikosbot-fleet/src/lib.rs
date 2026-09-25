@@ -384,6 +384,7 @@ mod tests {
             end_location: Some((10, 2)),
             confidence: Confidence::Estimated,
             pareto: None,
+            resource_range: None,
         }
     }
 

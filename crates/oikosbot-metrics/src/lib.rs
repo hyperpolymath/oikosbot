@@ -132,6 +132,27 @@ pub struct ResourceProfile {
     pub memory: Memory,
 }
 
+/// Min/typical/max envelope for a resource estimate, with the confidence the
+/// row that produced it has earned.
+///
+/// [`AnalysisResult::resources`] collapses an estimate to a single point (the
+/// `typical` bound). The envelope is kept alongside it so consumers can see the
+/// uncertainty band instead of treating the point estimate as exact. It is
+/// present only when the estimate came from a calibrated operation profile (see
+/// `oikosbot_analysis::calibration::estimate_operation`); the naive
+/// `complexity`-derived path produces a point estimate with no band and leaves
+/// this `None`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceRange {
+    pub min: ResourceProfile,
+    pub typical: ResourceProfile,
+    pub max: ResourceProfile,
+    /// Confidence is a property of the evidence behind an estimate, so it rides
+    /// with the row that produced it — and is earned per operation kind, never
+    /// assigned to a whole file or run.
+    pub confidence: Confidence,
+}
+
 impl ResourceProfile {
     pub fn zero() -> Self {
         ResourceProfile {
@@ -282,6 +303,11 @@ pub struct AnalysisResult {
     /// Pareto pass; None when analyzed in isolation).
     #[serde(default)]
     pub pareto: Option<ParetoInfo>,
+    /// Uncertainty band behind `resources`, when the estimate is calibrated
+    /// (see [`ResourceRange`]). `None` on the naive `complexity`-derived path,
+    /// where `resources` is a point estimate with no band.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resource_range: Option<ResourceRange>,
 }
 
 /// Source code location

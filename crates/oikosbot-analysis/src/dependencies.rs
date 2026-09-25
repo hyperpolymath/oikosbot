@@ -253,6 +253,7 @@ fn dep_finding_to_result(finding: DepFinding) -> AnalysisResult {
         end_location: None,
         confidence: Confidence::Estimated,
         pareto: None,
+        resource_range: None,
     }
 }
 

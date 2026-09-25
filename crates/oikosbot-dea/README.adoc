@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-dea`
+:toc: macro
+
+Data Envelopment Analysis over estate entities: allocative and productive
+efficiency from observed inputs and outputs, solved as paired linear programs
+(`good_lp` + HiGHS).
+
+== Public surface
+
+* `Dmu { name, inputs, outputs }` — one decision-making unit (typically one
+  repository).
+* `dea(dmus) -> Vec<DeaScore>` — per unit: `theta_ccr` (constant returns to
+  scale), `theta_bcc` (variable returns), `theta_mult` (the multiplier form),
+  `peers` (the reference set with positive envelopment weight), and the input
+  and output shadow prices (`v_i`, `u_r`).
+* Strong duality is asserted, not assumed: `|theta_ccr - theta_mult|` must agree
+  within tolerance, which is the implementation's own correctness check.
+
+== What it does not do
+
+DEA is *relative*: a score is a unit's standing against the observed peer set,
+so a new snapshot can move a score without the unit changing. The solver has
+been validated against self-authored analytic cases (a closed-form single
+input/output, a strictly dominated unit, and the duality assertion) — not yet
+against a published worked example with a citation, which is the standard that
+would make it externally defensible.
+
+== Tests
+
+----
+cargo test -p oikosbot-dea
+----

@@ -88,11 +88,13 @@ configuration, and SARIF output that GitHub code scanning ingests.
 
 [IMPORTANT]
 ====
-**Per-file resource figures are heuristic estimates and `--check` cannot block a
-merge.** Only `Measured`/`Calibrated` inputs may fail a run, and the analyser
-emits only `Estimated` — calibration exists but is not yet wired in (issue
-\#48). OikosBot warns loudly rather than passing silently, but treat the
-per-file verdict as an advisor, not a regulator.
+**Per-file resource figures are still estimates, and only calibrated ones can
+block.** The analyser prices a recognised pattern from the calibration table and
+labels the finding `Calibrated`; anything it cannot classify stays on the naive
+complexity path and is labelled `Estimated`. Only `Measured`/`Calibrated`
+objectives may fail a run, so `--check` blocks on a calibrated regression and
+warns loudly (exit 0) on a heuristic one. The absolute figures remain static and
+unvalidated — trust the direction, not the joules.
 
 The *estate* path is the exception: `wall_minutes` comes straight from the
 GitHub API and is genuinely `Measured`. See link:DEBT.adoc[`DEBT.adoc`] for the

@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-analysis`
+:toc: macro
+
+Turns source files into `AnalysisResult`s: parse with tree-sitter, walk the
+AST, detect inefficiency patterns, and price the unit.
+
+== Modules
+
+[cols="1,4"]
+|===
+| `analyzer` | `Analyzer` — parses a file or source string, finds function
+nodes, and builds one result per function.
+
+| `language` | Extension → tree-sitter language. Supports `rs`, `js`/`mjs`/`cjs`,
+`ts`/`mts`/`cts` (JavaScript grammar), `py`/`pyw`.
+
+| `patterns` | `detect_patterns` — nested loops (depth ≥ 3), busy-wait, string
+concatenation in a loop, `.clone()` in a loop, unbuffered I/O, large
+allocation, redundant `to_string`/`to_owned`. Each match carries an
+`impact_multiplier` and a suggestion.
+
+| `calibration` | `estimate_operation(kind, n)` — the priced operation rows,
+each returning a `ResourceRange` that carries the min/typical/max band **and**
+the confidence that row has earned (`Calibrated` for the measured kinds,
+`Estimated` for the host-dependent ones); `operation_for_pattern` — the
+documented pattern → `OperationKind` mapping.
+
+| `carbon` | `estimate_carbon(energy)` — the single carbon model used everywhere.
+
+| `dependencies` | Manifest scanning for heavy dependencies
+(`oikosbot/heavy-dependency` findings).
+
+| `directives` | In-source directive parsing.
+
+| `migration` | Migration helpers for the analysis output.
+
+| `security` | Security–sustainability correlation. **Feature-gated**
+(`panic-attack`): not compiled by default, enabled by
+`oikosbot-cli --features security`.
+|===
+
+== How a resource estimate is chosen
+
+`Analyzer::estimate_resources` has exactly two paths, chosen by evidence:
+
+. **Calibrated** — a detected pattern maps to a known operation category. The
+   estimate comes from `calibration::estimate_operation`, the finding carries
+   that row's confidence (`Calibrated` for `HashLookup`, `Sort`, `Allocation`,
+   `MathCompute`; `Estimated` for the host-dependent `FileIO`/`StringOp`/
+   `NetworkCall` rows),
+   and the min/typical/max band is propagated on the result. When several
+   patterns map, the largest `impact_multiplier` wins.
+. **Naive** — no recognised pattern. The historical
+   `complexity × constant` heuristic (0.1 J per AST node), labelled
+   `Estimated`, with no band claimed.
+
+`redundant-allocation` is deliberately unmapped: a marginal finding must not
+inherit `Calibrated` confidence from the allocation row.
+
+== What it does not do
+
+It does not run the policies under `policies/` (that is `oikosbot-eclexia`),
+does not rank units against each other (`oikosbot-pareto`), and does not emit
+SARIF (`oikosbot-sarif`). The absolute figures are static estimates: the
+calibrated path is better anchored than the naive one, but neither has been
+validated against profiling data.
+
+== Tests
+
+----
+cargo test -p oikosbot-analysis
+----

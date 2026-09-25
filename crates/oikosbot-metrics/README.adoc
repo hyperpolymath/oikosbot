@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-metrics`
+:toc: macro
+
+The shared vocabulary of the workspace: units, scores, and the record every
+other crate passes around. No analysis logic lives here — if a number has a
+unit or a confidence, its type is defined in this crate.
+
+== What it owns
+
+* **Units** — `Energy` (J), `Duration` (ms), `Carbon` (gCO2e), `Memory`
+  (bytes), each a newtype over the base unit with constructors
+  (`Energy::joules`, `Carbon::kilograms_co2e`, …). Constructors, not bare
+  floats, so a unit mix-up cannot compile.
+* **`ResourceProfile`** — the four-axis profile for one code unit, plus
+  `Add` and `cost(&ShadowPrices)` for the Eclexia-style shadow-price
+  valuation.
+* **`ResourceRange`** — the min/typical/max envelope behind a calibrated
+  estimate.
+* **Scores** — `EcoScore`, `EconScore` (both clamped 0–100) and
+  `HealthIndex::compute(eco, econ, quality)`, whose `overall` is
+  `0.4·eco + 0.3·econ + 0.3·quality`.
+* **`Confidence`** — the ladder `Measured > Calibrated > Estimated >
+  `Unknown`, ordered by `PartialOrd`. Only `Measured` and `Calibrated` may
+  drive a blocking decision anywhere in the system.
+* **`AnalysisResult`** / **`CodeLocation`** / **`ParetoInfo`** — the finding
+  record. Every field after `resources` is `#[serde(default)]`, so a JSON
+  document written by an older version still loads; `resource_range` is
+  additionally skipped when absent, keeping the wire format stable.
+
+== What it does not do
+
+It does not compute anything from source. `EcoScore::new` clamps; it does not
+judge. Producing a number is `oikosbot-analysis`'s job; interpreting a set of
+them is `oikosbot-pareto`'s.
+
+== Tests
+
+----
+cargo test -p oikosbot-metrics
+----

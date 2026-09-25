@@ -10,7 +10,12 @@
 # Multi-stage, glibc-consistent (rust:slim builder -> debian:slim runtime),
 # non-root. The oikosbot-fleet bridge is excluded from the default workspace,
 # so this builds standalone with no gitbot-fleet dependency.
-FROM rust:1.88-slim AS builder
+# MSRV floor for this workspace is Rust 1.90 (tree-sitter 0.27.0 declares
+# rust-version = "1.90", edition = "2024"). Use the rolling stable builder
+# rather than a pinned point release so the floor stays satisfied as
+# dependencies move; arrow-rs 59.3.0 declares MSRV 1.88, tree-sitter is the
+# binding constraint.
+FROM rust:1-slim AS builder
 WORKDIR /build
 RUN apt-get update \
     && apt-get install -y --no-install-recommends cmake g++ libclang-dev make \

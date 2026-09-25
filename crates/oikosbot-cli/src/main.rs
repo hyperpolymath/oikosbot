@@ -409,7 +409,7 @@ fn main() -> Result<()> {
                  excluded from the default workspace so OikosBot builds standalone.\n\n\
                  To run it (with hyperpolymath/gitbot-fleet checked out as a sibling):\n  \
                  cargo run --manifest-path crates/oikosbot-fleet/Cargo.toml -- {} {}\n\n\
-                 See crates/oikosbot-fleet/README.md and DISAMBIGUATION.adoc.",
+                 See crates/oikosbot-fleet/README.adoc and DISAMBIGUATION.adoc.",
                 path.display(),
                 ctx,
             );

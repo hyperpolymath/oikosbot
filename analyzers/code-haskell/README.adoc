@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= The Haskell analyzer (`analyzers/code-haskell`)
+:toc: macro
+
+A second, independent implementation of the same scoring model, in Haskell.
+It exists as a cross-check: two implementations of one specification that
+disagree are evidence about the specification, and two that agree on
+independently written fixtures are evidence about the implementation.
+
+== What it computes
+
+[cols="1,4"]
+|===
+| `Eco/Carbon.hs` | Carbon estimates for the resource profiles.
+
+| `Eco/Energy.hs` | Energy estimates.
+
+| `Eco/Resource.hs` | The resource profile type and its arithmetic.
+
+| `Eco/Pareto.hs` | Dominance and frontier logic.
+
+| `Eco/Analysis.hs` | The top-level analysis entry point.
+
+| `Quality/Complexity.hs` | Complexity scoring.
+
+| `Quality/Coupling.hs` | Coupling scoring.
+
+| `Quality/Coverage.hs` | Coverage scoring.
+
+| `Quality/Debt.hs` | Technical-debt scoring.
+
+| `Types/Metrics.hs` | The metric types shared across modules.
+
+| `Types/Report.hs` | The report/output types.
+
+| `app/Main.hs` | The executable entry point.
+
+| `test/Main.hs` | The test suite entry point (`cabal test all`).
+|===
+
+== How it relates to the Rust workspace
+
+The Rust workspace under `crates/` is the shipping implementation: it is what
+the container image runs, what the GitHub Action calls, and what the estate
+pipeline uses. The Haskell analyzer is built and tested by CI
+(`just haskell-build` / `just haskell-test`, or the `Haskell Analyzer` job in
+`ci.yml`) but is not wired into the action or the CLI.
+
+That asymmetry is deliberate and worth stating plainly: the two are not kept
+in lock-step by a shared schema, so agreement between them is a finding to
+check, not a guarantee to rely on. Where they disagree, neither is
+automatically right.
+
+== Build and test
+
+[source,shell]
+----
+just haskell-build
+just haskell-test
+----
+
+== What it does not do
+
+It does not read GitHub metadata, does not emit SARIF, and does not run in the
+published container. It has no dependency on the Rust crates and vice versa.

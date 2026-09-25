@@ -3,9 +3,10 @@
 
 //! Core analysis engine using tree-sitter AST
 
+use crate::calibration::{estimate_operation, operation_for_pattern, OperationKind};
 use crate::carbon::estimate_carbon;
 use crate::language::Language;
-use crate::patterns::detect_patterns;
+use crate::patterns::{detect_patterns, PatternMatch};
 use anyhow::{Context, Result};
 use oikosbot_metrics::*;
 use std::fs;
@@ -107,12 +108,15 @@ impl Analyzer {
 
         // Estimate resources based on code patterns
         let complexity = self.estimate_complexity(node);
-        let resources = self.estimate_resources(complexity);
 
-        // Detect problematic patterns
+        // Detect problematic patterns first: they decide which calibration row
+        // (if any) the estimate is entitled to use.
         let pattern_matches = detect_patterns(source, node);
         let patterns: Vec<String> = pattern_matches.iter().map(|p| p.name.clone()).collect();
         let recommendations = self.generate_recommendations(&patterns);
+
+        let (resources, confidence, resource_range) =
+            self.estimate_resources(&pattern_matches, complexity);
 
         // Derive rule_id and suggestion from most significant pattern
         let (rule_id, suggestion) = if let Some(pm) = pattern_matches.first() {
@@ -138,8 +142,9 @@ impl Analyzer {
             rule_id,
             suggestion,
             end_location: Some((end.row + 1, end.column + 1)),
-            confidence: oikosbot_metrics::Confidence::Estimated,
+            confidence,
             pareto: None,
+            resource_range,
         })
     }
 
@@ -196,8 +201,62 @@ impl Analyzer {
         count
     }
 
-    fn estimate_resources(&self, complexity: usize) -> ResourceProfile {
-        // Baseline estimates (will be improved with profiling data)
+    /// Estimate the resources a unit uses, together with the confidence that
+    /// estimate is entitled to and the uncertainty band behind it.
+    ///
+    /// Two paths, chosen by evidence rather than by preference:
+    ///
+    /// * **Calibrated path** — the unit carries a detected pattern that maps to
+    ///   a known operation category (`calibration::operation_for_pattern`). The
+    ///   estimate comes from `calibration::estimate_operation` and the
+    ///   confidence is whatever that row earns (Calibrated for measured rows,
+    ///   Estimated for host-dependent ones). The min/typical/max band is
+    ///   propagated so consumers can see the spread instead of treating the
+    ///   point estimate as exact.
+    /// * **Naive path** — no recognised pattern, so there is nothing to price.
+    ///   The historical `complexity * constant` heuristic is kept, the finding
+    ///   is labelled `Estimated`, and no band is claimed.
+    ///
+    /// When several patterns map, the one with the largest impact multiplier
+    /// wins (first one on ties, i.e. detection order): the most severe
+    /// recognised cost driver prices the unit. `redundant-allocation` is
+    /// intentionally unmapped and therefore never promotes a unit off the naive
+    /// path.
+    fn estimate_resources(
+        &self,
+        pattern_matches: &[PatternMatch],
+        complexity: usize,
+    ) -> (ResourceProfile, Confidence, Option<ResourceRange>) {
+        let mut dominant: Option<(OperationKind, f64)> = None;
+        for pattern in pattern_matches {
+            let Some(kind) = operation_for_pattern(&pattern.name) else {
+                continue;
+            };
+            if dominant.is_none_or(|(_, mult)| pattern.impact_multiplier > mult) {
+                dominant = Some((kind, pattern.impact_multiplier));
+            }
+        }
+
+        match dominant {
+            Some((kind, _)) => {
+                let range = estimate_operation(kind, complexity);
+                // The row that priced the unit also states how much its figure
+                // is worth; that confidence travels with the finding.
+                (range.typical.clone(), range.confidence, Some(range))
+            }
+            None => {
+                let profile = self.naive_resources(complexity);
+                (profile, Confidence::Estimated, None)
+            }
+        }
+    }
+
+    /// The historical heuristic: four axes derived from the AST node count
+    /// alone. Kept for units with no recognised pattern — but note that all
+    /// four axes are the same linear function of `complexity`, so a Pareto
+    /// frontier computed over them is a one-dimensional sort. That is why the
+    /// calibrated path exists.
+    fn naive_resources(&self, complexity: usize) -> ResourceProfile {
         let energy = Energy::joules(complexity as f64 * 0.1);
         let duration = Duration::milliseconds(complexity as f64 * 0.5);
         let carbon = estimate_carbon(energy);
@@ -267,5 +326,103 @@ impl Analyzer {
         }
 
         recs
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn analyze(source: &str) -> Vec<AnalysisResult> {
+        let mut analyzer = Analyzer::new(Language::Rust).expect("analyzer builds");
+        analyzer.analyze_source(source).expect("analysis succeeds")
+    }
+
+    /// `depth` nested `for` loops — the smallest nest flagged as
+    /// `nested-loops` is depth 3. The body avoids every other pattern (no
+    /// `.clone()`, no `File::open`, no `vec![]`, no string `+`, no
+    /// `to_string`) so exactly one calibrated row prices the unit.
+    fn nested_loop_work(depth: usize) -> String {
+        let mut body =
+            String::from("fn deep_work(items: &[u32]) -> usize {\n    let mut total = 0;\n");
+        for _ in 0..depth {
+            body.push_str("    for i in 0..8 {\n");
+        }
+        body.push_str("        total += 1;\n");
+        for _ in 0..depth {
+            body.push_str("    }\n");
+        }
+        body.push_str("    total\n}\n");
+        body
+    }
+
+    /// Straight-line code with no recognised pattern.
+    fn plain_work(statements: usize) -> String {
+        let mut body = String::from("fn plain_work() -> usize {\n    let mut total = 0;\n");
+        for i in 0..statements {
+            body.push_str(&format!("    total += {};\n", i + 1));
+        }
+        body.push_str("    total\n}\n");
+        body
+    }
+
+    /// Falsifier for the old behaviour: a recognised pattern used to be
+    /// labelled `Estimated` like everything else, so no finding could ever be
+    /// `Calibrated` and `--check` could never block.
+    #[test]
+    fn recognized_pattern_earns_calibrated_confidence_and_a_band() {
+        let results = analyze(&nested_loop_work(3));
+        assert_eq!(results.len(), 1, "one function, one finding");
+
+        let result = &results[0];
+        assert_eq!(result.confidence, Confidence::Calibrated);
+        assert_eq!(result.rule_id, "oikosbot/nested-loops");
+
+        // The band is propagated, not collapsed: min <= typical <= max, and the
+        // point estimate IS the typical bound.
+        let range = result
+            .resource_range
+            .as_ref()
+            .expect("a calibrated estimate must carry its band");
+        assert!(range.min.energy.0 <= range.typical.energy.0);
+        assert!(range.typical.energy.0 <= range.max.energy.0);
+        assert!((range.typical.energy.0 - result.resources.energy.0).abs() < 1e-12);
+        assert!(range.max.memory.0 >= range.typical.memory.0);
+    }
+
+    /// Unrecognised code keeps the naive path and is honest about it: no band is
+    /// claimed where none was computed.
+    #[test]
+    fn unrecognized_code_stays_estimated_with_no_band() {
+        let results = analyze(&plain_work(4));
+        assert_eq!(results.len(), 1);
+
+        let result = &results[0];
+        assert_eq!(result.confidence, Confidence::Estimated);
+        assert_eq!(result.rule_id, "oikosbot/general");
+        assert!(result.resource_range.is_none());
+
+        // The naive path is unchanged: a positive, complexity-derived figure
+        // (0.1 J per AST node) with no band around it.
+        assert!(result.resources.energy.0 > 0.0);
+    }
+
+    /// The calibrated path must actually change the numbers, or the wiring
+    /// would be decoration. Same unit, same size, different evidence.
+    #[test]
+    fn calibration_changes_the_estimate() {
+        let plain = analyze(&plain_work(40));
+        let nested = analyze(&nested_loop_work(3));
+
+        // The naive path charges 0.1 J per node; the calibrated Sort row
+        // charges microjoules per comparison-bounded operation. A nested-loop
+        // unit is no longer free just because it is small, and plain code is
+        // no longer expensive just because it is long.
+        assert!(
+            plain[0].resources.energy.0 > nested[0].resources.energy.0,
+            "naive energy {:.4} J should dwarf calibrated {:.6} J",
+            plain[0].resources.energy.0,
+            nested[0].resources.energy.0
+        );
     }
 }
