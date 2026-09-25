@@ -1,0 +1,217 @@
+=== #12: Reconcile finding-taxonomy vocabulary: META.a2ml [maintenance-axes] vs NEUROSYM.a2ml [finding-taxonomy]  [refactor]
+
+## Problem
+
+Two files define the same three-axis finding taxonomy with **divergent vocabulary**. The executable taxonomy added in #9 (`NEUROSYM.a2ml [finding-taxonomy]`) was not reconciled against the pre-existing `META.a2ml [maintenance-axes]`:
+
+| Axis | `META.a2ml [maintenance-axes]` (pre-existing) | `NEUROSYM.a2ml [finding-taxonomy]` (#9) |
+|------|---|---|
+| intent (deontic) | `must > intend > `**`like`** | `must / intend / `**`wish`** |
+| maintenance | `corrective > adaptive > perfective` | `corrective / adaptive / perfective / `**`preventive`** |
+| locus | `systems > compliance > `**`effects`** | `systems / compliance / `**`externalities`** |
+
+Divergences: **`like` vs `wish`**, **`effects` vs `externalities`** (the latter chosen explicitly while building #9), and NEUROSYM adds a 4th maintenance class **`preventive`**.
+
+## Proposed resolution (option 2 — *contingent on the canonical decision*)
+
+Make `NEUROSYM.a2ml [finding-taxonomy]` the **canonical** definition — it is the richer one, is executable via `policies/finding_taxonomy.ecl`, and already encodes the chosen `externalities` — and then:
+
+- align `META.a2ml [maintenance-axes]`'s three axis lines to it (`wish`, `externalities`, add `preventive`);
+- have `META` cross-reference `NEUROSYM [finding-taxonomy]` as the single source of truth.
+
+This is **dependent on which definition becomes canonical**. If instead `META`'s `like` / `effects` is preferred, flip the direction: update `NEUROSYM [finding-taxonomy]` + `policies/finding_taxonomy.ecl` + `policies/README.adoc` to match.
+
+## Affected files
+- `.machine_readable/6a2/META.a2ml` — `[maintenance-axes]`
+- `.machine_readable/6a2/NEUROSYM.a2ml` — `[finding-taxonomy]`
+- `policies/finding_taxonomy.ecl`, `policies/README.adoc` (only if the NEUROSYM vocabulary is the side that changes)
+
+_Surfaced during the post-extraction stale-reference sweep (#11)._
+
+=== #16: docs: split README into a docs/ tree and fill developer + maintainer depth  [documentation]
+
+A documentation survey during the extraction close-out found the conceptual docs are strong (ARCHITECTURE, EXPLAINME, DISAMBIGUATION, GOVERNANCE, MAINTAINERS, policies/README) but **nothing ties them together**, the README is overloaded (~190 lines doing the job of `docs/`), and **per-component developer depth is missing**. `docs/tech-debt-2026-05-26.adoc` already recommends the split.
+
+### Structure / navigation
+- [ ] Add a `docs/` index (`docs/README.adoc`) — a documentation map by audience (developer / maintainer / end-user) linking the existing docs. *(quick win — see close-out)*
+- [ ] Split the overloaded `README.adoc` into a thin entry point + `docs/architecture.adoc`, `docs/usage.adoc`, `docs/policies.adoc`.
+
+### Developer depth
+- [ ] Per-crate READMEs: `oikosbot-cli`, `-analysis`, `-metrics`, `-sarif`, `-eclexia` (only `oikosbot-fleet` has one today) — purpose, how it fits, key types.
+- [ ] `analyzers/code-haskell/README` — no docs today; build (`cabal build/test all`), the `Eco.*`/`Quality.*` modules, and the heuristic (not ontology-driven) nature.
+- [ ] End-to-end build walkthrough across Rust + Haskell + AffineScript (currently scattered across QUICKSTART/PLAYBOOK).
+- [ ] Expand the `CONTRIBUTING.md` stub (20 lines): code style, commit convention, the a2ml/STATE session workflow.
+
+### Maintainer depth
+- [ ] CI/workflow runbook — what each `.github/workflow` does (the governance battery, hypatia-scan, scorecard, secret-scanner, codeql, language-policy).
+- [ ] `just` target reference (what `just check` / `maint-audit` / `release-preflight` actually run).
+- [ ] Pre-release checklist + gitbot-fleet coordination notes.
+
+_Surfaced during the post-extraction close-out._
+
+=== #17: docs: end-user guide — interpreting findings, SARIF, BOT_MODE, policy customization, deploy  [documentation, governance, automation]
+
+End-user documentation is the weakest layer. GitHub App setup (`docs/GITHUB_APP_SETUP.adoc`) is good, but once OikosBot comments on a PR there's no guidance on what it means or what to do. (Partly gated on the bot becoming deployable — `bot-integration-affine/` is still a scaffold.)
+
+- [ ] **Interpreting a finding** — what `Eco 80.4/100`, `Overall 75.1/100`, and the energy/carbon/time numbers mean, and what action to take.
+- [ ] **The eco/econ lens** — why the default carbon-40 / economic-30 / quality-30 weights, and how an org changes them.
+- [ ] **SARIF output guide** — the `oikosbot-sarif` format and how to consume it in CI.
+- [ ] **`BOT_MODE`** — advisor / consultant / regulator, referenced in GITHUB_APP_SETUP.adoc but never defined.
+- [ ] **Policy customization** — setting carbon/energy/memory budgets via `config/oikos.yaml`; how a `high_carbon` finding maps to a fix.
+- [ ] **Troubleshooting** — webhook fails, no comment appears, where the logs are.
+- [ ] **Production deployment runbook** to replace the `DEPLOY.adoc` stub (gated on operational parity of the AffineScript port).
+
+_Surfaced during the post-extraction close-out._
+
+=== #18: feat: carry finding-taxonomy tags (intent/maintenance/locus) through the Rust Finding types  [enhancement]
+
+The finding taxonomy (#9) is defined canonically in `NEUROSYM.a2ml [finding-taxonomy]` and the `intent` axis is executable in `policies/finding_taxonomy.ecl`, but findings don't yet **carry** the three tags through the code. To make the taxonomy real end-to-end:
+
+- [ ] Add `intent` (derived from confidence), `maintenance`, and `locus` to the Rust `Finding`/result types (`crates/oikosbot-metrics`).
+- [ ] Populate them in `crates/oikosbot-analysis`.
+- [ ] Emit them in `crates/oikosbot-sarif` output (and any PR-comment rendering).
+- [ ] **Depends on #12** — the canonical-vocabulary decision (`wish`/`externalities` vs `like`/`effects`).
+
+_Surfaced during the taxonomy work (#9) and the close-out._
+
+=== #48: Wire calibration into the analyzer so confidence is earned (and --check can enforce)  [enhancement]
+
+`crates/oikosbot-analysis/src/calibration.rs` provides `estimate_operation()` returning min/typical/max `ResourceRange`s with `Confidence::Calibrated` for known operation kinds (HashLookup, Sort, FileIO, NetworkCall, Allocation, StringOp, MathCompute). Its module doc says it *"replaces naive complexity * 0.1 J with pattern-based resource profiles"*.
+
+**It was never wired in.** `Analyzer::estimate_resources()` is still exactly that naive form:
+
+```rust
+let energy = Energy::joules(complexity as f64 * 0.1);
+let duration = Duration::milliseconds(complexity as f64 * 0.5);
+let memory = Memory::kilobytes(complexity * 2);
+```
+
+and every result is hardcoded `Confidence::Estimated`.
+
+## Consequences
+
+1. **Every published figure is a guess** — energy, carbon, duration, memory, and therefore EcoScore, EconScore, ParetoScore and the health index.
+2. **`--check` can never enforce.** Only Measured/Calibrated inputs may block, so the enforcement path is inert. #47 makes that refusal loud rather than silent, but the underlying capability is still missing.
+
+## What to do
+
+- Map detected patterns (`patterns.rs`: nested-loops, busy-wait, string-concat-in-loop, clone-in-loop, unbuffered-io, large-allocation) onto `OperationKind`s.
+- Use `estimate_operation()` for recognised patterns; keep the naive path for unrecognised code and label it `Estimated` — confidence must be **earned per finding**, never blanket-assigned.
+- Propagate the real `ResourceRange` (min/typical/max) rather than collapsing to a point estimate; a range is what makes "Calibrated" meaningful.
+- Add tests proving (a) a recognised pattern yields `Calibrated`, (b) unrecognised code stays `Estimated`, (c) `--check` **can** now exit 1 on an undocumented, calibrated regression — a falsifier for the gate.
+
+## Caution
+
+This changes every resource figure and every downstream score, including for the 17 estate consumers. It needs its own reviewed change with before/after numbers, not a drive-by. Do not relabel existing estimates as Calibrated to unblock `--check` — that would be overclaiming.
+
+Blocks: real regulator mode.
+Related: #42 (Pareto engine), #47 (loud refusal).
+
+=== #81: Priority test and benchmark backlog (Proven-Tests adoption)  [testing]
+
+## Purpose
+
+Build the next OikosBot test and benchmark tranche from the estate's canonical
+`hyperpolymath/proven-tests-and-benches` doctrine, tailored to OikosBot's real
+Rust analyzer, SARIF, container, release, and estate-telemetry boundaries.
+
+The framework's executable harness is Idris2-specific and is **not** a drop-in
+dependency here. The immediately reusable parts are its admissibility contract
+(silent + firing fixtures; 0 pass / 1 wrong outcome / 2 no check), provenance
+classification, frozen workloads, checksum/black-box discipline, and JSON
+benchmark result shape with environment metadata.
+
+## P0 — trust and release boundaries
+
+- [ ] Add an end-to-end composite-action fixture that runs the digest-pinned
+  image, emits valid SARIF, and proves at least one known actionable finding.
+- [ ] Add the corresponding silence fixture: clean source produces zero SARIF
+  alerts while JSON/text still retain measurement telemetry.
+- [ ] Add release-contract tests for pull-by-digest, `oikosbot --version`,
+  non-root execution, package provenance attestation, semver tag, SHA tag, and
+  deliberate failure for a nonexistent digest.
+- [ ] Give every analyzer rule a paired silent/firing fixture; malformed or
+  unsupported input must report "no check performed" rather than green.
+- [ ] Validate produced SARIF against the SARIF 2.1.0 schema plus GitHub's
+  structural constraints, including the regression that forbids schema-invalid
+  `fixes` and the regression that keeps `oikosbot/general` telemetry out of
+  code-scanning results.
+- [ ] Exercise configuration/exclude globs against relative paths, nested roots,
+  symlinks, invalid YAML, unknown languages, and deliberately excluded files.
+- [ ] Test paginated GitHub estate collection with recorded/mocked pages,
+  null timestamps, rate-limit responses, duplicate repository names across
+  owners, startup failures, and partial API failure. A truncated page must not
+  be reported as a complete estate.
+
+## P1 — sensitivity and adversarial inputs
+
+- [ ] Replace the current generic UTF-8 `fuzz_main` payload with real fuzz
+  targets for Rust/JavaScript/Python parsing, `.oikos.yml`, SARIF serialization,
+  and directory/path handling; preserve every crashing input as a regression.
+- [ ] Run mutation testing over pattern detection, SARIF filtering, confidence
+  gating, Pareto verdicts, and DEA score bounds. Prioritize surviving mutants
+  over line-coverage expansion.
+- [ ] Convert/extend the hand-rolled randomized Pareto checks into seeded,
+  shrinking property tests: bounded scores, frontier non-domination,
+  irreflexivity/antisymmetry, epsilon stability, and verdict symmetry.
+- [ ] Differentially test supported-language equivalents of the same algorithm
+  and verify that rule classification is stable where syntax semantics match.
+- [ ] Add lifecycle/compatibility tests for old `.oikos.yml` dialects and SARIF
+  consumers across the supported release window.
+
+## Priority benchmarks
+
+- [ ] Micro: per-function parsing/pattern analysis for frozen small/medium/large
+  fixtures in each supported language.
+- [ ] Meso: whole-repository analysis, dependency scan, SARIF generation, and
+  DEA solving; report cold start separately from steady state.
+- [ ] Macro: composite-action container startup through uploaded SARIF on a
+  fixed representative repository corpus.
+- [ ] Record median, p99, spread (MAD or standard deviation), peak RSS,
+  compiler/flags, CPU/OS, iteration count, commit, and raw samples as artifacts.
+- [ ] Consume every benchmark result/checksum so optimization cannot erase the
+  workload, freeze fixture/workload versions, and compare only against a
+  committed baseline with an explicitly justified regression threshold.
+
+## Acceptance rules
+
+- Every new gate demonstrates both a clean input that stays silent and a broken
+  input that fires for the intended reason.
+- Missing tools, unparsed inputs, crashes, and absent artifacts are not passes.
+- Tests assert observable behaviour, not private implementation details.
+- Benchmarks do not gate until workload, environment recording, baseline, and
+  noise policy are all committed and reviewed.
+
+
+
+=== #82: policy: gate future interfaces on Idris2, Zig, SNIF, and Hexadeca  [chore, governance, bindings]
+
+## Current classification
+
+Observation horizon: the complete OikosBot working tree excluding build output and .git.
+
+- No Idris2 source/package files.
+- No Zig source files.
+- No exported C ABI, extern-C/no-mangle surface, BEAM NIF loader, or SNIF guest.
+- OikosBot is currently an application/container boundary, not a library FFI/ABI boundary.
+
+Therefore Idris2 ABI proofs, Zig FFI, Hexadeca adapter conformance, and NIF-to-SNIF conversion are **not applicable to the implemented OikosBot surface today**. Adding empty proof/FFI scaffolds would not create evidence and must not be reported as implementation.
+
+## Triggered requirements
+
+If OikosBot adds any in-process foreign/library interface or public adapter:
+
+- [ ] define the ABI contract/proofs in Idris2
+- [ ] implement the FFI/adapter in Zig
+- [ ] use SNIF/ReleaseSafe WASM for eligible BEAM numeric/buffer work; never add an application-owned direct NIF
+- [ ] conform to a located and pinned canonical Zig unified Hexadeca API
+- [ ] add paired clean/firing model-to-runtime conformance fixtures
+- [ ] update this issue with the exact authority, toolchain version, and evidence
+
+## Current blockers to future API conformance
+
+A complete hyperpolymath repository-name enumeration (limit 1000) and bounded local searches did not locate a canonical repository/specification for the historically named unified Hexadeca API. Do not invent a substitute and label it canonical; locate or publish the authority first.
+
+Test and benchmark priorities remain separately tracked in #81.
+
+
