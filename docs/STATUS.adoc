@@ -101,20 +101,26 @@ The economic core (`crates/oikosbot-pareto`) is real and executable:
 
 [IMPORTANT]
 ====
-**Every resource figure is a heuristic estimate, and enforcement is inert.**
+**Resource figures are estimates, and enforcement is earned per finding.**
 
-`Analyzer::estimate_resources()` is still `complexity × 0.1 J` — the naive form
-that `calibration.rs` was written to replace but is not yet wired to. So every
-result carries `Confidence::Estimated`, and since only `Measured` or
-`Calibrated` inputs may fail a run, **`--check` always exits 0**.
+`Analyzer::estimate_resources()` has two paths. A unit with a recognised
+pattern is priced from `calibration::estimate_operation()` and carries that
+row's confidence — `Calibrated` for the measured operation kinds, `Estimated`
+for the host-dependent ones. A unit with no recognised pattern stays on the
+naive `complexity × 0.1 J` form and is labelled `Estimated`.
 
-It says so loudly — a `::warning::` annotation naming the verdict and the
-confidence that blocked enforcement — rather than passing silently. A gate that
-quietly does nothing is indistinguishable from one that passed, which is exactly
-the failure mode OikosBot exists to find.
+Since only `Measured` or `Calibrated` inputs may fail a run, `--check` blocks
+on an undocumented regression whose drivers are calibrated, and refuses to
+block on heuristic drivers — saying so loudly in a `::warning::` rather than
+passing silently. A gate that quietly does nothing is indistinguishable from one
+that passed, which is exactly the failure mode OikosBot exists to find.
 
-Tracked in issue #48. Until it lands, treat OikosBot as an advisor, not a
-regulator.
+Wired in issue #48. What is *not* earned yet: the absolute figures have never
+been validated against profiling data, and the eco score's log scale is anchored
+at 1 J, so calibrated (microjoule-scale) estimates clamp near 100 — the eco
+threshold therefore discriminates far less than the Pareto verdicts, which
+compare base against head. Treat OikosBot as an advisor with a working
+regulator, not the reverse.
 ====
 
 Also incomplete:

@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-sarif`
+:toc: macro
+
+Emits SARIF 2.1.0 from `AnalysisResult`s, so GitHub code scanning can ingest
+OikosBot's findings.
+
+== Shape
+
+* One run, driver `oikosbot`, `semantic_version` from the caller.
+* `tool.driver.rules` carries the builtin rule catalogue (`oikosbot/nested-loops`,
+  `oikosbot/busy-wait`, `oikosbot/string-concat-in-loop`, `oikosbot/clone-in-loop`,
+  `oikosbot/unbuffered-io`, `oikosbot/large-allocation`,
+  `oikosbot/redundant-allocation`, `oikosbot/eco-threshold`,
+  `oikosbot/carbon-intensity`, `oikosbot/security-sustainability`) with default
+  levels. Findings whose `rule_id` is not in the catalogue still emit, with no
+  `ruleIndex`.
+* `level` is derived from the eco score: `error` below 30, `warning` below 60,
+  else `note`.
+* `region` carries start **and** end line/column, so the whole function is
+  annotated rather than its first line.
+* `properties` is the machine-readable payload: `eco_score`, `econ_score`,
+  `quality_score`, `overall_health`, `energy_joules`, `carbon_gco2e`,
+  `duration_ms`, `memory_bytes`, `confidence`, optional `suggestion`, optional
+  `pareto_status` / `pareto_score` / `pareto_dominated_by`, and — for
+  calibrated estimates — `resource_range` with `min`/`typical`/`max` per axis.
+* Suggestions ride in the message and in `properties`. There is deliberately no
+  SARIF `fix` object: OikosBot does not rewrite code.
+
+== What it does not do
+
+`oikosbot/general` records are per-function telemetry, not defects, and are
+**filtered out of the SARIF results** — analysing a repository must not raise a
+code-scanning alert for every function in it. They still appear in `json` and
+`text` output.
+
+== Tests
+
+----
+cargo test -p oikosbot-sarif
+----

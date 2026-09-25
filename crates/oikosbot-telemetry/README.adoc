@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-telemetry`
+:toc: macro
+
+Estate-level telemetry: collect GitHub Actions run history, derive energy,
+carbon and cost from it, and write Parquet + JSON snapshots. This is the one
+part of OikosBot that measures rather than estimates.
+
+== Modules
+
+[cols="1,4"]
+|===
+| `collect` | `collect_runs`, `list_repos`, `collect_releases` — read-only
+collectors that shell out to the `gh` CLI through the `GhRunner` trait
+(`GhCli` is the production implementation, so tests can substitute a fake).
+
+| `rows` | `RunRow`, `RepoRow`, `ReleaseRow` — the flat, serialisable records
+everything downstream consumes.
+
+| `derive` | `derive_per_repo(runs, assumptions)` — per-repo aggregates, and
+`confidence_of(metric)` which states the confidence of each derived figure:
+`wall_minutes` is `Measured` (it comes straight from the GitHub API), while
+energy, carbon and cost are `Calibrated`/`Estimated` from `Assumptions`.
+
+| `snapshot` | `write_runs`/`read_runs`, `write_repos`/`read_repos`,
+`write_releases`/`read_releases` — Parquet staging.
+|===
+
+== What it does not do
+
+It never gates anything: `oikosbot estate` reports. Enforcement lives in the
+per-file `check`/`compare` path. Snapshots are written outside this repository
+(`hyperpolymath/oikosbot-estate`) so the tool never silently measures a corpus
+that contains itself.
+
+== Tests
+
+----
+cargo test -p oikosbot-telemetry
+----

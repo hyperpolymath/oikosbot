@@ -17,6 +17,36 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Added
 
+* feat(analysis): wire the calibration framework into the analyser (issue #48).
+  `Analyzer::estimate_resources()` maps a detected pattern onto an
+  `+OperationKind+` via the new `+calibration::operation_for_pattern+` and
+  prices it with `+estimate_operation()+`, whose `+ResourceRange+` carries the
+  min/typical/max band **and** the confidence that row has earned —
+  `+Calibrated+` for the measured operation kinds (`+HashLookup+`, `+Sort+`,
+  `+Allocation+`, `+MathCompute+`), `+Estimated+` for the host-dependent ones
+  (`+FileIO+`, `+StringOp+`, `+NetworkCall+`). Unrecognised code keeps the naive
+  complexity-derived estimate, labelled `+Estimated+`, with no band claimed.
+  `+redundant-allocation+` is deliberately unmapped so a marginal finding cannot
+  inherit calibrated confidence.
+* feat(metrics): `+ResourceRange+` (min/typical/max + the row's confidence) and
+  `+AnalysisResult::resource_range+`, `+#[serde(default,
+  skip_serializing_if = "Option::is_none")]+`, so the uncertainty band is
+  propagated instead of collapsed to a point estimate. SARIF emits it as
+  `+properties.resource_range+`.
+* test(cli): `+tests/check_gate.rs+` — end-to-end proof that
+  `+oikosbot compare --check+` can actually block: an undocumented calibrated
+  regression exits 1, the same regression without `+--check+` exits 0, a
+  documented `+Pareto-Trade-off:+ is accepted, and a heuristic regression
+  refuses to block *and says so*.
+* docs: `+docs/usage.adoc+` (end-user guide: action inputs, the three modes,
+  verdicts and the confidence ladder, the SARIF shape, `+.oikos.yml+`,
+  `+BOT_MODE+`, troubleshooting) and `+docs/ci-runbook.adoc+` (gate inventory,
+  `+actions.lock+` rules, diagnosing Hypatia and `+Publish Image+` without the
+  logs, `+just+` target reference, pre-release checklist). Both are indexed in
+  `+docs/README.adoc+`.
+* docs: per-crate guides (`+crates/*/README.adoc+`) and
+  `+analyzers/code-haskell/README.adoc+`, each stating what the crate owns, its
+  public surface, and what it does **not** do.
 * feat(policies): add the OikosBot *finding taxonomy* — three orthogonal
 axes (`+intent+` / `+maintenance+` / `+locus+`) defined canonically in
 `+NEUROSYM.a2ml [finding-taxonomy]+`. The confidence-derived `+intent+`
@@ -50,6 +80,15 @@ payload extraction, and HTTP-server accept loop are gated on upstream
 
 ==== Removed
 
+* chore(policy-engine): delete `+policy-engine/deepproblog/eco_problog.pl+`,
+  dead since the 2026-07-28 ruling (policy engine → Scallop, Python DeepProbLog
+  retired with no exemption). `+EXPLAINME.adoc+` no longer cites it.
+* refactor(analysis): remove `+calibration::calibrated_estimate()+` and its
+  duplicated multiplier table — superseded by the pattern → operation-kind
+  mapping, which left `+patterns.rs+` as the single source of truth for pattern
+  severity.
+* refactor(pareto): remove `+standard_objectives()+`, dead code since the
+  workspace was extracted; the live objective set is `+result_objectives()+`.
 * chore(containers): remove the stale ReScript-era `+containers/+` that
 were ported with the extraction but still built the long-removed
 `+bot-integration/+` ReScript bot (`+*.res.js+`, `+rescript-runtime/+`)
@@ -58,6 +97,16 @@ rebuilt natively when OikosBot is deployable.
 
 ==== Fixed
 
+* fix(ci): Hypatia's sole high/critical finding was
+  `+research_extensions+` RE008 — `+dependabot-automerge.yml+` gated auto-merge
+  on `+github.actor == 'dependabot[bot]'+`, an identity check built on a context
+  a fork or rerun event can set. The PR-author gate is kept; the actor conjunct
+  is removed.
+* fix(containers): `+Publish Image+` failed with `+cargo build --release
+  --locked -p oikosbot-cli+` exit 101 because `+tree-sitter+` 0.27.0 declares
+  `+rust-version = "1.90"+` / `+edition = "2024"+` while the builder was
+  `+rust:1.88-slim+`. The builder is now the rolling `+rust:1-slim+`, so the
+  MSRV floor stays satisfied as dependencies move.
 * fix(release): restore GHCR publication with a Rust 1.88 builder and the
 CMake/C++/Make/libclang toolchain required by `+highs-sys+`, publish versioned image tags for
 release tags, and make the Action default to the verified immutable image digest
@@ -94,6 +143,19 @@ step-level (#17)
 
 ==== Changed
 
+* refactor(analysis): `+ResourceRange+` moves to `+oikosbot-metrics+` (so it
+  can be carried on an `+AnalysisResult+`) and gains the `+confidence+` its row
+  has earned — confidence is a property of the evidence behind an estimate, not
+  of the estimate. `+estimate_operation()+` keeps its signature and now prices
+  each row with the confidence that row deserves: `+Calibrated+` for the
+  measured operation kinds, `+Estimated+` for the host-dependent ones.
+* docs: the standing "`+--check+` cannot block a merge" caveats in
+  `+README.adoc+`, `+QUICKSTART.adoc+`, `+docs/STATUS.adoc+`, `+action.yml+` and
+  `+docs/COMPARISON-climate-warrior.adoc+` now describe what is true: calibrated
+  findings may block, heuristic findings may not, and the refusal is loud. The
+  same documents now name the eco-score saturation that follows from calibrated
+  (microjoule-scale) estimates, so a passing eco threshold is not mistaken for a
+  working one.
 * chore(decouple): sever OikosBot’s dependency on `+gitbot-fleet+`. The
 default `+cargo+` workspace *excludes* `+crates/oikosbot-fleet+` (the
 only fleet-aware crate), and the optional `+panic-attacker+` /

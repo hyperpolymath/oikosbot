@@ -1,6 +1,17 @@
 # SPDX-License-Identifier: MPL-2.0
 # This workflow is managed by gh actions-lock.
 # Instant Forge Sync - Triggers propagation to all forges on push/release
+#
+# STATE: DISABLED at the repository settings level (Settings → Actions →
+# Workflows), so it never runs on pushes or releases even though the triggers
+# below are still declared. Repository-level workflow disabling is not visible
+# from the repository contents, so it is recorded here.
+#
+# It is kept in the tree because the propagation mechanism is still the
+# intended distribution path for the estate (see mirror.yml, which publishes to
+# one mirror). Re-enable only with a `FARM_DISPATCH_TOKEN` secret present on the
+# destination farm; without the secret the credential check below no-ops with a
+# notice, so re-enabling before the secret exists is safe but useless.
 name: Instant Sync
 on:
   push:

@@ -409,6 +409,7 @@ pub fn decisions_to_results(decisions: &[PolicyDecision]) -> Vec<AnalysisResult>
                 end_location: None,
                 confidence: oikosbot_metrics::Confidence::Estimated,
                 pareto: None,
+                resource_range: None,
             }
         })
         .collect()
@@ -531,6 +532,7 @@ mod tests {
             end_location: None,
             confidence: oikosbot_metrics::Confidence::Estimated,
             pareto: None,
+            resource_range: None,
         }
     }
 }

@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-cli`
+:toc: macro
+
+The `oikosbot` binary — the product surface. Every other crate is a library;
+this is what the container image runs and what the composite action invokes.
+
+== Subcommands
+
+[cols="1,4"]
+|===
+| `check <path>` | Analyse a directory and compare each finding's eco score
+against the floor. Below-floor findings are listed; the run exits 1 only when
+the config makes enforcement blocking (`mode: regulator` or
+`enforcement: blocking`).
+
+| `report <path>` | Same analysis, emit SARIF/JSON/text. This is the action's
+default mode.
+
+| `compare <base> <head>` | Pareto verdict for a diff: improvement, regression,
+trade-off or neutral, with per-objective deltas and the confidence that backs
+them. `--check` enforces the trade-off doctrine; `--pr-body` supplies the PR
+description to check for a documented `Pareto-Trade-off:`.
+
+| `estate collect|analyse|report` | Estate telemetry, capability and DEA
+analysis. Read-only by design.
+
+| `analyze <file>` | Analyse a single file.
+
+| `self-analyze` | Dogfooding: run the analyser over this repository.
+
+| `fleet <path>` | Prints how to run the optional `oikosbot-fleet` bridge,
+which is deliberately *not* a dependency of this binary.
+|===
+
+== Configuration
+
+`--config <path>` or an auto-discovered `.oikos.yml` next to the analysed
+directory. Keys that take effect: `mode`, `thresholds.eco_minimum.carbon` /
+`.energy`, `enforcement`, `exclude`, `analysis.languages`. Everything else in
+`config/oikos.yaml` is parsed and discarded (documented as aspirational there).
+
+== The enforcement doctrine
+
+`compare --check` exits 1 on an undocumented regression or trade-off **only
+when every driving objective is `Measured` or `Calibrated`**. When it cannot
+enforce, it prints a `::warning::` naming the verdict and the confidence, and
+exits 0 — never silently. A gate that quietly does nothing is indistinguishable
+from one that passed.
+
+=== Integration tests
+
+`tests/check_gate.rs` proves the doctrine end to end against the real binary:
+an undocumented calibrated regression exits 1, the same regression without
+`--check` exits 0, a documented trade-off is accepted, and a heuristic
+regression refuses to block *and says so*.
+
+== Tests
+
+----
+cargo test -p oikosbot-cli
+cargo test -p oikosbot-cli --test check_gate
+----

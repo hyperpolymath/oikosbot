@@ -87,10 +87,13 @@ Warrior to store documents with an SCI ledger, OikosBot to review code.
 
 == What OikosBot does not do (honesty section)
 
-* Estimates are **static heuristics** today (`Confidence::Estimated`), not
-  measurements. Runtime calibration and the VeriSimDB-backed praxis loop are
-  roadmap items. This is exactly why the confidence gate exists: heuristics
-  advise; only measured or calibrated figures may ever block a merge.
+* Estimates are **static** today, not measurements: a recognised pattern is
+  priced from the calibration table (`Calibrated`), and anything unclassified
+  stays on the naive complexity heuristic (`Estimated`). Neither has been
+  validated against profiling data, and runtime calibration plus the
+  VeriSimDB-backed praxis loop are roadmap items. This is exactly why the
+  confidence gate exists: heuristics advise; only measured or calibrated
+  figures may ever block a merge.
 * The GitHub **App** (webhook, PR comments without CI) is not yet live — CI
   Action mode is the generation-1 surface. The App is gated on upstream
   AffineScript stdlib work by deliberate ruling (no interim listener).

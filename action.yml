@@ -50,11 +50,11 @@ inputs:
     default: ''
   check:
     description: >-
-      compare mode: fail on an undocumented, measured Pareto
-      regression/trade-off. NOTE: cannot block today — every resource figure is
-      a heuristic Estimated value and only Measured/Calibrated inputs may
-      fail a run, so this warns loudly and exits 0 until calibration is wired
-      in (see QUICKSTART).
+      compare mode: fail on an undocumented Pareto regression/trade-off whose
+      driving objectives are Measured or Calibrated. Recognised patterns are
+      priced from the calibration table and may block; unrecognised code stays
+      on the naive estimate (Estimated), which may not — it warns loudly and
+      exits 0 instead (see QUICKSTART and docs/usage.adoc).
     required: false
     default: 'false'
   image:

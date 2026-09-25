@@ -38,18 +38,18 @@ fails the run on an undocumented, measured regression or trade-off.
 
 [IMPORTANT]
 ====
-*`--check` cannot block a merge today, by design.* Only objectives backed by
-`Measured` or `Calibrated` inputs may fail a run, and every resource figure
-OikosBot currently produces is a heuristic `Estimated` value — the calibration
-framework at `crates/oikosbot-analysis/src/calibration.rs` exists but is not
-yet wired into the analyzer, which still uses a naive complexity-derived
-estimate.
+*`--check` blocks only on evidence, by design.* Only objectives backed by
+`Measured` or `Calibrated` inputs may fail a run. The analyser earns that
+evidence per finding: a recognised pattern is priced from the calibration table
+(`crates/oikosbot-analysis/src/calibration.rs`) and labelled `Calibrated`, while
+unclassified code stays on the naive complexity-derived estimate and is labelled
+`Estimated`.
 
-So `--check` reports and warns, but always exits 0. It says so *loudly* — a
-`::warning::` annotation naming the confidence level — rather than passing
-silently. A gate that quietly does nothing is indistinguishable from one that
-passed, which is precisely the failure mode OikosBot exists to find.
-Enforcement becomes real when calibration is wired in.
+So an undocumented regression whose drivers are calibrated exits 1; the same
+regression on heuristic drivers prints a `::warning::` naming the verdict and
+the confidence level, and exits 0. A gate that quietly does nothing is
+indistinguishable from one that passed, which is precisely the failure mode
+OikosBot exists to find — so the refusal is never silent.
 ====
 
 === Per-repo configuration

@@ -125,6 +125,7 @@ mod inner {
                 end_location: None,
                 confidence: Confidence::Estimated,
                 pareto: None,
+                resource_range: None,
             };
 
             security_findings.push(finding);

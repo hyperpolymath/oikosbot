@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-pareto`
+:toc: macro
+
+Multi-objective comparison: dominance, frontiers, scores, and the base-vs-head
+verdict that the `compare` subcommand reports.
+
+== Public surface
+
+* **Objectives** — `result_objectives()` is the live five-axis set the Rust
+  analyser actually measures: carbon, energy, duration, memory (minimise) and
+  the quality score as the maintainability proxy (maximise).
+* **Dominance and frontiers** — `dominates`, `frontier_indices`,
+  `dominated_by_counts`, `normalize`, `pareto_scores`, `refactor_candidates`,
+  all ε-tolerant (`DEFAULT_EPSILON = 1e-6`).
+* **Verdicts** — `compare` classifies head vs base as `Improvement`,
+  `Regression`, `TradeOff` or `Neutral`; `assess` adds the per-objective
+  deltas, the list of *drivers* (objectives that actually moved), and
+  `actionable`.
+* **Confidence gating** — `actionable` is true only when **every driving**
+  objective is backed by `Measured` or `Calibrated` input. Heuristic estimates
+  advise; they do not block. `aggregate_confidence` and `weaker_confidence`
+  combine confidences across a result set.
+* **Wiring** — `apply_to_results` runs the intra-repo pass (frontier
+  membership, `ParetoScore`, and the full `EconScore` composition);
+  `result_point`, `aggregate_point` project results into objective space.
+
+== What it does not do
+
+It never decides whether a finding is *true* — it compares numbers it is given.
+`actionable` is a statement about evidence, not about severity.
+
+== Tests
+
+----
+cargo test -p oikosbot-pareto
+----

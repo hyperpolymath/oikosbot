@@ -391,6 +391,33 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
         properties["pareto_score"] = serde_json::json!(pareto.score);
         properties["pareto_dominated_by"] = serde_json::json!(pareto.dominated_by);
     }
+    // Propagate the calibrated uncertainty band so consumers can see the spread
+    // instead of treating the point estimate as exact. Absent on the naive
+    // path, where there is no band to report.
+    if let Some(ref range) = result.resource_range {
+        properties["resource_range"] = serde_json::json!({
+            "energy_joules": {
+                "min": range.min.energy.0,
+                "typical": range.typical.energy.0,
+                "max": range.max.energy.0,
+            },
+            "carbon_gco2e": {
+                "min": range.min.carbon.0,
+                "typical": range.typical.carbon.0,
+                "max": range.max.carbon.0,
+            },
+            "duration_ms": {
+                "min": range.min.duration.0,
+                "typical": range.typical.duration.0,
+                "max": range.max.duration.0,
+            },
+            "memory_bytes": {
+                "min": range.min.memory.0,
+                "typical": range.typical.memory.0,
+                "max": range.max.memory.0,
+            },
+        });
+    }
 
     SarifResult {
         rule_id: rule_id.clone(),
@@ -430,6 +457,7 @@ mod tests {
             end_location: Some((25, 2)),
             confidence: Confidence::Estimated,
             pareto: None,
+            resource_range: None,
         }
     }
 

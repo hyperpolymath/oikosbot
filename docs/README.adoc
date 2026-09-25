@@ -28,20 +28,44 @@ fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
 * link:../policies/README.adoc[policies/README] — Eclexia (`.ecl`) policies and the finding taxonomy.
 * link:../bot-integration-affine/README.adoc[bot-integration-affine] — the AffineScript webhook receiver (scaffold).
 * link:../.github/CONTRIBUTING.md[CONTRIBUTING] — fork / branch / PR flow.
-* _Planned (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): per-crate READMEs, the Haskell analyzer guide, an end-to-end build walkthrough._
+* link:ci-runbook.adoc[CI runbook] — every gate, what it enforces, and how to
+  read a red check when the logs are unavailable.
+* _Crate guides_ — one README per workspace crate, each stating what it owns,
+  its public surface, and what it does **not** do:
+  link:../crates/oikosbot-metrics/README.adoc[metrics],
+  link:../crates/oikosbot-analysis/README.adoc[analysis],
+  link:../crates/oikosbot-pareto/README.adoc[pareto],
+  link:../crates/oikosbot-sarif/README.adoc[sarif],
+  link:../crates/oikosbot-eclexia/README.adoc[eclexia],
+  link:../crates/oikosbot-telemetry/README.adoc[telemetry],
+  link:../crates/oikosbot-capability/README.adoc[capability],
+  link:../crates/oikosbot-dea/README.adoc[dea],
+  link:../crates/oikosbot-cli/README.adoc[cli],
+  plus the optional
+  link:../crates/oikosbot-fleet/README.adoc[fleet bridge] (excluded from the
+  default workspace).
+* link:../analyzers/code-haskell/README.adoc[Haskell analyzer] — what
+  `analyzers/code-haskell` computes and how it relates to the Rust workspace.
+* _Still open (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): an end-to-end build walkthrough._
 
 == For maintainers
 
 * link:../GOVERNANCE.adoc[GOVERNANCE] + link:../MAINTAINERS.adoc[MAINTAINERS] — governance model and roles.
 * link:../ROADMAP.adoc[ROADMAP] — phases and milestones.
 * link:../.machine_readable/descriptiles/README.adoc[.machine_readable/descriptiles] — the machine-readable state/runbook (see below).
-* _Planned (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): CI/workflow runbook, `just`-target reference, pre-release checklist._
+* link:ci-runbook.adoc[CI runbook] — the gate inventory, `actions.lock` rules,
+  how to diagnose Hypatia and `Publish Image` failures, the `just` target
+  reference, and the pre-release (GitHub Marketplace) checklist.
+* _Still open (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): the `README` → `docs/` split._
 
 == For end users
 
 * link:GITHUB_APP_SETUP.adoc[GitHub App setup] — install and configure the App.
 * link:../SECURITY.md[SECURITY] — vulnerability reporting and data handling.
-* _Planned (link:https://github.com/hyperpolymath/oikosbot/issues/17[#17]): interpreting findings/SARIF, `BOT_MODE`, policy customization, troubleshooting, and a production deploy runbook (today link:../DEPLOY.adoc[DEPLOY] is a stub)._
+* link:usage.adoc[Using OikosBot] — action inputs, the three modes, what each
+  verdict and confidence level means, the SARIF shape, `.oikos.yml`
+  configuration, `BOT_MODE`, and a troubleshooting table.
+* _Still open (link:https://github.com/hyperpolymath/oikosbot/issues/17[#17]): a production deploy runbook — link:../DEPLOY.adoc[DEPLOY] is still a stub, gated on AffineScript operational parity._
 
 == Machine-readable docs (A2ML)
 
@@ -56,8 +80,9 @@ The canonical project state and decisions live in `.machine_readable/descriptile
 == Current state (read first)
 
 * link:STATUS.adoc[**STATUS**] — what works, what does *not*, and how each claim
-  was verified. Includes the standing caveat that resource figures are heuristic
-  estimates and `--check` cannot yet block a merge.
+  was verified. Includes the standing caveat that resource figures are static
+  estimates, that only calibrated findings may block a merge, and that the eco
+  score's absolute scale saturates under calibrated magnitudes.
 * link:COMPARISON-climate-warrior.adoc[**OikosBot vs Climate Warrior**] —
   positioning against the nearest GitHub Marketplace neighbour.
 
@@ -69,4 +94,7 @@ The canonical project state and decisions live in `.machine_readable/descriptile
 * **VeriSimDB** octad data layer (deferred) — link:verisimdb-client.adoc[verisimdb-client] + `META.a2ml` ADR-001.
 * **Provenance & the PMPL license** — link:../PALIMPSEST.adoc[PALIMPSEST].
 
-_Audience-depth gaps are tracked in link:https://github.com/hyperpolymath/oikosbot/issues/16[#16] (dev/maintainer) and link:https://github.com/hyperpolymath/oikosbot/issues/17[#17] (end-user); the README→`docs/` split is also in #16._
+_Remaining audience-depth gaps: the README→`docs/` split and the end-to-end
+build walkthrough in link:https://github.com/hyperpolymath/oikosbot/issues/16[#16],
+and the production deploy runbook in
+link:https://github.com/hyperpolymath/oikosbot/issues/17[#17]._

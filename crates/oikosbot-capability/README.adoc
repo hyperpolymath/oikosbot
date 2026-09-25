@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-capability`
+:toc: macro
+
+Verified capability from run history alone. A gate with N successes and zero
+failures in its entire history cannot be shown to be *able* to fail, so its
+green is not evidence and its successes are excluded from verified output.
+This is the operationalisation of the estate's fake-gate pathology.
+
+== Public surface
+
+`assess(runs, releases, min_n) -> Vec<CapabilityRow>`, where each row carries
+run totals, startup failures, dead (never-parsed) runs, workflow counts, and
+`infallible_gate_candidates`.
+
+`infallible_gate_candidates` is keyed on **workflow path**, not the free-text
+workflow name. Two different files can share a name (two workflows both titled
+"CI"), and grouping by name merges their run counts — which can hide a
+fake-gate candidate behind a same-named failing workflow. Measured on
+2026-08-07: by path 1482 candidates across 313 repos, by name 1270. The
+212-candidate gap was the concealment, and it is why the shipped key is the
+path.
+
+== What it does not do
+
+It does not decide that a gate is fake — it lists candidates that need a human
+look, and it excludes their successes from verified output.
+
+== Tests
+
+----
+cargo test -p oikosbot-capability
+----

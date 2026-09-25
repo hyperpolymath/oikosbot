@@ -1,0 +1,227 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= OikosBot CI Runbook
+:toc: macro
+:icons: font
+
+Audience: maintainers. This is the operational companion to
+link:../ARCHITECTURE.adoc[ARCHITECTURE] (what the system is meant to be) and
+link:../DEBT.adoc[DEBT] (what it is not yet): what runs on every change, what
+each gate actually enforces, how to diagnose a red check when the logs are not
+available, and what has to be true before a release.
+
+Most push-triggered gates are branch-filtered to `main`, so **a pull request
+into `main` is the only way to exercise CI, Hypatia, Governance, CodeQL and the
+linters from a working branch**. `Publish Image` runs on pushes to `main`, on
+`v*` tags, and on manual dispatch only.
+
+== Gate inventory
+
+[cols="2,1,4",options="header"]
+|===
+| Workflow | Triggers | What it enforces
+
+| `CI`
+| push/PR → `main`
+| Three jobs: `Haskell Analyzer` (`cabal build`/`cabal test` under
+`analyzers/code-haskell`), `Rust Workspace` (`cargo fmt --check`,
+`cargo test --workspace --locked`, the Eclexia adapter shell test, then
+`cargo clippy --workspace`), and `AffineScript` (scaffold check for
+`bot-integration-affine`). The Rust job is the gate for every change under
+`crates/`.
+
+| `CodeQL Security Analysis`
+| push/PR → `main`, weekly
+| Static analysis for Rust and Actions. `codeql.yml` pins
+`github/codeql-action@v4.38.1` — the same ref as `ci.yml`, deliberately, so the
+lock list stays single-valued.
+
+| `Governance`
+| push/PR → `main`, dispatch
+| Delegates to the standards reusable workflow: `actions.lock` verification,
+licence/SPDX hygiene, and (informational) baseline validation. A lock mismatch
+fails closed here.
+
+| `Hypatia Security Scan`
+| push → `main`/`master`/`develop`, PR → `main`/`master`, weekly, dispatch
+| Delegates to `hypatia-scan-reusable.yml` in `hyperpolymath/standards` with
+`block-on-high: true`. SARIF findings at `critical` or `high` become
+`level: error` and fail the step. Pinned by SHA in `actions.lock`.
+
+| `Workflow Security Linter`
+| any PR, push touching `.github/workflows/**`
+| Re-runs the SPDX-header check (line 1 must be the SPDX line) and the
+pinned-action check, which probes the API for SHA *existence* — a phantom SHA
+is a failure, not a warning.
+
+| `Secret Scanner`
+| any PR, push → `main`
+| Delegates to the standards secret scanner. Findings are advisory
+annotations, not merge blocks.
+
+| `Language Policy Enforcement`
+| push → `main`, PR
+| Blocks new `.py`, `.rb`, `.pl`, `.java`, `.kt` files (repo language policy).
+Existing assets are grandfathered; new ones are not.
+
+| `Publish Image`
+| push → `main`, `v*` tags, dispatch
+| Builds `Containerfile` and pushes `ghcr.io/hyperpolymath/oikos`. Path-filtered
+to `crates/**`, the manifests, the `Containerfile`, `.dockerignore` and its own
+file, so a docs-only change does not rebuild the image.
+
+| `Mirror to Git Forges`
+| push → `main`, dispatch
+| Pushes the repo to the configured mirrors. `Instant Sync` (fan-out
+propagation to the farm) is disabled at the repository-settings level and
+documented as such in its own header.
+
+| `GitHub Pages`
+| push → `main`, dispatch
+| Builds and deploys the AsciiDoc site. A cold GHC build is the usual cause of
+a long first run.
+
+| `OSSF Scorecard`
+| weekly, dispatch
+| Supply-chain self-assessment. Schedule-only by design; it does not gate
+pushes.
+
+| `Dependabot Auto-Merge`
+| PRs authored by `dependabot[bot]`
+| Approves and auto-merges security updates at patch/minor. Gated on the PR
+*author*, never on `github.actor`.
+
+| `Labels` / `Label Triage`
+| dispatch / push on `.github/labels.json`; issue events
+| Label set synchronisation and triage. Non-gating.
+|===
+
+== Reading a failure without the logs
+
+In restricted environments (no artifact download, `gh run view --log-failed`
+failing with EOF) the check-run **annotations** API is the reliable channel:
+
+[source,shell]
+----
+# Resolve the run for a commit, then the job, then its annotations
+gh api repos/hyperpolymath/oikosbot/actions/runs?head_sha=<sha> \
+  --jq '.workflow_runs[] | "\(.name) \(.id) \(.conclusion)"'
+
+# The failing job's id (pick the job whose NAME matches the failing check)
+gh api repos/hyperpolymath/oikosbot/actions/runs/<run_id>/jobs \
+  --jq '.jobs[] | "\(.name) \(.id) \(.conclusion)"'
+
+gh api repos/hyperpolymath/oikosbot/check-runs/<job_id>/annotations \
+  --jq '.[].message'
+----
+
+Two gotchas, both learned the hard way:
+
+* The annotations endpoint takes the **job** id, not the run id (a run id
+  returns 404). Pick the job whose `name` matches the failing check — a run can
+  contain several jobs, and `jobs[].id | head -1` is not necessarily the one
+  that failed.
+* Reusable-workflow checks (`Hypatia`, `Governance`, `Secret Scanner`) surface
+  their diagnostics as a single annotation plus a retained artifact
+  (`hypatia-scan-findings`, 90-day retention). When the artifact cannot be
+  downloaded, the annotation text is the whole diagnosis.
+
+== `actions.lock`
+
+`.github/workflows/actions.lock` is the estate lockfile GitHub's workflow
+enforcement requires. Rules that keep it green:
+
+* A workflow's `uses:` and its lock entry must agree on ref **and** SHA. The
+  classic drift is bumping the workflow but not the lock (or vice versa), which
+  shows up as a `Governance` failure, not a workflow failure.
+* Regenerate in the same change as the `uses:` edit
+  (`scripts/update-actions-lock.sh` upstream), and never prune entries by hand:
+  several entries exist only to cover actions used *inside* the standards
+  reusable workflows (checkout, cache, upload-artifact, setup-beam,
+  scorecard-action, ssh-agent, rust-toolchain, editorconfig-checker).
+* Verify locally before pushing:
+
+[source,shell]
+----
+bash tools/ci/lockcheck.sh     # actions.lock ↔ workflows consistency
+bash tools/ci/linter-verify.sh # runs the linter's checks verbatim
+----
+
+`tools/ci/lockcheck.sh` re-implements the verifier's consistency rules; it
+reported `VALID: 15 workflows, 29 dependencies` on 2026-09-25.
+
+== Hypatia
+
+Hypatia is the estate's neurosymbolic workflow scanner. What matters for
+diagnosis:
+
+* Severity maps to SARIF level as `critical`/`high` → `error`. `block-on-high:
+  true` counts `error`s, so exactly one high-or-critical finding is enough to
+  fail the step.
+* Findings of kind `code_scanning_alerts` are rejected at render time — they
+  never reach the SARIF, so a "finding" you can see in the Security tab is not
+  necessarily what failed the build.
+* Without `.hypatia-baseline.json`, every current finding counts. A baseline
+  (schema: `.machine_readable/hypatia-baseline.schema.json` in standards, plus
+  `scripts/apply-baseline.sh`) suppresses *baselined* findings only, so the
+  gate stays blocking for anything new. **Never baseline a real vulnerability
+  to go green** — the baseline is for accepted, evidenced findings.
+
+Two root causes already diagnosed in this repo, kept here because both are
+recurring estate-wide patterns:
+
+[cols="1,3"]
+|===
+| Finding | Cause and fix
+
+| `research_extensions` RE008 (critical) on
+  `.github/workflows/dependabot-automerge.yml`
+| The rule flags `github.actor == 'dependabot[bot]'` as an identity check
+  built on a spoofable context: `github.actor` is the dispatch actor, which
+  fork and rerun events can set without the PR being Dependabot's. The fix is
+  to gate on the PR author (`github.event.pull_request.user.login`) only. The
+  rule was wired into the scan on 2026-09-10, which is why a byte-identical
+  caller went from green to red.
+
+| `Publish Image` → `Build and push` exit 101
+| A dependency MSRV drift: `tree-sitter` 0.27.0 declares
+  `rust-version = "1.90"` and `edition = "2024"`, while the `Containerfile`
+  builder was `rust:1.88-slim`. CI on `ubuntu-latest` passed because the
+  runner ships a newer rustc; the container did not. The builder now uses the
+  rolling `rust:1-slim`. Diagnose this class of failure by checking the
+  *builder* toolchain against the workspace's highest declared `rust-version`,
+  not by trusting CI's green tick.
+|===
+
+== Local re-verification
+
+[source,shell]
+----
+just check            # rust-build + rust-test + haskell-build + haskell-test
+just rust-fmt-check   # cargo fmt --check, as CI runs it
+bash tools/ci/linter-verify.sh
+bash tools/ci/lockcheck.sh
+----
+
+There is no Rust, Haskell or Elixir toolchain in every environment this repo is
+maintained from. Where that is true, Rust changes are verified in CI only:
+keep them small and reviewable, say so plainly in the PR, and prefer a PR over
+`main` so the branch-filtered gates actually run.
+
+== Pre-release checklist (GitHub Marketplace)
+
+The Action is the release unit: `action.yml` plus the container image it pins.
+
+1. `main` is green across CI, CodeQL, Governance, Hypatia, Workflow Security
+   Linter, Secret Scanner and Language Policy.
+2. `Publish Image` has succeeded on the release commit, and
+   `ghcr.io/hyperpolymath/oikos@sha256:<digest>` resolves.
+3. `action.yml`'s pinned `image` digest is updated to that digest (never to a
+   mutable tag), and the version in the root `Cargo.toml` matches the release.
+4. The inputs documented in link:usage.adoc[the end-user guide] match
+   `action.yml` exactly, including defaults.
+5. `CHANGELOG.adoc` has an entry for the release; `DEBT.adoc` reflects what is
+   still unearned.
+6. The Marketplace listing is published from `main` by a repository owner, and
+   the `DEPLOY.adoc` gate (AffineScript operational parity) is either met or
+   explicitly still open.

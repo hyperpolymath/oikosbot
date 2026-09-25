@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= `oikosbot-eclexia`
+:toc: macro
+
+Policy adapter: evaluates the Eclexia (`.ecl`) policies under `policies/`
+against a set of analysis results and returns `PolicyDecision`s.
+
+[IMPORTANT]
+====
+**This backend is a seam, not an implementation.** With the default features it
+shells out to an `eclexia` binary if one is on `PATH`; if none is found it falls
+back to a builtin evaluator that matches policies by **file stem** and applies
+hardcoded thresholds — the `.ecl` contents are never parsed. The hardcoded
+thresholds can and do disagree with the policy text
+(`energy_threshold.ecl` declares `> 50.0 J` per function; the builtin fires at
+`> 1000 J` total). Every builtin evaluation emits a `::warning::` saying exactly
+that (`builtin_warning`). It is loud, and it is still fake. Tracked as debt.
+====
+
+== Public surface
+
+* `evaluate_policies(policy_dir, results)` — one `PolicyDecision` per `.ecl`
+  file, plus a `Warn` decision for any policy that errors.
+* `decisions_to_results(decisions)` — converts decisions into synthetic
+  `AnalysisResult`s (`oikosbot/policy-<name>`) so they join the Pareto and SARIF
+  paths like any other finding.
+* `builtin_warning(policy_stem)` — the loud notice quoted above.
+* `EXAMPLE_POLICY` — a documented example `.ecl` for tests and docs.
+
+== The `eclexia-native` feature
+
+Reserved and **unbuildable**: the `cfg` branch calls into `eclexia_parser` /
+`eclexia_interp`, which are not declared dependencies. It fails with an explicit
+"unavailable" error rather than compiling a stub, so a successful build can
+never claim native integration.
+
+== Tests
+
+----
+cargo test -p oikosbot-eclexia
+----

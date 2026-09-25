@@ -29,9 +29,9 @@ Severity is about *consequence*, not effort:
 
 | <<licence>> | HYGIENE | One orphaned licence text; one doc missing its SPDX header.
 | <<docs>> | STRUCTURAL | Two boilerplate files describe a directory layout this repo does not have; `ARCHITECTURE.adoc` specifies components that were never built.
-| <<code>> | BLOCKING | The per-file analyser derives every resource axis from one integer, so its Pareto frontier is a one-dimensional sort.
+| <<code>> | BLOCKING | Unrecognised code still derives every resource axis from one integer, so its Pareto frontier is a one-dimensional sort. Recognised patterns are now calibrated (2026-09-26).
 | <<proof>> | BLOCKING | The Datalog policy engine has never executed; the Eclexia policy backend matches on filenames and never reads the files.
-| <<cicd>> | HYGIENE | Repo CI is green; the consumer fleet cannot run until each repo ships a lockfile.
+| <<cicd>> | BLOCKING | Four phantom required contexts block every pull request, so every merge needs `--admin`. The two long-standing red checks are fixed; the consumer fleet cannot run until each repo ships a lockfile.
 |===
 
 [#licence]
@@ -142,10 +142,11 @@ open and are only partly addressed by `docs/README.adoc`.
 
 [cols="1,4"]
 |===
-| `BLOCKING` | *Every resource axis in the per-file analyser is a scalar
-multiple of one integer.* `Analyzer::estimate_resources()`
-(`crates/oikosbot-analysis/src/analyzer.rs:199`) derives all four axes from
-`complexity`, a raw AST **node count**:
+| `BLOCKING` | *Every resource axis in the per-file analyser's naive path is a
+scalar multiple of one integer.* `Analyzer::naive_resources()`
+(`crates/oikosbot-analysis/src/analyzer.rs`) derives all four axes from
+`complexity`, a raw AST **node count**. It is still the path taken by any unit
+with no recognised pattern:
 +
 [source,rust]
 ----
@@ -164,25 +165,37 @@ rank-inverted, and `Debt` is `100 − 0.5 × complexity`.
 +
 *Status:* solved at **estate** level by round one (telemetry gives money, time,
 energy and carbon as mutually independent axes — measured
-`wall_minutes ~ size_kb` correlation is −0.049). *Unsolved at file level.*
+`wall_minutes ~ size_kb` correlation is −0.049). *Partly solved at file level*
+(2026-09-26): a unit with a recognised pattern is priced from a per-kind row
+whose formulae differ per axis — `Sort` is `n·log₂ n` on energy and duration but
+linear on memory; `Allocation` is linear on bytes; `MathCompute` has no memory
+term — so those units no longer collapse the frontier. Units with **no**
+recognised pattern still take the naive path below and remain collinear.
 
-| `BLOCKING` | *`calibration.rs` has zero callers* (issue
-https://github.com/hyperpolymath/oikosbot/issues/48[#48]). The module is
-written in full — `OperationKind`, `ResourceRange`, pattern multipliers — and
-nothing calls `calibrated_estimate()` or `estimate_operation()`. Verified:
-`grep -rn "calibrated_estimate\|estimate_operation" crates/` matches only the
-defining file.
+| — | *Resolved 2026-09-26:* *`calibration.rs` had zero callers* (issue
+https://github.com/hyperpolymath/oikosbot/issues/48[#48]).
+`Analyzer::estimate_resources()` now maps a detected pattern onto
+an `OperationKind` via `calibration::operation_for_pattern` and prices it with
+`estimate_operation`, whose `ResourceRange` carries the min/typical/max band
+*and* the confidence that row has earned. The band is propagated on `AnalysisResult`
+(`oikosbot_metrics::ResourceRange`) and emitted in SARIF `properties`.
+`calibrated_estimate()` — the unwired, multiplier-based path — was deleted
+rather than left as a second, contradictory estimator.
 
-| `BLOCKING` | *Consequence: `compare --check` cannot block.* Only
-`Measured`/`Calibrated` inputs may fail a run; the analyser emits only
-`Estimated`, so `assess().actionable` is always false. Since
-https://github.com/hyperpolymath/oikosbot/pull/47[#47] it refuses *loudly*
-rather than passing silently — the honest handling of a gate that cannot yet
-gate, but the gate still cannot gate.
+| — | *Resolved 2026-09-26 (partly):* *`compare --check` could not block.*
+Findings built on a recognised pattern now carry
+`Calibrated` (measured rows) or `Estimated` (host-dependent rows), so
+`assess().actionable` is true for calibrated drivers and `--check` exits 1 on an
+undocumented calibrated regression. Proven by
+`crates/oikosbot-cli/tests/check_gate.rs` against the real binary. Heuristic
+findings still cannot block, and the refusal stays loud (`::warning::`), as
+https://github.com/hyperpolymath/oikosbot/pull/47[#47] established.
 +
 *Round one changed this partially:* `Confidence::Measured` is now produced for
 the first time, at `crates/oikosbot-telemetry/src/derive.rs:99`, for
-`wall_minutes`. The estate path has Measured data; the per-file path does not.
+`wall_minutes`. The estate path has Measured data; the per-file path has
+`Calibrated` data (2026-09-26, above) for units with a recognised pattern, and
+`Estimated` data for the rest.
 
 | `STRUCTURAL` | *`aggregate_point` sums resources but averages quality*
 (`crates/oikosbot-pareto`), so a `compare` verdict is sensitive to file
@@ -194,9 +207,10 @@ improved.
 weights, while `config/oikos.yaml` advertises a `weights:` block that the
 loader discards.
 
-| `STRUCTURAL` | *`standard_objectives()` is dead code* — seven axes declared
-per `ARCHITECTURE.adoc`, never called. The live set is `result_objectives()`
-(five axes, no coverage or debt axis).
+| — | *Resolved 2026-09-26:* *`standard_objectives()` was dead code* — seven
+axes declared per `ARCHITECTURE.adoc`, never called. The function was deleted;
+the live set remains `result_objectives()` (five axes, no coverage or debt
+axis).
 |===
 
 === Language and detection coverage
@@ -218,11 +232,24 @@ measurable at all), but per-file analysis cannot see most of the estate.
 combines AST-kind matching with **substring search on node source text**,
 producing false negatives on JS and Python.
 
-| `HYGIENE` | *Detected patterns never affect the estimate.* `impact_multiplier`
-is computed and attached to findings but is never applied in `analyzer.rs`; the
-multiplier logic lives only in the unwired calibration path — and the two
-multiplier tables (`patterns.rs` and `calibration.rs`) are duplicated with no
-shared source of truth.
+| — | *Resolved 2026-09-26:* *detected patterns never affected the estimate.*
+`impact_multiplier` was computed and attached to findings but never applied. A
+detected pattern now selects the operation category
+that prices the unit, and where several patterns map, the largest
+`impact_multiplier` wins. The duplicated multiplier table in `calibration.rs`
+was deleted with `calibrated_estimate()`; `patterns.rs` is the single source of
+truth for pattern severity.
+
+[NOTE]
+====
+What this did **not** fix, and must not be read as fixed: the naive path is
+still collinear (four axes, one integer), so units with no recognised pattern
+keep the one-dimensional-frontier problem described above. The eco score's log
+scale is anchored at 1 J, so calibrated microjoule-scale estimates clamp near
+100 and the eco *threshold* discriminates far less than it did; the Pareto
+verdicts, which compare base against head, are unaffected. Absolute figures
+remain unvalidated against profiling data.
+====
 |===
 
 === Round-one pipeline (`oikosbot-telemetry` / `-capability` / `-dea`)
@@ -304,9 +331,10 @@ behind a feature whose crates (`eclexia_parser`, `eclexia_interp`) are not
 declared dependencies, so the cfg branch is unbuildable — a seam, not an
 implementation.
 
-| `HYGIENE` | *`policy-engine/deepproblog/eco_problog.pl` is dead by ruling*
-(2026-07-28: policy engine → Scallop, Python DeepProbLog retired with no
-exemption) but the asset is still in the tree.
+| — | *Resolved 2026-09-26:* *`policy-engine/deepproblog/eco_problog.pl` was
+dead by ruling* (2026-07-28: policy engine → Scallop, Python DeepProbLog retired
+with no exemption) while the asset was still in the tree. The file is deleted and
+`EXPLAINME.adoc` no longer cites it.
 
 | `HYGIENE` | *DEA correctness is verified against self-authored analytic cases*
 — closed-form single-input/output, a strictly-dominated unit, and a strong-duality
@@ -326,10 +354,22 @@ downstream.
 | — | *Resolved:* the estate-wide `startup_failure` epidemic (GitHub's Actions
 workflow-lockfile enforcement) is cured for this repo —
 `.github/workflows/actions.lock` shipped in
-https://github.com/hyperpolymath/oikosbot/pull/61[#61] and CI now runs green
-(Hypatia, Secret Scanner, Governance, Language Policy, CodeQL all `success`).
-Reusable-caller permissions fixed in
+https://github.com/hyperpolymath/oikosbot/pull/61[#61]. Reusable-caller
+permissions fixed in
 https://github.com/hyperpolymath/oikosbot/pull/63[#63].
+
+| — | *Resolved 2026-09-26:* two red checks on `main` that had nothing to do
+with each other. `Hypatia` was failing on **one** high/critical finding —
+`research_extensions` RE008, critical, because
+`.github/workflows/dependabot-automerge.yml` gated auto-merge on
+`github.actor == 'dependabot[bot]'`, an identity check built on a context a
+fork or rerun can set. The PR-author gate is kept; the actor conjunct is gone.
+`Publish Image` was failing with `cargo build … exit code 101` because
+`tree-sitter` 0.27.0 declares `rust-version = "1.90"` / `edition = "2024"`
+while the `Containerfile` builder was `rust:1.88-slim`; CI on `ubuntu-latest`
+passed because the runner ships a newer rustc. The builder is now
+`rust:1-slim`. Both diagnoses, and the gate mechanics behind them, are written
+up in link:docs/ci-runbook.adoc[`docs/ci-runbook.adoc`].
 
 | `BLOCKING` | *Four phantom required contexts block every pull request, so
 every merge needs `--admin`.* The `main` ruleset requires 27 status checks. All
@@ -378,8 +418,10 @@ the single highest-value follow-up.
 | `HYGIENE` | *`scorecard.yml` runs per-push*; making it periodic is open as
 https://github.com/hyperpolymath/oikosbot/pull/64[#64].
 
-| `HYGIENE` | *`instant-sync.yml` is disabled* (`disabled_manually`) and
-undocumented — neither retired nor explained.
+| — | *Resolved 2026-09-26:* *`instant-sync.yml` was disabled*
+(`disabled_manually`) and undocumented. The workflow's header now records the
+settings-level disabled state (which is invisible from the repository contents),
+why it is kept, and what re-enabling requires.
 
 | `HYGIENE` | *`push-email-notify.yml` is dormant by design* but remains in the
 tree; the estate's dual-use ruling calls for removing push-email workflows

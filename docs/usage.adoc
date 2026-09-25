@@ -1,0 +1,394 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Using OikosBot
+:toc: macro
+:icons: font
+
+Audience: anyone consuming OikosBot — as a GitHub Action in a workflow, as the
+published container, or as the CLI in a pipeline. This page is about *running*
+it and *reading what it says*. For what the numbers mean and how far they can
+be trusted, start with link:../EXPLAINME.adoc[EXPLAINME] and
+link:../DEBT.adoc[DEBT]; the short version is repeated in
+<<honesty>> below.
+
+== Two ways to run it
+
+[cols="1,4"]
+|===
+| Composite Action | `uses: hyperpolymath/oikosbot@main` (or a pinned SHA). Runs the
+published CLI container, so a consumer needs no Rust toolchain. See
+`examples/oikosbot-ci.yml` for a complete workflow.
+
+| Container | `docker run --rm ghcr.io/hyperpolymath/oikos@sha256:<digest> <subcommand>`.
+Same binary, same flags; useful for local runs and for CI systems that are not
+GitHub Actions.
+|===
+
+The CLI's entrypoint is `oikosbot`, with four subcommands: `report`, `check`,
+`compare` and `estate` (plus `self-analyze` for dogfooding).
+
+== Action inputs
+
+Every input is optional; the defaults are what `examples/oikosbot-ci.yml` uses.
+
+[cols="2,1,3,2",options="header"]
+|===
+| Input | Default | Meaning | Maps to CLI
+
+| `mode`
+| `report`
+| `report` (write SARIF), `check` (threshold gate), `compare` (Pareto verdict
+against a base). Anything else is a hard error.
+| subcommand
+
+| `path`
+| `.`
+| Directory to analyse; in `compare` mode this is the *head* directory.
+| positional arg
+
+| `base`
+| _(empty)_
+| Base directory for `compare` mode — e.g. a checkout of the target branch.
+Required when `mode: compare`.
+| positional arg
+
+| `format`
+| `sarif`
+| `sarif` \| `json` \| `text`.
+| `--format`
+
+| `output`
+| `results.sarif`
+| Output file; empty means stdout. The written path is exposed as the action's
+`output-file` output.
+| `--output`
+
+| `config`
+| _(empty)_
+| Path to an `.oikos.yml`. Empty means auto-discover one under `path`.
+| `--config`
+
+| `eco-threshold`
+| _(empty)_
+| Eco-score floor, 0–100. Empty means "take it from the config, else 50".
+| `--eco-threshold`
+
+| `pr-body`
+| _(empty)_
+| File holding the PR description, for the trade-off documentation check in
+`compare` mode.
+| `--pr-body`
+
+| `check`
+| `false`
+| In `compare` mode, fail the run on an undocumented regression or trade-off
+_whose drivers are measured or calibrated_. Heuristic findings still cannot
+block; see <<enforcement>>.
+| `--check`
+
+| `image`
+| pinned digest
+| The container image to run. Pinned by digest, never by tag — override it only
+to test a candidate build.
+| (action-level)
+|===
+
+[NOTE]
+====
+`eco-threshold` is an *eco-score* floor, not an energy or carbon figure. The
+config keys `thresholds.eco_minimum.carbon` and `.energy` both express that
+same 0–100 floor today; `carbon` wins if both are set.
+====
+
+== What each mode does
+
+`report`:: Analyse the directory and emit findings. With `format: sarif` the
+output is uploaded to GitHub code scanning by the caller's workflow; `json` is
+the same results with the SARIF envelope removed; `text` prints a summary.
+
+`check`:: Analyse, then compare each finding's eco score against the floor.
+Below-floor findings are listed, and the run **fails (exit 1) when the config
+says enforcement is blocking** — either `enforcement: blocking` or
+`mode: regulator`. With an `advisor`/`consultant` config the run reports and
+exits 0, printing which config made it advisory.
+
+`compare`:: Analyse base and head, project both onto the five Pareto
+objectives, and classify the change:
+
+[cols="2,4"]
+|===
+| Verdict | Meaning
+
+| `Improvement`
+| Head is better on at least one objective and worse on none.
+
+| `Regression`
+| Head is worse on at least one objective and better on none.
+
+| `TradeOff`
+| Better on some, worse on others. Must be documented with a
+`Pareto-Trade-off:` trailer (or a heading containing "pareto trade-off") in the
+PR body passed via `pr-body`.
+
+| `Neutral`
+| No objective moved by more than ε (1e-6).
+|===
+
+[#enforcement]
+=== Enforcement: what can actually fail a run
+
+`compare --check` fails on an undocumented `Regression` or `TradeOff` **only
+when every driving objective is backed by `Measured` or `Calibrated` input**.
+That gate exists because a heuristic number must never be able to block a
+merge, and it is enforced by the code, not by convention.
+
+What that means in practice:
+
+* A function whose detected pattern maps to a known operation category is
+  priced from the calibration table
+  (`crates/oikosbot-analysis/src/calibration.rs`) and carries
+  `Confidence::Calibrated` for the measured rows (`HashLookup`, `Sort`,
+  `Allocation`, `MathCompute`) — so a regression driven by those findings *can*
+  block.
+* A function with no recognised pattern stays on the naive complexity-derived
+  estimate and carries `Confidence::Estimated`, which can never block.
+* When `--check` is requested but the drivers are heuristic, the run **exits 0
+  and prints a `::warning::` naming the verdict and the confidence level**.
+  A gate that quietly does nothing is indistinguishable from one that passed,
+  which is the failure mode OikosBot exists to find.
+
+The estate path (`oikosbot estate`) is the one place with genuinely `Measured`
+input: `wall_minutes` comes straight from the GitHub API.
+
+== Reading a finding
+
+Every finding is one analysed function (or one synthetic policy/security
+record) with:
+
+* **location** — file, line/column, and the end position used for range
+  annotations, plus the function name;
+* **rule_id** — `oikosbot/<pattern>` (see the rule table below) or
+  `oikosbot/general` for a function with no detected pattern;
+* **suggestion** — the concrete fix, also printed into the SARIF message;
+* **resources** — energy (J), duration (ms), carbon (gCO2e), memory (bytes);
+* **health** — eco (0–100), econ (0–100), quality (0–100), and the composite
+  `overall = 0.4·eco + 0.3·econ + 0.3·quality`;
+* **confidence** — the ladder below;
+* **resource_range** — when the estimate is calibrated, the min/typical/max
+  band behind `resources`. `resources` *is* the typical bound. Absent on the
+  naive path, where no band was computed.
+
+[cols="1,3"]
+|===
+| Confidence | Meaning
+
+| `Measured`
+| Read from an instrument (the GitHub API's wall-clock minutes). The only
+  level that needs no calibration.
+
+| `Calibrated`
+| Priced from a measured operation profile. Earned per finding, per operation
+  kind — never assigned to a whole file or run.
+
+| `Estimated`
+| Heuristic: a pattern we recognise but have not measured (host-dependent I/O
+  and string work), or the naive complexity path. Advises; never blocks.
+
+| `Unknown`
+| No estimate at all (the generic fallback row).
+|===
+
+[IMPORTANT]
+====
+Absolute figures are still small, static and unvalidated against profiling
+data. Treat the *relative* signal — which function is worse, which direction a
+diff moves — as the product, and the absolute joules as an order-of-magnitude
+hint. See link:../DEBT.adoc[DEBT] for the current list of unearned claims.
+====
+
+=== Rules
+
+[cols="2,1,4",options="header"]
+|===
+| Rule id | Default level | Fires when
+
+| `oikosbot/nested-loops`
+| warning
+| Loop nesting depth ≥ 3.
+
+| `oikosbot/busy-wait`
+| warning
+| A `loop`/`while` whose body has no sleep/await/yield/recv, no I/O and no
+  legitimate iteration.
+
+| `oikosbot/string-concat-in-loop`
+| warning
+| A `+`/`+=` string concatenation inside a loop body.
+
+| `oikosbot/clone-in-loop`
+| note
+| `.clone()` inside a loop body.
+
+| `oikosbot/unbuffered-io`
+| warning
+| `File::open`/`File::create` with no `BufReader`/`BufWriter` in scope.
+
+| `oikosbot/large-allocation`
+| note
+| An allocation with a numeric literal above 1,000,000.
+
+| `oikosbot/redundant-allocation`
+| note
+| Five or more `.to_string()`/`.to_owned()` in one function.
+
+| `oikosbot/eco-threshold`, `oikosbot/carbon-intensity`,
+  `oikosbot/security-sustainability`
+| warning
+| Emitted by the threshold, policy and security-correlation paths rather than
+  by pattern detection.
+|===
+
+=== SARIF shape
+
+`format: sarif` emits SARIF 2.1.0 with one run, driver name `oikosbot`, and the
+rules above in `tool.driver.rules`. Per result:
+
+* `ruleId` is the finding's `rule_id`; `level` comes from the eco score
+  (`error` below 30, `warning` below 60, else `note`).
+* `locations[0].physicalLocation.region` carries start/end line and column, so
+  GitHub can annotate the whole function.
+* `properties` carries the machine-readable payload: `eco_score`,
+  `econ_score`, `quality_score`, `overall_health`, `energy_joules`,
+  `carbon_gco2e`, `duration_ms`, `memory_bytes`, `confidence`, optional
+  `suggestion`, optional `pareto_status` / `pareto_score` /
+  `pareto_dominated_by`, and — for calibrated estimates — `resource_range`
+  with `min`/`typical`/`max` per axis.
+
+`oikosbot/general` records are per-function telemetry, not defects: they appear
+in `json`/`text` output and are **filtered out of the SARIF results**, so
+analysing a repository does not raise a code-scanning alert for every function
+in it.
+
+== Configuring it (`.oikos.yml`)
+
+Place an `.oikos.yml` in the analysed directory (or pass `--config`). The keys
+that take effect today:
+
+[source,yaml]
+----
+mode: regulator            # consultant | advisor (default) | regulator
+thresholds:
+  eco_minimum:
+    carbon: 50             # the eco-score floor, 0-100 (energy: is the fallback)
+    enforcement: blocking  # fail the run when below the floor
+exclude:                   # globs, matched against paths relative to the root
+  - "**/target/**"
+  - "**/node_modules/**"
+analysis:
+  languages: [rust, javascript, python]
+----
+
+* `mode: regulator` (or `enforcement: blocking`) is what makes a below-floor
+  finding fail the run. Without either, `check` reports and exits 0, naming the
+  config that made it advisory.
+* `analysis.languages` is intersected with what the tree-sitter analyser can
+  actually parse (`rust`, `javascript`, `python`). Naming only unsupported
+  languages is warned about loudly and falls back to the default set, because
+  analysing nothing would be a silent no-scan.
+* Other keys in `config/oikos.yaml` (`eco_standard`, `eco_excellence`,
+  `complexity`, and the datastore block) are parsed and **discarded** by the
+  current loader. They are documented for the target design and take no effect;
+  the file says so inline.
+
+Policy files under `policies/` (`*.ecl`, Eclexia) are a separate mechanism —
+see link:../policies/README.adoc[policies/README]. They are evaluated by
+`oikosbot-eclexia` when `--policy-dir` is passed.
+
+== `BOT_MODE` (the App) vs `mode` (the CLI)
+
+`BOT_MODE` configures the AffineScript webhook receiver in
+`bot-integration-affine/` — it is read in `src/Config.affine`, lower-cased, and
+anything unrecognised becomes `advisor`.
+
+[cols="1,3"]
+|===
+| Value | Behaviour (from `src/Types.affine` and `src/Report.affine`)
+
+| `consultant`
+| Answers questions and offers alternatives. PR comments open with
+  "Oikos consultant — analysis".
+
+| `advisor` (default)
+| Proactive suggestions on pull requests. Comments open with
+  "Oikos advisor — suggestions".
+
+| `regulator`
+| Enforces policy compliance. Comments open with
+  "Oikos regulator — policy review".
+|===
+
+The CLI's `.oikos.yml` `mode:` key is the same three values, but it only
+decides enforcement (regulator ⇒ blocking); it does not change the report
+wording. `GET /health` on the receiver reports the active mode, which is the
+quickest way to confirm what a deployment thinks it is.
+
+[NOTE]
+====
+The GitHub App receiver is a scaffold: the webhook handler and HMAC
+verification exist, the HTTP listener is gated on upstream AffineScript stdlib
+work, and comments are not yet posted from a live deployment. Until then, CI is
+the supported path.
+====
+
+== Troubleshooting
+
+[cols="2,3",options="header"]
+|===
+| Symptom | Cause and fix
+
+| `unknown mode '<x>' (report | check | compare)`
+| The action's `mode` input is misspelled. The container exits 1 immediately.
+
+| `compare mode requires the 'base' input`
+| `mode: compare` without `base`. Check out the target branch into a directory
+  and pass it.
+
+| `no analyzable files under <base> and/or <head>`
+| The directories contain no file with a supported extension, or everything
+  was excluded. Check `exclude` globs and `analysis.languages`.
+
+| `Unsupported file extension: <ext>`
+| A file was analysed directly (not via a directory) and its extension is not
+  `rs`/`js`/`py`.
+
+| Run reports but never fails
+| Expected in `advisor`/`consultant` mode. Set `mode: regulator` or
+  `enforcement: blocking` to make below-floor findings fail.
+
+| `--check` warns "NOT enforced" and exits 0
+| The verdict is real but its drivers are heuristic (`Estimated`), and only
+  measured/calibrated inputs may block. This is the gate refusing to fake a
+  decision, not a bug.
+
+| Every function is an alert in code scanning
+| It should not be: `oikosbot/general` records are filtered out of SARIF. If
+  you see per-function alerts, the caller is uploading `format: json` output as
+  SARIF.
+
+| Eco scores look uniformly high
+| The eco score is a log scale anchored at 1 J; calibrated estimates are
+  microjoule-scale, so most units clamp at 100. The eco *threshold* therefore
+  discriminates far less than the Pareto verdicts, which compare base against
+  head. This is a known, tracked limitation, not a silently passing gate.
+|===
+
+[#honesty]
+== What to trust
+
+* Direction and ranking (which unit is worse, which way a diff moves) are the
+  product. They are deterministic for a given input tree.
+* Absolute joules, grams and milliseconds are static estimates. The calibrated
+  path is better anchored than the naive one, but neither has been validated
+  against profiling data on real hardware.
+* `Confidence` tells you which of the two you are looking at, per finding. Read
+  it before acting on a number.
