@@ -1,0 +1,296 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+
+= Owner actions — what only you can do
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+:toc: preamble
+:toclevels: 2
+
+Everything in the repository that could be fixed from a checkout has been
+fixed. This file lists what is left, and every item needs a permission the
+automation does not have: repository settings, another repository, or a design
+ruling. It also carries ready-to-post issue comments so the tracker does not
+have to be rewritten by hand.
+
+Gathered 2026-09-26 on branch `arena/01a0dad6-oikosbot`.
+
+== The one blocker that gates everything else
+
+`CI` (and every other workflow on a `pull_request` event from this branch) ends
+in `startup_failure` at 0 seconds. Fetching the run's HTML page gives the reason
+verbatim:
+
+____
+Actor is not allowed to trigger Actions workflows.
+Workflow file: '.github/workflows/ci.yml'.
+____
+
+That is a repository policy on *which actors* may trigger workflows, not a
+defect in the workflows, the lockfile, or the actor's permissions — the API run
+object does not even carry the message, it exists only on the HTML page.
+
+It is also why the sandbox cannot verify any Rust change: with no Rust toolchain
+obtainable (rustup and crates.io are both blocked by the proxy allowlist),
+`cargo fmt --check`, `cargo build`, `cargo test` and `cargo clippy` can only be
+exercised by CI.
+
+Three ways past it, in order of preference:
+
+. **Re-run the PR's workflows yourself.** On the PR page, *Re-run all jobs*.
+   Because you are the actor, the policy does not apply.
+. **Allow the bot actor** — Settings → Actions → General → *Actions permissions*
+   → the allow-list of actors that may trigger workflows. Add
+   `arena-ai-coding-agent[bot]`. This also unblocks every future session branch.
+. **Merge to `main`.** A `push` event on `main` runs normally — that is how
+   #107 was verified. `Publish Image` only triggers on `main`, `v*` tags or a
+   manual dispatch, so the container fix needs this route regardless.
+
+== Verification status
+
+[cols="1,1,2,3"]
+|===
+| PR | Change | Status | What is still unverified
+
+| #107 | #48 calibration wiring, RE008 fix, MSRV fix | **merged** (`97a3393`) | Nothing. `CI` green on the merge, including the `Rust Workspace` job's format check, build, test, Eclexia adapter and clippy steps. `Hypatia` and `Publish Image` — the two long-standing red checks — are green.
+| #109 | #81 P0 analyzer fixtures | open, CI blocked by the actor policy | `cargo test -p oikosbot-analysis` must run the new `pattern_fixtures.rs`. Verified out-of-band by porting `detect_patterns` and running all 17 sources through it (see the PR body); CI is the remaining confirmation.
+|===
+
+== Repository settings
+
+=== 1. Four phantom required contexts
+
+The `main` ruleset requires 27 status checks. All 27 that *can* report do report
+and pass — but four of the required contexts never appear, so `mergeStateStatus`
+is permanently `BLOCKED` and every merge needs `--admin`.
+
+[cols="2,3"]
+|===
+| Required context | Why it never reports
+
+| `Build and push oikos image`
+| `publish-image.yml` triggers only on `push: branches: [main]`. It cannot run on a pull request, so **no PR can ever satisfy it**. Structurally unsatisfiable, not merely absent.
+
+| `Dependabot`
+| Reports only on Dependabot's own PRs. Unsatisfiable on any human PR.
+
+| `governance / Guix primary / Nix fallback policy`
+| The job was renamed to `governance / Guix packaging policy (Nix retired)`. Renaming a job silently orphans the required context that names it.
+
+| `lint-workflows`
+| Declared as a job in `workflow-linter.yml` but did not report on the PR measured; the governance-scoped `governance / Workflow security linter` did. Looks like a duplicate or stale entry — needs confirmation.
+|===
+
+*Fix:* drop the two structurally unsatisfiable contexts, rename the Guix one to
+match the job, and confirm the fourth.
+
+The consequence is worse than the inconvenience: branch protection that can never
+be satisfied is not protection. It trains everyone to merge with `--admin`, which
+bypasses **all** the checks including the 23 real ones, so over-specifying the
+ruleset yields *less* enforcement than specifying it correctly.
+
+*Reproduce:*
+[source,shell]
+----
+comm -23 <(gh api repos/hyperpolymath/oikosbot/rules/branches/main \
+  -q '.[]|select(.type=="required_status_checks")|.parameters.required_status_checks[].context' \
+  | sort -u) <(gh pr checks <PR> | cut -f1 | sort -u)
+----
+
+=== 2. Actions actor policy
+
+See the blocker above. This is the single change that unblocks CI verification
+for every future session.
+
+=== 3. GHCR package access
+
+`Publish Image` previously failed with `permission_denied: write_package`; that
+was granted. It is green now. Worth re-checking only if the image build fails
+again.
+
+=== 4. Marketplace listing
+
+Publishing the release and the Marketplace listing from `main` is owner-only.
+Before publishing, two things need a decision:
+
+* `action.yml` pins the image by digest (`sha256:c6a127…`). That digest predates
+  the `rust:1-slim` builder fix, so it **must be re-pinned** after the next
+  successful `Publish Image` run on `main`. The new digest cannot be known from
+  the sandbox (`ghcr.io` is unreachable here).
+* Version 0.1.0 in `Cargo.toml` — confirm that is the release you intend to
+  publish.
+
+== Design rulings the code is waiting on
+
+These are not bugs. Each is a decision the automation should not make on the
+project's behalf.
+
+=== 1. EcoScore scale (blocking: the `check` eco-threshold gate)
+
+The canon says `EcoScore = w1·CarbonScore + w2·EnergyScore + w3·ResourceScore`.
+The implementation is a single term: `100 − 10·ln(E)` clamped to 0–100.
+
+Now that calibration is wired, calibrated energies land around 0.001–1 J, so the
+score saturates near 100 for almost everything and the `check` eco-threshold
+gate becomes near-vacuous. A ~30-node depth-3 nested loop went from a naive ~3 J
+(eco ≈ 89) to a calibrated ~0.007 J (eco clamped to 100). The gate was already
+weak — it only fires above roughly 1480 nodes — but the wiring makes it weaker.
+
+Either rescale `EnergyScore` or accept that the eco-threshold gate is decorative
+and say so in the docs. What should not happen is leaving a gate that looks like
+it enforces something.
+
+=== 2. The Datalog policy engine has never executed
+
+`policy-engine/datalog/eco_rules.dl` is Souffle-dialect Datalog. Nothing invokes
+it: no Souffle call in `Justfile`, any `.just` file, or any workflow. Souffle
+*is* declared as a dependency in `guix/manifest.scm` and `guix/oikos.scm` — the
+toolchain is packaged, the rules are written, and the two are never connected.
+
+Consequence: the allocation-waste and technical-debt rules declared in the
+Datalog have **no Rust counterpart at all**. The `Alloc` and `Debt` terms in
+EconScore are unrelated stand-ins, not implementations of those rules.
+
+Options, in the order the evidence supports:
+
+. Wire Souffle into `just` and run the rules as a real gate.
+. Port to an executable Scallop engine (the 2026-07-28 ruling's target).
+. Keep it as a specification and **remove the pretence that it is executed** —
+  `docs/STATUS.adoc` already says this honestly, but `ROADMAP.adoc` used to
+  imply otherwise.
+
+=== 3. The Eclexia policy backend is a fake gate
+
+`oikosbot-eclexia` has three backends. The default, `evaluate_builtin`,
+dispatches on the `.ecl` **file stem** and applies hardcoded Rust thresholds;
+the file's contents are never read. The thresholds contradict the files they
+claim to implement: `policies/energy_threshold.ecl` declares `> 50.0 J` **per
+function**, the builtin fires at `> 1000 J` **total**.
+
+It is mitigated, not fixed: every builtin evaluation emits a loud
+`::warning::… file contents NOT parsed`. The real fix is the upstream `eclexia`
+binary or the native parser/interpreter, neither of which this repository can
+supply. `eclexia-native` is a reserved, unbuildable seam.
+
+=== 4. #12 — taxonomy vocabulary reconciliation
+
+`META.a2ml [maintenance-axes]` and `NEUROSYM.a2ml [finding-taxonomy]` define
+overlapping-but-different vocabularies for the same concept. The DEED migration
+is the delivery vehicle, and the converter fails closed on the family-4 mapping
+that this needs. Either:
+
+. extend the standards-side family-4 mapping for `[finding-taxonomy]`, **or**
+. rule explicitly on the mapping so the converter can proceed.
+
+Do not hand-roll an unmapped clause — that is the one outcome worse than leaving
+it open.
+
+=== 5. Minor open design questions
+
+* `aggregate_point` sums resources but averages quality across files. Confirm
+  that asymmetry is intended.
+* Compile-time epsilon and weights versus runtime configuration.
+* `push-email-notify.yml` was removed under the dual-use ruling. Confirm no
+  other repo needs an exemption.
+
+== Ready-to-post issue comments
+
+The automation cannot comment on or close issues ("Resource not accessible by
+integration"), so the text is kept here instead.
+
+=== #48 — close as completed
+
+[source,markdown]
+----
+Landed in #107 (squash-merged to main as 97a3393) and verified by CI: CI green,
+including the Rust Workspace job's Format check, Build, Test, Eclexia adapter
+and Clippy steps.
+
+Asked vs shipped:
+
+- Map detected patterns onto OperationKind — calibration::operation_for_pattern
+  maps nested-loops to Sort, busy-wait to MathCompute, string-concat-in-loop to
+  StringOp, clone-in-loop and large-allocation to Allocation, unbuffered-io to
+  FileIO. redundant-allocation is deliberately unmapped so a marginal finding
+  cannot inherit calibrated confidence.
+- Use estimate_operation() for recognised patterns, naive path for the rest —
+  Analyzer::estimate_resources() takes the calibrated row when a pattern maps,
+  otherwise naive_resources() labelled Confidence::Estimated with no band.
+- Confidence earned per finding — it comes from the row that priced the unit,
+  not from a constant.
+- Propagate the real ResourceRange — oikosbot_metrics::ResourceRange{min,
+  typical, max, confidence} on AnalysisResult, serde-defaulted, emitted in SARIF
+  as properties.resource_range.
+- The three falsifier tests — analyzer.rs carries them, and
+  crates/oikosbot-cli/tests/check_gate.rs proves --check can exit 1 end-to-end
+  against the real binary.
+
+Two consequences recorded rather than hidden: the eco-threshold gate is now
+near-vacuous because calibrated energies are small enough that
+calculate_eco_score saturates near 100 (needs an owner ruling on the
+EnergyScore scale), and unrecognised code is still collinear on the naive path.
+----
+
+=== #81 — tick the P0 checkbox that landed
+
+The item *"Give every analyzer rule a paired silent/firing fixture; malformed or
+unsupported input must report 'no check performed' rather than green"* is
+delivered in #109. Seven rules, each with a firing and a silent fixture that
+differs in exactly the triggering feature, plus three no-check cases. The other
+six P0 items and all of P1 remain open.
+
+=== #17 — end-user guide
+
+Substantially delivered in #107: `docs/usage.adoc` covers the action inputs, the
+three modes, verdicts and the confidence ladder, the SARIF shape, `.oikos.yml`,
+`BOT_MODE` (defined from the code, not guessed) and troubleshooting;
+`docs/README.adoc` is now a documentation map; `docs/ci-runbook.adoc` covers the
+gates. Still missing before this can close: an issue-level walkthrough for a
+maintainer triaging a specific finding, and `DEPLOY.adoc`, which stays gated on
+AffineScript operational parity.
+
+=== #16 — split the README into a docs tree
+
+Delivered in #107: `docs/README.adoc` index, a per-crate `README.adoc` set
+(metrics, analysis, pareto, sarif, eclexia, telemetry, capability, dea, cli) and
+`analyzers/code-haskell/README.adoc`, each stating what the crate owns, its
+public surface, and what it does **not** do. `ROADMAP.adoc` and `README.adoc`
+point at the tree.
+
+=== #18 — taxonomy tags through the Rust `Finding` types
+
+Blocked on #12's vocabulary ruling. The plan is unchanged: add `intent` (derived
+from confidence), `maintenance` and `locus` to the types in
+`crates/oikosbot-metrics`, populate them in `crates/oikosbot-analysis`, emit them
+in `crates/oikosbot-sarif` `properties` and in PR comments, using enums rather
+than strings. Can only be verified in CI.
+
+=== #82 — close and re-file
+
+This is a conditional policy with an unresolvable blocker: no canonical Hexadeca
+authority exists. It is not actionable as a task. On your confirmation, close it
+with a comment linking the re-files:
+
+. a policy doc in-repo (`docs/policies/interface-gating.adoc`) recording the
+   Idris2 / Zig / SNIF / Hexadeca trigger conditions, and
+. an issue — standards-side if you agree — to locate or publish the Hexadeca
+   authority.
+
+Keep #81 cross-referenced.
+
+== Other repositories
+
+=== The consumer fleet is still dark
+
+Fifteen estate repositories carry `.github/workflows/oikosbot.yml` pinned to
+`oikosbot@bb95ab50` (v0.1.0), all merged — but each needs its **own** Actions
+lockfile before its workflows can start. Until then OikosBot is installed
+everywhere and running nowhere. This is the highest-value follow-up, and it
+cannot be done from this checkout.
+
+=== Idaptik-UMS has a repo-wide startup failure
+
+`metadatastician/idaptik-ums` fails all workflows at startup on `main`
+(OikosBot, Licence hygiene, CodeQL), with two workflows displayed as paths
+rather than names — the estate tell for never-parsed. Repo-level and
+pre-existing; not caused by the OikosBot sweep, since the same file succeeded on
+a branch there.
