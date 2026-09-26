@@ -38,7 +38,7 @@ Severity is about *consequence*, not effort:
 == Licence debt
 
 The scheme itself is sound and consistently applied: **MPL-2.0 for code,
-CC-BY-SA-4.0 for documentation**, 159 and 65 identifier occurrences respectively
+CC-BY-SA-4.0 for documentation**, 160 and 65 identifier occurrences respectively
 (`grep -rhoP "SPDX-License-Identifier: \K[A-Za-z0-9.+-]+"`, re-counted
 2026-09-26 against the current tree; the raw total includes two headers quoted
 inside `docs/superpowers/plans/2026-08-03-estate-economics-round-one.adoc`,
