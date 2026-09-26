@@ -16,10 +16,10 @@
 // `maintenance` and `locus` are categorical tags attached when a rule is
 // authored, so they are not computed here.
 //
-// Written in Eclexia (dogfooding): classifying a finding is provably cheaper
-// than producing it.
+// Example Eclexia policy, not executed by the builtin Rust adapter.
+// No cost proof is supplied for the declared resource annotations.
 
-// intent = MUST  <=> Safety-Triangle "eliminate" <=> auto-fix, no review.
+// Legacy numeric intent classification only; not authorization to auto-fix.
 def intent_is_must(confidence: Float) -> Bool
     @requires: energy < 0.01J, carbon < 0.001gCO2e
     @optimize: minimize energy
@@ -41,9 +41,10 @@ def intent_is_wish(confidence: Float) -> Bool
     confidence < 0.85
 }
 
-// A finding may be auto-actioned iff its intent is MUST.
+// Confidence alone never authorizes mutation. This sample has no authority
+// adapter, so automatic action is disabled for every input.
 def is_auto_actionable(confidence: Float) -> Bool
     @requires: energy < 0.01J, latency < 1ms
 {
-    intent_is_must(confidence)
+    false
 }

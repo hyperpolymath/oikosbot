@@ -3,264 +3,95 @@
 = OikosBot
 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 v0.1.0-dev
-:toc: macro
-:toclevels: 2
 :icons: font
-:source-highlighter: rouge
 
-image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
-image:https://img.shields.io/badge/status-alpha-orange.svg[Status: alpha]
-
-*Measures what software costs — in money, time, energy and carbon — and which
-repositories turn that spend into verified capability.*
-
-OikosBot analyses code and CI history through an *ecological and economic* lens.
-It is unusual in two ways: it treats the *economic* axes as seriously as the
-ecological ones, and it starts from *Pareto optimality* rather than a single
-score — a change is an improvement only if it dominates, and a trade-off is
-named as a trade-off.
-
-[NOTE]
-====
-This repository is only **OikosBot**, and it is easy to confuse with two
-similarly-named-but-separate things:
-
-* **oikos** — the stock-flow consistent economics *DSL*, now in
-  https://github.com/hyperpolymath/oikos-economics-accounting-dsl[`hyperpolymath/oikos-economics-accounting-dsl`].
-* **sustainabot** — a *reserved member slot* of
-  https://github.com/hyperpolymath/gitbot-fleet[`hyperpolymath/gitbot-fleet`]
-  (`bots/sustainabot/`), to be prototyped later. OikosBot is **not** sustainabot;
-  the implementation that briefly lived there was a misfiled copy of OikosBot and
-  has been moved into this repo.
-
-See link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`] for the full breakdown.
-====
-
-toc::[]
-
-== Documentation
-
-For a map of all documentation — grouped by audience (developer / maintainer /
-end-user) and by concept — see link:docs/README.adoc[`docs/README.adoc`].
-
-== Two units of analysis
-
-OikosBot works at two scales, and they have very different evidential strength.
-
-[cols="1,3,3"]
-|===
-| | *Per file* (`analyze` / `check` / `report` / `compare`) | *Per estate* (`estate collect` / `analyse` / `report`)
-
-| Question
-| Did this change dominate its base, or trade off?
-| Which repositories turn spend into verified capability — and which consume input and produce none?
-
-| Inputs
-| tree-sitter AST metrics
-| GitHub CI telemetry: billable minutes, wall-clock, runner class
-
-| Confidence
-| `Estimated` only
-| `Measured` money and time; `Calibrated` energy; `Estimated` carbon
-
-| Can it block?
-| No — see the caveat below
-| Not yet; round one is read-only by design
-|===
-
-The estate view exists because *allocative efficiency is not a property of a
-single change*. It means scarce resources flow to their highest-valued
-competing use; with one diff in front of you there is nothing to allocate
-between. Opportunity cost and marginal analysis need a portfolio, so the
-portfolio is the unit.
-
-== Status
-
-`v0.1.0` — **online in CI/Action mode**; estate pipeline **shipped, read-only**.
-Full picture: link:docs/STATUS.adoc[`docs/STATUS.adoc`] (human),
-link:.machine_readable/descriptiles/STATE.a2ml[`STATE.a2ml`] (machine), and
-link:DEBT.adoc[`DEBT.adoc`] (what is owed).
-
-Working: the Pareto engine (`crates/oikosbot-pareto`), the estate pipeline
-(`oikosbot-telemetry` / `-capability` / `-dea`), the published container
-`ghcr.io/hyperpolymath/oikos`, the composite GitHub Action, `.oikos.yml`
-configuration, and SARIF output that GitHub code scanning ingests.
+Ecological and economic code-analysis tooling: Rust source-pattern analysis,
+SARIF reports, advisory Pareto comparisons, and read-only estate telemetry/DEA.
+OikosBot is *not* the `oikos` economics DSL or the `sustainabot` fleet slot:
+link:DISAMBIGUATION.adoc[disambiguation].
 
 [IMPORTANT]
 ====
-**Per-file resource figures are still estimates, and only calibrated ones can
-block.** The analyser prices a recognised pattern from the calibration table and
-labels the finding `Calibrated`; anything it cannot classify stays on the naive
-complexity path and is labelled `Estimated`. Only `Measured`/`Calibrated`
-objectives may fail a run, so `--check` blocks on a calibrated regression and
-warns loudly (exit 0) on a heuristic one. The absolute figures remain static and
-unvalidated — trust the direction, not the joules.
-
-The *estate* path is the exception: `wall_minutes` comes straight from the
-GitHub API and is genuinely `Measured`. See link:DEBT.adoc[`DEBT.adoc`] for the
-full account of what is and is not earned.
+*Alpha; general launch and regulator claims are on hold.*
+Per-file energy/carbon/time/memory figures are heuristic estimates, including
+recognized patterns. No row currently has a reproducible calibration receipt.
+A score, range or frontier membership is not proof of environmental benefit.
+See link:docs/LAUNCH-READINESS.adoc[launch gates, issue disposition and evidence].
 ====
 
-The Rust analysis workspace (`crates/oikosbot-*`: CLI, analysis engine, metrics,
-Pareto engine, SARIF output, and Eclexia policy evaluation) builds and tests
-cleanly and is the most complete surface — it was extracted from the former
-`gitbot-fleet/bots/sustainabot/` and renamed.
+== Start here
 
-The AffineScript webhook receiver (`bot-integration-affine/`) is a scaffold.
-HMAC-SHA256 webhook signature verification is implemented in
-`bot-integration-affine/src/Webhook.affine` (constant-time, via the `hpm-crypto`
-RSR FFI), and the upstream AffineScript standard-library prerequisites have
-landed (`json` RSR rewire, affinescript#421; `Http` server RSR rewire,
-affinescript#425). The webhook → analyse → comment orchestration is now wired in
-source (`src/Payload.affine` extracts the PR fields and `handle_github_webhook`
-runs `Oikos.handle_pr_event`); what remains is binding the HTTP listener
-(`Sub.http_server`), which is gated on the stdlib `Http::Server` host type. (The
-AffineScript changes are unverified — there is no AS toolchain in this
-environment.)
+* link:QUICKSTART.adoc[Build and first report]
+* link:docs/usage.adoc[Use the CLI/Action and interpret results]
+* link:docs/architecture.adoc[Implemented architecture versus target design]
+* link:docs/policies.adoc[Policy/configuration limits]
+* link:docs/research/EVIDENCE-SCOPED-PARETO.adoc[The mathematics, type contract and estate comparisons]
+* link:docs/README.adoc[Full documentation map]
+* link:CONTRIBUTING.adoc[Development and verification]
 
-The Haskell analyzer scaffold (`analyzers/code-haskell/`) builds independently.
+== What exists
 
-== Repository Layout
+The standalone Rust workspace supports Rust/JavaScript/Python analysis,
+pattern findings, JSON/text/SARIF, `.oikos.yml`, point-vector Pareto comparisons,
+and estate `collect|analyse|report`. These are advisory models. The experimental
+scoped interval contract is a library prototype, not a production gate.
 
-[source,text]
-----
-oikosbot/
-|-- crates/                  # Rust workspace (oikosbot-* analysis engine + CLI)
-|   |-- oikosbot-cli/        #   `oikosbot` binary (analyze/check/report/compare/estate)
-|   |-- oikosbot-analysis/   #   tree-sitter analysis + eco/econ heuristics
-|   |-- oikosbot-metrics/    #   shared metric/result types + confidence ladder
-|   |-- oikosbot-pareto/     #   epsilon-tolerant dominance, frontier, verdicts
-|   |-- oikosbot-telemetry/  #   estate: gh-API collector, parquet snapshots, derived metrics
-|   |-- oikosbot-capability/ #   estate: verified-capability output metrics
-|   |-- oikosbot-dea/        #   estate: Data Envelopment Analysis (CCR/BCC LPs)
-|   |-- oikosbot-sarif/      #   SARIF report generation
-|   |-- oikosbot-eclexia/    #   Eclexia (.ecl) policy evaluation
-|   `-- oikosbot-fleet/      #   OPTIONAL gitbot-fleet bridge (excluded by default)
-|-- bot-integration-affine/  # AffineScript webhook receiver (in flight)
-|-- analyzers/code-haskell/  # Haskell eco/econ/quality analysis engine
-|-- policy-engine/           # Datalog and DeepProbLog policy rules
-|-- policies/                # Eclexia (.ecl) policy definitions
-|-- config/oikos.yaml        # Bot configuration
-|-- databases/ontology/      # eco.ttl — VeriSimDB semantic-witness ontology seed
-|-- examples/                # Example CI integration
-|-- fuzz/                    # cargo-fuzz targets (excluded from the workspace)
-|-- docs/                    # documentation map, status, setup guides, specs
-|-- ARCHITECTURE.adoc        # Platform architecture (TARGET design — see DEBT.adoc)
-|-- DEBT.adoc                # Debt register: licence / docs / code / proof / CI-CD
-|-- DISAMBIGUATION.adoc      # oikos vs OikosBot vs sustainabot
-|-- QUICKSTART.adoc          # CLI quickstart
-`-- DEPLOY.adoc              # Deployment status and runbook notes
-----
+The composite Action and GHCR image have been published previously. The default
+image is digest-pinned; source fixes do not change it until a reviewed artifact
+is built, tested and explicitly adopted. This branch's hardening changes still
+require Rust/container CI verification.
 
-== Data Layer
+The AffineScript webhook App remains a scaffold with source-level orchestration;
+listener/transport and operational parity are not demonstrated. Haskell is an
+independent analyzer surface. VeriSimDB is the target datastore, not a working
+runtime client. link:DEPLOY.adoc[Deployment boundaries].
 
-OikosBot persists analysis results, code-relationship graphs, and the eco/econ
-knowledge base in a single identity-consonance store,
-https://github.com/hyperpolymath/verisimdb[VeriSimDB]. In VeriSimDB one identity
-is an *octad* of modal witnesses — graph, vector, tensor, semantic, document,
-temporal, provenance, spatial. The **graph + document** witnesses take over the
-role once planned for ArangoDB (code-dependency graphs, analysis history, project
-metadata), and the **semantic** witness takes over the role once planned for
-Virtuoso/RDF (ontology knowledge, proof blobs). The eco/econ ontology seed for
-the semantic witness lives at
-link:databases/ontology/eco.ttl[`databases/ontology/eco.ttl`].
-
-VeriSimDB is `v0.1.0` and OikosBot's runtime client is *deferred*: the data layer
-is retargeted in design and configuration now (see
-link:config/oikos.yaml[`config/oikos.yaml`] and
-link:ARCHITECTURE.adoc[`ARCHITECTURE.adoc`]), with runtime wiring tracked on the
-link:ROADMAP.adoc[roadmap]. The legacy ArangoDB + Virtuoso assets were retired
-(recoverable in git history).
-
-== Local Checks
+== Run an advisory report
 
 [source,shell]
 ----
-cargo build --workspace      # or: just rust-build
-cargo test  --workspace      # or: just rust-test
-just haskell-build
-just haskell-test
-just affine-check
+cargo build --locked -p oikosbot-cli
+./target/debug/oikosbot report crates/oikosbot-analysis/src --format sarif --output results.sarif
+./target/debug/oikosbot compare /path/to/base /path/to/head --format json
 ----
 
-The default `cargo` workspace deliberately excludes `crates/oikosbot-fleet`
-(the optional gitbot-fleet bridge) so OikosBot builds standalone. See
-link:DISAMBIGUATION.adoc[`DISAMBIGUATION.adoc`].
-
-`just affine-check` expects an AffineScript compiler. Override the compiler path
-with `AS_BIN=/path/to/main.exe` when needed.
-
-== GitHub Action
-
-OikosBot runs in CI as a composite action wrapping the published container
-(`ghcr.io/hyperpolymath/oikos`):
-
-[source,yaml]
-----
-- uses: hyperpolymath/oikosbot@main   # pin a tag/SHA in production
-  with:
-    mode: report          # report | check | compare
-    path: .
-    output: results.sarif # upload with github/codeql-action/upload-sarif
-----
-
-`compare` mode issues a Pareto verdict against a base checkout (see
-link:QUICKSTART.adoc[QUICKSTART]). A repo-local `.oikos.yml` is honored
-automatically. Full workflow example:
-link:examples/oikosbot-ci.yml[`examples/oikosbot-ci.yml`].
-
-How OikosBot relates to the nearest Marketplace neighbour:
-link:docs/COMPARISON-climate-warrior.adoc[OikosBot vs Climate Warrior].
+`report` does not enforce. Explicit checks without sufficient evidence return
+*2 (no check performed)*, not a green pass; 1 is reserved for a supported negative
+check. This intentionally changes earlier behavior: heuristic checks used to
+warn and exit 0, and text threshold checks could fail while JSON/SARIF did not.
+See link:docs/usage.adoc[compatibility and exit semantics].
 
 == Estate analysis
 
-Treats a whole GitHub organisation as a portfolio competing for one budget of
-minutes, money, energy and carbon.
-
 [source,shell]
 ----
-oikosbot estate collect  --owner <org> --out <staging> [--max-runs 200]
-oikosbot estate analyse  --staging <staging> --snapshot <dir>
-oikosbot estate report   --snapshot <dir> [--format md|json] [-o FILE]
+oikosbot estate collect --owner ORG --out STAGING --max-runs 200
+oikosbot estate analyse --staging STAGING --snapshot SNAPSHOT
+oikosbot estate report --snapshot SNAPSHOT --format json
 ----
 
-`collect` reads CI run history through the authenticated `gh` CLI — no
-instrumentation in the measured repos, and it works retroactively. It is
-resumable: a staging file that already exists is skipped, so an interrupted
-sweep can simply be re-run.
+This path is read-only. Workflow API intervals are not invoices or CPU time;
+energy/carbon/imputed cost remain estimates. DEA is relative to the selected
+peers, inputs and output proxies—not causal ecological impact. Partial collection
+fails explicitly; capped histories and old staging files still require review.
+Snapshots belong outside this source repository, for example in
+https://github.com/hyperpolymath/oikosbot-estate[`oikosbot-estate`].
 
-`analyse` derives per-repo cost and capability, then runs *Data Envelopment
-Analysis* — input-oriented CCR and BCC solved as linear programs. DEA compares
-units with multiple incommensurable inputs *and* outputs, needs no prices, and
-returns three things: an efficiency score, the *peer set* (which frontier repos
-this one is measured against — an exemplar, not just a number), and the LP
-*duals*, which are shadow prices derived from the estate's own data.
+== Layout and checks
 
-The output measure is *verified capability*, not activity: does a workflow
-parse, can a gate actually fail, do artefacts publish. That reframes a familiar
-pathology as an economic one — a repository burning CI minutes on a gate with
-hundreds of successes and no failure in its entire history is consuming real
-input for no verified output.
+`crates/`:: Rust workspace; `oikosbot-fleet` is optional and excluded.
+`bot-integration-affine/`:: App scaffold, not a deployable substitute for the CLI.
+`analyzers/code-haskell/`:: Independent Haskell analyzer.
+`policies/`, `policy-engine/`:: Policy examples/target surfaces; see implementation limits.
+`docs/`, `.machine_readable/descriptiles/`:: Human guides and six core A2ML records.
+`tests/`, `tools/ci/`:: Contract fixtures and verification scripts.
 
-Snapshots are versioned Parquet committed to a separate dataset repository,
-https://github.com/hyperpolymath/oikosbot-estate[`hyperpolymath/oikosbot-estate`],
-so history is git history and the analysis never silently measures a corpus
-containing itself. Two `analyse` runs over the same staging produce
-byte-identical output.
+Run `cargo test --workspace --locked`, `cargo fmt --check`, and
+`just release-preflight` where their toolchains are installed. Missing tools
+are not passes. Follow link:docs/LAUNCH-READINESS.adoc[the launch review] before
+promoting any artifact or enabling an enforcement claim.
 
-[NOTE]
-====
-Round one is deliberately *read-only*: it reports, it does not gate. The
-premise was checked before anything was built on it — measured correlation
-between compute time and code volume across 381 repositories is −0.049, i.e.
-the axes really are independent rather than one variable in disguise.
-====
+== Licence and security
 
-== GitHub App
-
-The app manifest lives at link:.github/app.yml[`.github/app.yml`]. The setup
-guide is link:docs/GITHUB_APP_SETUP.adoc[`docs/GITHUB_APP_SETUP.adoc`].
-
-== Licence
-
-MPL-2.0. See link:LICENSE[`LICENSE`].
+MPL-2.0 code; per-file notices remain authoritative. See link:LICENSE[LICENSE],
+link:LICENSES/[LICENSES], and link:SECURITY.md[private vulnerability reporting].

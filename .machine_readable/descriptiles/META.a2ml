@@ -25,6 +25,13 @@ build-tool = "just"
 
 [maintenance-axes]
 scoping-first = true
-axis-1 = "must > intend > like"
-axis-2 = "corrective > adaptive > perfective"
-axis-3 = "systems > compliance > effects"
+canonical = "NEUROSYM.a2ml [finding-taxonomy]"
+axis-1 = "must > intend > wish"
+axis-2 = "corrective | adaptive | perfective | preventive"
+axis-3 = "systems | compliance | externalities"
+
+[decision-contract-2026-09-26]
+status = "proposed-implementation-awaiting-verification"
+reference = "docs/research/EVIDENCE-SCOPED-PARETO.adoc"
+principle = "Separate modeled feasibility, robust comparison, evidence adequacy and policy authorization; do not infer must/auto-fix authority from confidence."
+launch = "hold-general-launch-and-regulator-claims"

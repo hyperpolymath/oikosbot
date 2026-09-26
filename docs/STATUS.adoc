@@ -1,192 +1,48 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = OikosBot: current state
-:toc: macro
-:icons: font
+:toc:
 
-_Point-in-time status, 2026-07-28 (generation 1). Machine-readable counterpart:
-link:../.machine_readable/descriptiles/STATE.a2ml[`STATE.a2ml`]. Everything asserted here
-was measured, not inferred — see <<how-we-know>>._
+As of 2026-09-26: *alpha; hold general launch and regulator claims*.
+This supersedes earlier descriptions of a “working regulator” based on the
+pattern table. Calibration wiring existed, but no calibration receipts were
+found; labels alone were not earned evidence.
 
-toc::[]
+== Implemented surfaces, not certification
 
-[#what-works]
-== What works today
+* Standalone Rust analysis, metrics, SARIF, point-vector Pareto comparisons and
+  builtin policy adapter. The native Eclexia path reports unavailable.
+* Read-only estate telemetry/capability/DEA and snapshot/report commands.
+* Previously published Action and container. The pinned digest is an older
+  artifact; this branch's changes have not been released into it.
+* Haskell independent analyzer and AffineScript App scaffold.
 
-OikosBot is **online in CI/Action mode**. A repository can consume it in three ways:
+== Proposed hardening on this branch
 
-[cols="1,3",options="header"]
-|===
-| Surface | Status
+Heuristic evidence stays Estimated. Invalid comparisons become Indeterminate;
+epsilon no longer permits losses/cycles. CLI no-check exits are explicit and
+format-independent; parser/traversal/config failures cannot masquerade as success.
+Taxonomy is typed and emitted for pattern findings. Collection validates responses,
+pagination and partial failures. Candidate container checks and a pinned Rust
+version are added. See link:LAUNCH-READINESS.adoc[the full issue-by-issue audit].
 
-| GitHub Action
-| `uses: hyperpolymath/oikosbot@v0.1.0` — runs the published container, no Rust
-  toolchain needed. Modes: `report` (SARIF), `check` (threshold), `compare`
-  (Pareto verdict).
+The new `pareto::contract` module is an *experimental runtime refinement*, not a
+production authority or a proven novel type system. It checks scoped interval
+comparisons and non-compensatory hard limits. Its research/proof obligations and
+estate relationships are described in
+link:research/EVIDENCE-SCOPED-PARETO.adoc[the research note].
 
-| Container
-| `ghcr.io/hyperpolymath/oikos` — published, digest-pinned by the action.
+== Not demonstrated
 
-| CLI
-| `cargo build --release` → `oikosbot analyze\|check\|report\|compare`.
+Reproducible resource calibration, real workload equivalence, validated physical
+budgets, authenticated evidence ingestion, full SARIF schema/Action/release
+conformance, mutation/fuzz coverage and benchmark baselines remain outstanding.
+The App listener/transport, deployment operations and VeriSimDB runtime client
+are not demonstrated. No source-level orchestration claim establishes a deployable App.
 
-| Estate CLI
-| `oikosbot estate collect\|analyse\|report` — organisation-scale analysis over
-  CI telemetry. Read-only; reports, does not gate.
-|===
-
-Findings reach GitHub's Security tab as SARIF 2.1.0, carrying `pareto_status`,
-`pareto_score`, `pareto_dominated_by`, `econ_score` and a `confidence` label on
-every result.
-
-=== The estate pipeline (newest, strongest evidence)
-
-Shipped 2026-08-03 (PR #60). Three crates — `oikosbot-telemetry`,
-`oikosbot-capability`, `oikosbot-dea` — plus the `estate` subcommand.
-
-It exists because *allocative efficiency is not a property of a single diff*:
-scarce resources flowing to their highest-valued competing use requires
-competing claims on a shared budget. So the unit of analysis is the whole
-estate, and the per-PR check becomes one projection of it.
-
-What makes it the strongest surface in the project:
-
-* *The inputs are measured, not modelled.* Wall-clock minutes come straight
-  from the GitHub API — the first genuinely `Measured` quantity anywhere in
-  OikosBot. No instrumentation is installed in the analysed repositories, and
-  history already recorded is available retroactively.
-* *The premise was falsified first.* If compute time had turned out to be a
-  proxy for code volume, the DEA inputs would have been one variable in
-  disguise. Measured across 381 repositories and 69,445 runs:
-  `pearson(wall_minutes, size_kb) = -0.049`. Independent.
-* *Output is verified capability, not activity* — does a workflow parse, can a
-  gate actually fail, do artefacts publish. A gate with many successes and no
-  failure in its whole history has never demonstrated it can fail.
-* *DEA gives an exemplar, not just a score.* Each off-frontier repository is
-  returned with its peer reference set — the frontier repositories it is
-  measured against — plus the LP duals, which are shadow prices derived from
-  the estate's own data.
-* *Analysis is deterministic:* two runs over the same staging produce
-  byte-identical `analysis.json`.
-
-Snapshots live in
-https://github.com/hyperpolymath/oikosbot-estate[`hyperpolymath/oikosbot-estate`]
-— data only, no code, one directory per collection run, so history is git
-history and OikosBot never silently measures a corpus containing itself.
-
-Round one deliberately does **not** gate. See link:../DEBT.adoc[`DEBT.adoc`]
-for its known rough edges (zero-run repositories are absent from the analysis;
-zero-output repositories score θ = 0 with empty peer sets, an artefact of
-flooring rather than a ranking).
-
-=== The Pareto engine
-
-The economic core (`crates/oikosbot-pareto`) is real and executable:
-
-* ε-tolerant dominance, frontier extraction, dominated-by ranking — all total
-  functions (no panics on empty or degenerate input).
-* Objectives are **min-max normalized before any distance is measured** — raw
-  gCO2e, joules and bytes are not commensurable — with weights folded into the
-  metric. ParetoScore = `100 × (1 − weighted distance to frontier)`.
-* Pull-request verdicts: **pareto-improvement**, **pareto-regression**,
-  **trade-off**, **neutral**, with per-objective deltas.
-* Trade-off documentation (a `Pareto-Trade-off:` trailer or heading) is
-  machine-checked, per the doctrine "don't improve one axis at another's
-  expense without saying so".
-* `EconScore = 0.5·Pareto + 0.3·allocation (shadow prices) + 0.2·debt`, as
-  specified in link:../ARCHITECTURE.adoc[ARCHITECTURE.adoc].
-
-[#what-does-not]
-== What does *not* work yet — read this before trusting a number
-
-[IMPORTANT]
-====
-**Resource figures are estimates, and enforcement is earned per finding.**
-
-`Analyzer::estimate_resources()` has two paths. A unit with a recognised
-pattern is priced from `calibration::estimate_operation()` and carries that
-row's confidence — `Calibrated` for the measured operation kinds, `Estimated`
-for the host-dependent ones. A unit with no recognised pattern stays on the
-naive `complexity × 0.1 J` form and is labelled `Estimated`.
-
-Since only `Measured` or `Calibrated` inputs may fail a run, `--check` blocks
-on an undocumented regression whose drivers are calibrated, and refuses to
-block on heuristic drivers — saying so loudly in a `::warning::` rather than
-passing silently. A gate that quietly does nothing is indistinguishable from one
-that passed, which is exactly the failure mode OikosBot exists to find.
-
-Wired in issue #48. What is *not* earned yet: the absolute figures have never
-been validated against profiling data, and the eco score's log scale is anchored
-at 1 J, so calibrated (microjoule-scale) estimates clamp near 100 — the eco
-threshold therefore discriminates far less than the Pareto verdicts, which
-compare base against head. Treat OikosBot as an advisor with a working
-regulator, not the reverse.
-====
-
-Also incomplete:
-
-* **Languages**: Rust, JavaScript, Python only. A `.oikos.yml` naming
-  unsupported languages is warned about loudly, never silently skipped.
-* **GitHub App** (webhook, comments without CI): not live. Ruled 2026-07-28 to
-  wait on upstream AffineScript stdlib work rather than build an interim
-  listener.
-* **Policy engine**: `policy-engine/datalog/eco_rules.dl` has never executed. It
-  is a specification, kept as the reference the Rust dominance code conforms to.
-  Ruled port target: Scallop (Rust), not DeepProbLog (Python).
-* **VeriSimDB / praxis loop**: design and config only.
-
-[#how-we-know]
-== How we know (verification performed)
-
-* The published container was pulled and run end-to-end, producing SARIF that
-  **GitHub accepted: 101 results** ingested via
-  `metadatastician/enaction-engine` PR #21.
-* Workspace tests pass, including property tests for dominance
-  (irreflexivity, antisymmetry), the frontier invariant, normalization
-  orientation, and conformance with the Datalog dominance semantics.
-* The pinned image digest was verified to resolve, run, and contain the SARIF
-  fix before being committed.
-
-=== Two measurement traps worth remembering
-
-. **Parseable JSON is not schema-valid SARIF.** `serde_json` accepted output
-  that GitHub rejected, because our `fixes[]` objects lacked the required
-  `artifactChanges`. No OikosBot SARIF was ingestible before #45. A regression
-  test now guards it.
-. **Timeout expiry is reported as "cancelled", not "failed".** The docs site had
-  never deployed — 30 consecutive runs showed `cancelled`, which were the cold
-  GHC build exceeding a 15-minute limit. Raised to 60; the site is now live.
-
-[#consumers]
-== Consumers
-
-Seventeen repositories carry a `.oikos.yml` and an OikosBot workflow. All of
-them previously pinned an image tag that had never existed, and masked the
-resulting failure with `|| echo` — so the gate was green while never once
-executing. All are now on the composite action, having been proven on one repo
-first before the pattern was swept.
-
-Consumer workflow shape (see link:../examples/oikosbot-ci.yml[`examples/oikosbot-ci.yml`]):
-
-[source,yaml]
-----
-- uses: hyperpolymath/oikosbot@v0.1.0
-  with:
-    mode: report
-    path: .
-    output: results.sarif
-- uses: github/codeql-action/upload-sarif@<verified-sha>
-  with:
-    sarif_file: results.sarif
-    category: oikosbot
-----
-
-A `container:` job cannot be used: the image sets a non-root `USER`, which
-GitHub rejects.
-
-== Positioning
-
-See link:COMPARISON-climate-warrior.adoc[OikosBot vs Climate Warrior] for how
-this differs from the nearest GitHub Marketplace neighbour. In short: that
-product is storage with carbon telemetry; OikosBot is a code analyzer with an
-economics engine. The overlap is the SCI vocabulary and nothing else.
+Full pinned-toolchain Rust/Haskell/AS/container execution was unavailable.
+An older standalone formatter and eight isolated Rust numerical checks ran;
+these do not establish workspace integration or serialization correctness.
+New tests are authored but require CI execution; earlier successful main-branch
+runs do not test this branch. Check `STATE.a2ml [launch-hardening-audit]` for exact
+local verification. No release-readiness grade or formal proof is claimed.

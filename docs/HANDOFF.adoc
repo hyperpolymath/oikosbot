@@ -1,0 +1,145 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Next-agent baton and owner decisions
+:toc:
+
+== Current integration status — 2026-09-26
+
+*PR: https://github.com/hyperpolymath/oikosbot/pull/110[#110]. Not merged.*
+The owner requested creation and merge, but required verification could not run.
+Initial head `6103004cd498a12954d4f34675157f43ac2b6ce6` was pushed successfully.
+The CI run
+https://github.com/hyperpolymath/oikosbot/actions/runs/36267202433[36267202433]
+ended in `startup_failure`, with zero jobs and this annotation:
+
+[quote]
+____
+Actor is not allowed to trigger Actions workflows. Workflow file: '.github/workflows/ci.yml'.
+____
+
+Governance, Hypatia, Secret Scanner, Language Policy and Workflow Security Linter
+also failed to start. This is an actor-policy restriction on the Arena app, not a
+Rust/compiler/test failure and not grounds to remove or weaken CI. Repository
+Actions-settings and branch-protection reads returned integration-scope HTTP 403;
+ordinary git/PR access works. Do not request credentials or impersonate another actor.
+
+*Do not rely only on `gh pr checks`*: a workflow rejected before creating jobs may
+be absent from that rollup. Inspect workflow runs for the exact head SHA too.
+CodeRabbit initially reported SUCCESS while its comment said “Review skipped:
+Bot user detected.” That is no review receipt. External scan success does not
+replace Rust/Haskell/container execution or substantive review.
+
+The owner needs an authorized human-triggered CI event or an appropriate
+Actions actor-policy permission. One normal retrigger route is closing and
+reopening this PR from the owner's own GitHub account (the workflows already
+subscribe to `pull_request` reopening). Whether that actor is permitted must
+then be verified from the new run; do not promise that a retrigger fixes policy.
+If policy continues to reject it, inspect repository/account Actions restrictions.
+Do not change organization policy from an agent, force-merge or enable auto-merge
+while these checks are absent. No release or image-digest promotion occurred.
+
+The next agent should verify this live status, address real CI failures once
+checks can start, record the evidence, then merge #110 only when warranted.
+Respect the new session's assigned-branch constraints; do not assume permission
+to switch branches or push to this PR's head from a differently bound session.
+
+== Start here
+
+Continue the OikosBot launch-hardening work, not a launch. Read, in order:
+
+. `0-AI-MANIFEST.a2ml` and `.claude/CLAUDE.md`.
+. `.machine_readable/descriptiles/STATE.a2ml`, especially the latest dated session.
+. `docs/LAUNCH-READINESS.adoc` and the merged/pending hardening PR's checks.
+. `docs/research/EVIDENCE-SCOPED-PARETO.adoc` (pinned estate sources and exact proof boundaries).
+. `docs/usage.adoc` (breaking exit/configuration semantics).
+
+Locate the hardening PR and verify its current state rather than assuming a merge:
+
+[source,shell]
+----
+gh pr list --repo hyperpolymath/oikosbot --state all --head arena/01a0df1f-oikosbot
+gh run list --repo hyperpolymath/oikosbot --limit 15
+gh issue list --repo hyperpolymath/oikosbot --state open
+----
+
+Do not close issues merely because a checkbox has source code behind it. Review
+current head/merge-SHA CI evidence. Historical local verification limitations stay
+in the audit; later CI receipts supersede those limits only for checks actually run.
+
+== Non-negotiable boundaries
+
+* Remain advisory/alpha. No semver release, stable image promotion, Marketplace
+  launch, regulator enablement or auto-fix authority without explicit owner approval
+  and the launch receipts. A code merge is not a release approval.
+* Preserve exit 2 for no requested check performed. Do not make missing evidence,
+  malformed input, missing tools or unavailable integrations green.
+* Expert tables remain Estimated/Unknown. Recognition of a code pattern, a range,
+  or an enum label cannot manufacture calibration, a probability or policy authority.
+* Pareto dominance permits no losses; epsilon suppresses small wins, not losses.
+  Invalid input is Indeterminate. The interval contract remains a separate prototype.
+* `Feasible` witnesses only the declared numeric constraints. No claim of real-world
+  adequacy, consent, authenticated evidence, budget ownership or ecological benefit.
+* Rust workspace is standalone. Do not reintroduce the separate economics DSL or
+  fleet Sustainabot identity. Security/native Eclexia seams report unavailable until
+  real adapters are integrated. App and VeriSimDB remain operationally unverified.
+* Preserve existing licence notices. Do not bulk-copy template scaffolds, badges,
+  ABI proofs or metadata formats and claim conformance. Consult the applicability
+  tensions and exact source revisions recorded in the audit.
+
+== Next executable tranche (priority order)
+
+. Resolve any failed head/main CI checks first. Test *both* default and all-feature
+  builds: all-features alone does not cover feature-disabled behavior. Confirm the
+  published development artifact if publication occurred; do not change the Action
+  digest without testing that exact artifact. Inspect PR comments/check annotations,
+  not just the aggregate status.
+. Issue #81: add pinned full SARIF 2.1.0 schema validation plus negative fixtures,
+  then test the actual composite Action (not its argument recorder) and a released
+  digest. Test anonymous pull, version, non-root execution, provenance, semver/SHA
+  consistency and deliberate nonexistent-digest rejection. Ensure the tested
+  candidate and published digest are the same artifact before claiming that.
+. Calibration #48: design one small reproducible workload/calibration experiment
+  with the owner's functional unit and boundary. Preserve raw observations,
+  environment/model versions, repetitions, holdouts and error bounds. Validate
+  actual-world applicability; propagate evidence per axis. Keep benchmarks and
+  corpora outside the source repo following existing estate storage conventions.
+  Do not promote a whole result to Calibrated because one operation was measured.
+. Collection completeness: version an inventory/coverage/freshness manifest;
+  distinguish missing time from zero, cap from complete history, elapsed workflow
+  interval from job CPU/billable time, and resumed files from fresh observations.
+  Add atomic writes and validation of pre-existing staging identities/content.
+. Taxonomy #18: deliberately classify synthetic policy/dependency findings and
+  preserve backwards JSON behavior; do not derive `must` from a resource enum.
+  App comment transport remains contingent on a real App runtime.
+. Research: start a minimal checked proof of the no-loss order and interval
+  comparator soundness relative to explicit box membership. Include cycle,
+  incomparability, overlapping intervals, inconsistent evidence and lost-context
+  counterexamples. Coordinate vocabulary with nextgen-typing; novelty requires
+  prior-work/separation evidence, not a new name. This research is not permission
+  to wire the prototype into enforcement.
+
+Keep the next PR narrower than this initial cross-cutting audit. Record exact
+commands, tool versions, run URLs and remaining limits. Add paired clean/firing/
+no-check fixtures for each new boundary. No fake proof or successful-tool receipts.
+
+== Owner decisions (not chores delegated back from automatable work)
+
+. Choose the first useful functional unit and representative workload: for example,
+  one successful request at specified correctness/latency, or one verified build.
+  Name the first one or two repositories/pilots and the reference baseline.
+. Choose the observation boundary and horizon: operational electricity only versus
+  embodied/upstream effects; region/grid assumptions; per-operation versus portfolio
+  budgets. State which omissions must be visible on every report.
+. Decide non-compensatory limits and who may accept a genuine trade-off. Financial
+  savings must not silently override an ecological ceiling. Unknown/unmeasured limits
+  remain unknown; do not invent numbers to unblock the agent.
+. Approve profiling resources/access and an initial advisory-only pilot when its
+  artifact checks pass. If measured power is unavailable, accept a clearly labeled
+  proxy experiment—not a false energy calibration.
+. Keep general launch/regulator/App deployment on hold. Review a later explicit
+  release proposal with receipts; no release action is required merely to merge
+  the hardening work.
+
+An agent can draft options and run the engineering checks. It cannot decide these
+valuation/authority boundaries on the owner's behalf or obtain hardware readings
+from an environment that does not expose them.

@@ -2,125 +2,41 @@
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = OikosBot Quickstart
 :icons: font
-:source-highlighter: rouge
 
-== Build
-
-[source,bash]
-----
-cargo build --release
-----
-
-== Usage
-
-=== Analyze a file
+*Alpha, advisory use only.* See link:docs/LAUNCH-READINESS.adoc[the launch hold]
+and link:CONTRIBUTING.adoc[toolchain/native build prerequisites].
 
 [source,bash]
 ----
-./target/release/oikosbot analyze path/to/file.rs
+cargo build --release --locked -p oikosbot-cli
+./target/release/oikosbot analyze path/to/file.rs --format json
+./target/release/oikosbot report path/to/repo --format sarif --output results.sarif
+./target/release/oikosbot compare path/to/base path/to/head --format json
 ----
 
-Supports: Rust (`.rs`), JavaScript (`.js`), Python (`.py`).
+Supported source languages are Rust (`.rs`), JavaScript (`.js`) and Python (`.py`).
+A directory scan must find analyzable functions; unsupported, empty or fully
+excluded input is not a successful scan. Configure mode/excludes/languages with
+`.oikos.yml` or `--config`; see link:docs/usage.adoc[the user guide].
 
-=== Pareto verdict on a change (base vs head)
+Numbers are *heuristic estimates*, including recognized pattern-table rows.
+No calibration receipt currently validates those rows or their envelopes.
+`compare --check` and blocking `check` therefore return *2 (no check performed)*
+when evidence is insufficient. Use `report` or plain `compare` for advisory use.
+A documented trade-off cannot turn an estimate into evidence or approval.
+
+Pareto comparisons report improvement, regression, trade-off, neutral or
+indeterminate within the declared numeric model. They do not establish ecological
+benefit for equivalent real workloads. Scores are heuristic and weights encode
+value choices; do not optimize for the score instead of useful work.
 
 [source,bash]
 ----
-./target/release/oikosbot compare path/to/base path/to/head
+cargo test --workspace --locked
+cargo fmt --check
+bash tests/test-eclexia-adapter.sh
 ----
 
-Classifies the change in objective space (carbon, energy, time, memory,
-maintainability): *pareto-improvement* (better on at least one objective,
-worse on none), *pareto-regression* (worse on at least one, better on none),
-*trade-off* (mixed — document it with a `Pareto-Trade-off:` trailer in the PR
-description), or *neutral*. Advisory by default; `--check --pr-body pr.txt`
-fails the run on an undocumented, measured regression or trade-off.
-
-[IMPORTANT]
-====
-*`--check` blocks only on evidence, by design.* Only objectives backed by
-`Measured` or `Calibrated` inputs may fail a run. The analyser earns that
-evidence per finding: a recognised pattern is priced from the calibration table
-(`crates/oikosbot-analysis/src/calibration.rs`) and labelled `Calibrated`, while
-unclassified code stays on the naive complexity-derived estimate and is labelled
-`Estimated`.
-
-So an undocumented regression whose drivers are calibrated exits 1; the same
-regression on heuristic drivers prints a `::warning::` naming the verdict and
-the confidence level, and exits 0. A gate that quietly does nothing is
-indistinguishable from one that passed, which is precisely the failure mode
-OikosBot exists to find — so the refusal is never silent.
-====
-
-=== Per-repo configuration
-
-`check`, `report`, and `compare` honor an `.oikos.yml` in the analyzed
-directory (or pass `--config path/to/.oikos.yml`): operating mode
-(advisor/regulator), `thresholds.eco_minimum`, `exclude` globs, and
-`analysis.languages`.
-
-=== Analyze oikosbot itself (dogfooding!)
-
-[source,bash]
-----
-./target/release/oikosbot self-analyze
-----
-
-This proves we practice what we preach — the analyzer itself is efficient.
-
-=== JSON output
-
-[source,bash]
-----
-./target/release/oikosbot analyze file.rs --format json
-----
-
-== What It Does
-
-OikosBot analyzes code for:
-
-* *Energy consumption* (Joules)
-* *Carbon footprint* (gCO2e)
-* *Execution time* (milliseconds)
-* *Memory usage* (bytes)
-
-And provides:
-
-* *Eco score* (0-100) — environmental impact
-* *Econ score* (0-100) — algorithmic efficiency
-* *Quality score* (0-100) — code quality
-* *Overall health* (weighted combination)
-
-== Example Output
-
-[source,text]
-----
-📍 Function: nested_loops_function
-   Resources:
-     Energy:   7.10 J
-     Carbon:   0.0009 gCO2e
-     Time:     35.50 ms
-
-   Health Index:
-     Eco:      80.4/100
-     Overall:  75.1/100
-
-   Recommendations:
-     • Consider algorithm optimization to reduce nested iterations
-----
-
-== The Eclexia Connection
-
-* *Phase 1* (DONE): Analyzer built with Eclexia principles (explicit resource types)
-* *Phase 2* (Next): Policy engine runs Eclexia code from `policies/*.ecl`
-* *Phase 3+*: Migrate core to Eclexia as the language matures
-
-== Philosophy
-
-[quote]
-____
-"The best ecological code analyzer is one that's ecological itself."
-____
-
-OikosBot demonstrates that efficient, resource-aware code is not just theory —
-it works in practice.
+The builtin Eclexia adapter does not execute arbitrary `.ecl`; native integration
+is explicitly unavailable. The self-analysis command is a demonstration, *not*
+a benchmark or proof that OikosBot itself is resource-efficient.

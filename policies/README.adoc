@@ -30,9 +30,9 @@ link:../.machine_readable/descriptiles/NEUROSYM.a2ml[`NEUROSYM.a2ml` `[finding-t
 
 | `intent`
 | `must` / `intend` / `wish`
-| Deontic force, *derived from confidence*. Identical to the gitbot-fleet
-  Safety Triangle: `must` ≡ eliminate (≥ 0.95, auto-fix), `intend` ≡ substitute
-  (≥ 0.85, review), `wish` ≡ control (< 0.85, human). **This axis is executable.**
+| Intended deontic vocabulary, not automatic authorization. Current Rust heuristic
+  patterns emit `wish`. The legacy numeric example uses probability thresholds,
+  but resource confidence categories are not probabilities; no conversion is earned.
 
 | `maintenance`
 | `corrective` / `adaptive` / `perfective` / `preventive`
@@ -45,7 +45,7 @@ link:../.machine_readable/descriptiles/NEUROSYM.a2ml[`NEUROSYM.a2ml` `[finding-t
   above.
 |===
 
-Because only `intent` is numerically derivable, only it is executable in
-Eclexia; `maintenance` and `locus` are categorical tags set when a rule is
-authored. A natural next step is to carry all three tags on the Rust `Finding`
-types (`crates/oikosbot-metrics`) so emitted SARIF/reports are tagged end to end.
+The Rust pattern findings now carry all three typed tags through JSON and SARIF.
+Unclassified synthetic/legacy findings retain no taxonomy. The numeric Eclexia
+example is not an active Rust policy, and automatic action is disabled without
+policy authority and validated evidence. See link:../docs/policies.adoc[policy boundaries].

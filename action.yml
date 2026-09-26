@@ -50,11 +50,10 @@ inputs:
     default: ''
   check:
     description: >-
-      compare mode: fail on an undocumented Pareto regression/trade-off whose
-      driving objectives are Measured or Calibrated. Recognised patterns are
-      priced from the calibration table and may block; unrecognised code stays
-      on the naive estimate (Estimated), which may not — it warns loudly and
-      exits 0 instead (see QUICKSTART and docs/usage.adoc).
+      Request comparison enforcement. In current source, missing calibration
+      evidence returns no-check (2), not success. The default image is an older
+      published artifact and may retain earlier behavior; adopt a newly tested
+      digest explicitly before relying on changed semantics. Use false for advice.
     required: false
     default: 'false'
   image:
@@ -85,20 +84,31 @@ runs:
         IMAGE: ${{ inputs.image }}
       run: |
         set -euo pipefail
+        case "$DO_CHECK" in
+          true|false) ;;
+          *) echo "::error::check must be true or false"; exit 2 ;;
+        esac
         args=("$MODE")
         case "$MODE" in
           compare)
-            [ -n "$BASE" ] || { echo "::error::compare mode requires the 'base' input"; exit 1; }
+            [ -n "$BASE" ] || { echo "::error::compare mode requires the 'base' input"; exit 2; }
             args+=("$BASE" "$TARGET")
             [ "$DO_CHECK" = "true" ] && args+=(--check)
             [ -n "$PR_BODY" ] && args+=(--pr-body "$PR_BODY")
-            [ "$FORMAT" = "json" ] && args+=(--format json)
+            # Compare has no SARIF renderer. Map the inherited default to
+            # JSON rather than silently ignoring --output in text mode.
+            case "$FORMAT" in
+              sarif|json) args+=(--format json) ;;
+              text) args+=(--format text) ;;
+              *) echo "::error::unknown comparison format '$FORMAT'"; exit 2 ;;
+            esac
+            [ -z "$THRESHOLD" ] || { echo "::error::eco-threshold is not a compare input"; exit 2; }
             ;;
           report|check)
             args+=("$TARGET" --format "$FORMAT")
             ;;
           *)
-            echo "::error::unknown mode '$MODE' (report | check | compare)"; exit 1
+            echo "::error::unknown mode '$MODE' (report | check | compare)"; exit 2
             ;;
         esac
         [ -n "$OUTFILE" ] && args+=(--output "$OUTFILE")

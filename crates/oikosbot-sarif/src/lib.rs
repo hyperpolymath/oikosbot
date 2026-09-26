@@ -349,11 +349,25 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
                 uri: result.location.file.clone(),
                 uri_base_id: Some("%SRCROOT%".to_string()),
             },
-            region: Some(Region {
-                start_line: Some(result.location.line),
-                start_column: Some(result.location.column),
-                end_line: result.location.end_line,
-                end_column: result.location.end_column,
+            // Zero means unknown in legacy synthetic findings. SARIF uses
+            // one-based source positions; omit unknown regions, never invent
+            // a location at line 1 or serialize a schema-invalid zero.
+            region: (result.location.line > 0).then(|| {
+                let end_line = result
+                    .location
+                    .end_line
+                    .filter(|&line| line >= result.location.line);
+                Region {
+                    start_line: Some(result.location.line),
+                    start_column: (result.location.column > 0).then_some(result.location.column),
+                    end_line,
+                    end_column: result.location.end_column.filter(|&column| {
+                        column > 0
+                            && end_line.is_some_and(|line| {
+                                line > result.location.line || column >= result.location.column
+                            })
+                    }),
+                }
             }),
         },
         logical_locations: result.location.name.as_ref().map(|name| {
@@ -382,6 +396,7 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
         "duration_ms": result.resources.duration.0,
         "memory_bytes": result.resources.memory.0,
         "confidence": format!("{:?}", result.confidence),
+        "taxonomy": result.taxonomy,
     });
     if let Some(ref s) = result.suggestion {
         properties["suggestion"] = serde_json::json!(s);
@@ -391,7 +406,7 @@ fn convert_result(result: &AnalysisResult, rule_ids: &[&str]) -> SarifResult {
         properties["pareto_score"] = serde_json::json!(pareto.score);
         properties["pareto_dominated_by"] = serde_json::json!(pareto.dominated_by);
     }
-    // Propagate the calibrated uncertainty band so consumers can see the spread
+    // Propagate the heuristic uncertainty band so consumers can see the spread
     // instead of treating the point estimate as exact. Absent on the naive
     // path, where there is no band to report.
     if let Some(ref range) = result.resource_range {
@@ -436,6 +451,7 @@ mod tests {
 
     fn sample_result() -> AnalysisResult {
         AnalysisResult {
+            taxonomy: None,
             location: CodeLocation {
                 file: "src/main.rs".to_string(),
                 line: 10,
@@ -459,6 +475,18 @@ mod tests {
             pareto: None,
             resource_range: None,
         }
+    }
+
+    #[test]
+    fn unknown_source_positions_are_omitted_not_fabricated() {
+        let mut result = sample_result();
+        result.location.line = 0;
+        result.location.column = 0;
+        let log = to_sarif(&[result], "0.1.0");
+        assert!(log.runs[0].results[0].locations[0]
+            .physical_location
+            .region
+            .is_none());
     }
 
     #[test]

@@ -3,8 +3,7 @@
 //!
 //! Transforms flat RunRow telemetry into aggregated, economically meaningful
 //! metrics with explicit confidence levels. The confidence ladder is the honesty
-//! contract: only API-sourced quantities are Measured; coefficients over
-//! measurements are Calibrated; anything resting on a declared assumption
+//! contract: only API-sourced quantities are Measured; coefficients without calibration receipts are Estimated; anything resting on a declared assumption
 //! (grid region) is Estimated.
 
 use crate::rows::RunRow;
@@ -92,12 +91,12 @@ pub fn derive_per_repo(runs: &[RunRow], a: &Assumptions) -> Vec<DerivedRepo> {
 /// Return the confidence level for a derived metric.
 ///
 /// The ladder is the honesty contract: only API-sourced quantities are
-/// Measured; coefficients over measurements are Calibrated; anything
+/// Measured as API interval proxies; unvalidated coefficients and anything
 /// resting on a declared assumption (grid region) is Estimated.
 pub fn confidence_of(metric: &str) -> Confidence {
     match metric {
         "wall_minutes" => Confidence::Measured,
-        "energy_kwh" | "imputed_cost_usd" => Confidence::Calibrated,
+        "energy_kwh" | "imputed_cost_usd" => Confidence::Estimated,
         "carbon_g" => Confidence::Estimated,
         _ => Confidence::Unknown,
     }
@@ -134,8 +133,8 @@ mod tests {
     #[test]
     fn confidence_ladder_is_honest() {
         assert_eq!(confidence_of("wall_minutes"), Confidence::Measured);
-        assert_eq!(confidence_of("energy_kwh"), Confidence::Calibrated);
+        assert_eq!(confidence_of("energy_kwh"), Confidence::Estimated);
         assert_eq!(confidence_of("carbon_g"), Confidence::Estimated);
-        assert_eq!(confidence_of("imputed_cost_usd"), Confidence::Calibrated);
+        assert_eq!(confidence_of("imputed_cost_usd"), Confidence::Estimated);
     }
 }

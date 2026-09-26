@@ -93,16 +93,17 @@ pub fn load(path: &Path) -> Result<ResolvedConfig> {
         Some("consultant") => Mode::Consultant,
         Some("regulator") => Mode::Regulator,
         Some("advisor") | None => Mode::Advisor,
-        Some(other) => {
-            tracing::warn!(
-                "unknown mode {other:?} in {}; using advisor",
-                path.display()
-            );
-            Mode::Advisor
-        }
+        Some(other) => anyhow::bail!("unknown mode {other:?} in {}", path.display()),
     };
 
     let level = raw.thresholds.eco_minimum.unwrap_or_default();
+    anyhow::ensure!(
+        matches!(
+            level.enforcement.as_deref(),
+            None | Some("blocking" | "warning" | "advisory")
+        ),
+        "unknown threshold enforcement mode"
+    );
     let enforcement_blocking =
         mode == Mode::Regulator || level.enforcement.as_deref() == Some("blocking");
     // The eco floor: carbon threshold, falling back to energy if only that
@@ -115,7 +116,7 @@ pub fn load(path: &Path) -> Result<ResolvedConfig> {
             Ok(g) => {
                 globs.add(g);
             }
-            Err(e) => tracing::warn!("ignoring invalid exclude glob {pattern:?}: {e}"),
+            Err(e) => anyhow::bail!("invalid exclude glob {pattern:?}: {e}"),
         }
     }
     let exclude = globs.build().context("cannot build exclude globs")?;
@@ -123,24 +124,14 @@ pub fn load(path: &Path) -> Result<ResolvedConfig> {
     let allowed_extensions: Vec<&'static str> = if raw.analysis.languages.is_empty() {
         DEFAULT_EXTENSIONS.to_vec()
     } else {
-        let exts: Vec<&'static str> = raw
-            .analysis
+        raw.analysis
             .languages
             .iter()
-            .filter_map(|l| language_extension(l))
-            .collect();
-        if exts.is_empty() {
-            // Config names only languages the analyzer cannot parse yet;
-            // analyzing nothing would be a silent no-scan. Fall back loudly.
-            tracing::warn!(
-                "no configured language is supported by the analyzer; \
-                 falling back to {:?}",
-                DEFAULT_EXTENSIONS
-            );
-            DEFAULT_EXTENSIONS.to_vec()
-        } else {
-            exts
-        }
+            .map(|language| {
+                language_extension(language)
+                    .with_context(|| format!("unsupported configured language: {language}"))
+            })
+            .collect::<Result<Vec<_>>>()?
     };
 
     Ok(ResolvedConfig {
@@ -205,7 +196,6 @@ exclude:
 analysis:
   languages:
     - rust
-    - typescript
     - python
 "#,
         );
@@ -215,7 +205,7 @@ analysis:
         assert!(!c.enforcement_blocking);
         assert!(c.exclude.is_match("crates/foo/target/debug/x.rs"));
         assert!(!c.exclude.is_match("crates/foo/src/lib.rs"));
-        // typescript is listed but unsupported; rust + python survive.
+        // Both configured languages are supported.
         assert_eq!(c.allowed_extensions, vec!["rs", "py"]);
     }
 

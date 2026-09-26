@@ -16,6 +16,8 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'Containerfile'
+      - 'rust-toolchain.toml'
+      - 'tests/test-container-contract.sh'
       - '.dockerignore'
       - '.github/workflows/publish-image.yml'
   workflow_dispatch: {}
@@ -53,9 +55,19 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=development,enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=sha
+      - name: Build candidate for smoke contract
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: ./Containerfile
+          load: true
+          tags: oikosbot:verify
+          cache-from: type=gha
+      - name: Test candidate contract
+        run: bash tests/test-container-contract.sh oikosbot:verify
       - name: Build and push
         id: push
         uses: docker/build-push-action@v7.4.0

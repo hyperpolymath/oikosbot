@@ -50,9 +50,14 @@ pub fn evaluate_policies(
     let mut decisions = Vec::new();
 
     // Find all .ecl files in the policy directory
-    if !policy_dir.exists() {
-        return Ok(decisions);
-    }
+    anyhow::ensure!(
+        policy_dir.is_dir(),
+        "policy directory is missing or not a directory"
+    );
+    anyhow::ensure!(
+        !results.is_empty(),
+        "no analysis results for policy evaluation"
+    );
 
     let entries = std::fs::read_dir(policy_dir)
         .with_context(|| format!("Failed to read policy dir: {}", policy_dir.display()))?;
@@ -71,19 +76,14 @@ pub fn evaluate_policies(
             match evaluate_single_policy(&path, results) {
                 Ok(decision) => decisions.push(decision),
                 Err(e) => {
-                    tracing::warn!("Policy {} failed: {}", policy_name, e);
-                    decisions.push(PolicyDecision {
-                        outcome: PolicyOutcome::Warn,
-                        message: format!("Policy evaluation error: {}", e),
-                        suggestion: None,
-                        evaluation_cost: None,
-                        policy_name,
-                    });
+                    return Err(e)
+                        .with_context(|| format!("policy {policy_name} was not evaluated"))
                 }
             }
         }
     }
 
+    anyhow::ensure!(!decisions.is_empty(), "no .ecl policies found");
     Ok(decisions)
 }
 
@@ -383,6 +383,7 @@ pub fn decisions_to_results(decisions: &[PolicyDecision]) -> Vec<AnalysisResult>
             });
 
             AnalysisResult {
+                taxonomy: None,
                 location: oikosbot_metrics::CodeLocation {
                     file: "policies/".to_string(),
                     line: 0,
@@ -507,6 +508,7 @@ mod tests {
 
     fn sample_result(energy_j: f64) -> AnalysisResult {
         AnalysisResult {
+            taxonomy: None,
             location: oikosbot_metrics::CodeLocation {
                 file: "test.rs".to_string(),
                 line: 1,

@@ -9,16 +9,17 @@ verdict that the `compare` subcommand reports.
 == Public surface
 
 * **Objectives** — `result_objectives()` is the live five-axis set the Rust
-  analyser actually measures: carbon, energy, duration, memory (minimise) and
+  analyser actually models: carbon, energy, duration, memory (minimise) and
   the quality score as the maintainability proxy (maximise).
 * **Dominance and frontiers** — `dominates`, `frontier_indices`,
   `dominated_by_counts`, `normalize`, `pareto_scores`, `refactor_candidates`,
-  all ε-tolerant (`DEFAULT_EPSILON = 1e-6`).
+  with tolerance suppressing tiny wins but never permitting losses
+  (`DEFAULT_EPSILON = 1e-6`).
 * **Verdicts** — `compare` classifies head vs base as `Improvement`,
-  `Regression`, `TradeOff` or `Neutral`; `assess` adds the per-objective
+  `Regression`, `TradeOff`, `Neutral` or `Indeterminate`; `assess` adds the per-objective
   deltas, the list of *drivers* (objectives that actually moved), and
   `actionable`.
-* **Confidence gating** — `actionable` is true only when **every driving**
+* **Confidence gating** — `actionable` is true only when **every**
   objective is backed by `Measured` or `Calibrated` input. Heuristic estimates
   advise; they do not block. `aggregate_confidence` and `weaker_confidence`
   combine confidences across a result set.
@@ -29,7 +30,12 @@ verdict that the `compare` subcommand reports.
 == What it does not do
 
 It never decides whether a finding is *true* — it compares numbers it is given.
-`actionable` is a statement about evidence, not about severity.
+`actionable` is a legacy confidence-label eligibility flag, not authenticated
+evidence or authority to act. The CLI supplies only estimates today.
+
+`contract.rs` is an experimental scoped interval refinement: explicit contexts/units,
+non-compensatory limits, and unresolved overlapping uncertainty. It is not wired
+as production authorization. See link:../../docs/research/EVIDENCE-SCOPED-PARETO.adoc[design and proof obligations].
 
 == Tests
 

@@ -46,7 +46,7 @@ fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
   default workspace).
 * link:../analyzers/code-haskell/README.adoc[Haskell analyzer] — what
   `analyzers/code-haskell` computes and how it relates to the Rust workspace.
-* _Still open (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): an end-to-end build walkthrough._
+* link:../CONTRIBUTING.adoc[End-to-end build walkthrough].
 
 == For maintainers
 
@@ -56,7 +56,7 @@ fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
 * link:ci-runbook.adoc[CI runbook] — the gate inventory, `actions.lock` rules,
   how to diagnose Hypatia and `Publish Image` failures, the `just` target
   reference, and the pre-release (GitHub Marketplace) checklist.
-* _Still open (link:https://github.com/hyperpolymath/oikosbot/issues/16[#16]): the `README` → `docs/` split._
+* link:architecture.adoc[Implemented architecture] and link:policies.adoc[policy boundaries].
 
 == For end users
 
@@ -65,7 +65,7 @@ fleet slot (see link:../DISAMBIGUATION.adoc[DISAMBIGUATION]).
 * link:usage.adoc[Using OikosBot] — action inputs, the three modes, what each
   verdict and confidence level means, the SARIF shape, `.oikos.yml`
   configuration, `BOT_MODE`, and a troubleshooting table.
-* _Still open (link:https://github.com/hyperpolymath/oikosbot/issues/17[#17]): a production deploy runbook — link:../DEPLOY.adoc[DEPLOY] is still a stub, gated on AffineScript operational parity._
+* link:../DEPLOY.adoc[Advisory rollout and App production hold]; operational parity remains unverified.
 
 == Machine-readable docs (A2ML)
 
@@ -81,8 +81,8 @@ The canonical project state and decisions live in `.machine_readable/descriptile
 
 * link:STATUS.adoc[**STATUS**] — what works, what does *not*, and how each claim
   was verified. Includes the standing caveat that resource figures are static
-  estimates, that only calibrated findings may block a merge, and that the eco
-  score's absolute scale saturates under calibrated magnitudes.
+  estimates, that heuristic checks return no-check, and that no table row has
+  a calibration receipt.
 * link:COMPARISON-climate-warrior.adoc[**OikosBot vs Climate Warrior**] —
   positioning against the nearest GitHub Marketplace neighbour.
 
@@ -112,3 +112,20 @@ For whoever picks this up next — the automation or a new maintainer:
 * link:handoff/open-issues.txt[**open-issues.txt**] — verbatim issue bodies.
 * link:handoff/CI-EVIDENCE.md[**CI-EVIDENCE**] — how the CI failures were
   diagnosed without access to logs or artifacts.
+
+== Launch hardening and research (2026-09-26)
+
+* link:LAUNCH-READINESS.adoc[Launch hold, every open issue and acceptance evidence]
+* link:research/EVIDENCE-SCOPED-PARETO.adoc[Mathematics, type contract and pinned estate sources]
+* link:architecture.adoc[Implemented versus target architecture]
+* link:policies.adoc[Actual policy/configuration behavior]
+* link:../CONTRIBUTING.adoc[End-to-end build and contribution walkthrough]
+
+The README split and build walkthrough are now supplied. Production App
+operations remain gated, not completed by documentation alone. Earlier calibration
+and regulator claims in historical debt/session records are superseded by this audit.
+
+== Continuation
+
+link:HANDOFF.adoc[Next-agent baton and the owner's decisions] separates executable
+engineering work from the workload, scope and authority choices the owner must make.

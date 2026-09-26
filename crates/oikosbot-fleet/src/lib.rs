@@ -363,6 +363,7 @@ mod tests {
 
     fn sample_result(energy_j: f64) -> AnalysisResult {
         AnalysisResult {
+            taxonomy: None,
             location: CodeLocation {
                 file: "test.rs".to_string(),
                 line: 1,

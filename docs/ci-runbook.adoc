@@ -188,7 +188,7 @@ recurring estate-wide patterns:
   `rust-version = "1.90"` and `edition = "2024"`, while the `Containerfile`
   builder was `rust:1.88-slim`. CI on `ubuntu-latest` passed because the
   runner ships a newer rustc; the container did not. The builder now uses the
-  rolling `rust:1-slim`. Diagnose this class of failure by checking the
+  explicit `rust:1.90.0-slim-bookworm` (matching `rust-toolchain.toml`). Diagnose this class of failure by checking the
   *builder* toolchain against the workspace's highest declared `rust-version`,
   not by trusting CI's green tick.
 |===
@@ -225,3 +225,24 @@ The Action is the release unit: `action.yml` plus the container image it pins.
 6. The Marketplace listing is published from `main` by a repository owner, and
    the `DEPLOY.adoc` gate (AffineScript operational parity) is either met or
    explicitly still open.
+
+== Additional launch-hardening checks
+
+`CI / Container smoke contract` builds the candidate on PRs after Rust tests,
+then tests version, default non-root user, silent clean SARIF and a known firing
+rule. Publish Image now runs the same contract on a locally loaded candidate
+before pushing. Neither checks full SARIF schema nor proves that the final pushed
+digest is identical to the candidate; the release-digest/provenance contract is
+still required. New source/test/toolchain files must trigger publication when
+an owner decides to adopt the changes.
+
+`just release-preflight` collects local evidence and returns 2 if required tooling
+is absent. The launch audit, not this script, owns the list of remaining gates.
+Do not treat the informational clippy job, AffineScript shell syntax job or
+security scanner's continue-on-error as full conformance gates.
+
+Main-branch publication now updates `development`, not `latest`. It is a candidate
+channel, not a launch endorsement. Existing digest consumers are unaffected;
+consumers of `latest` do not silently receive these breaking check semantics.
+Semver publication remains tied to an explicitly created version tag and must
+follow the launch review; no version tag was created in this work.

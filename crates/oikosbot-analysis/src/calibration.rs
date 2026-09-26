@@ -15,7 +15,7 @@
 use crate::carbon::estimate_carbon;
 use oikosbot_metrics::{Confidence, Duration, Energy, Memory, ResourceProfile, ResourceRange};
 
-/// Operation categories for calibrated estimates
+/// Operation categories for heuristic estimates
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperationKind {
     /// HashMap/BTreeMap lookup
@@ -36,20 +36,18 @@ pub enum OperationKind {
     Generic,
 }
 
-/// Calibrated resource profiles for known operation patterns.
+/// Heuristic resource profiles for known operation patterns.
 ///
 /// These are expert estimates that will be refined with profiling data.
 /// All values assume a modern x86_64 system at ~50W TDP.
 ///
-/// Returns the min/typical/max envelope, carrying the confidence a finding
-/// built on this estimate is entitled to. The ladder is deliberate and
-/// per-kind: only `HashLookup`, `Sort`, `Allocation` and `MathCompute` are
-/// backed by calibration data, so only those rows are `Calibrated`. `FileIO`,
-/// `StringOp` and `NetworkCall` depend on host and workload specifics we have
-/// not measured, so they stay `Estimated` even though they use this table.
-/// `Generic` is the fallback for code we could not classify and stays
-/// `Unknown`. Confidence is therefore earned per finding, never
-/// blanket-assigned.
+/// Returns a heuristic min/typical/max envelope, NOT a statistical confidence
+/// interval or a certified bound. No row currently has a reproducible calibration
+/// receipt (workload, hardware, samples, fit and validation error). Consequently
+/// every known operation stays `Estimated`; `Generic` stays `Unknown`.
+/// Recognising syntax does not calibrate its runtime cost. In particular, AST
+/// node count is not operation count and nested loops are not sorting.
+/// Retaining the old table values preserves report comparability, not validity.
 pub fn estimate_operation(kind: OperationKind, n: usize) -> ResourceRange {
     match kind {
         OperationKind::HashLookup => {
@@ -59,7 +57,7 @@ pub fn estimate_operation(kind: OperationKind, n: usize) -> ResourceRange {
                 min: profile(0.000001 * count, 0.00005 * count, 64 * n.max(1)),
                 typical: profile(0.000005 * count, 0.0001 * count, 128 * n.max(1)),
                 max: profile(0.00005 * count, 0.001 * count, 256 * n.max(1)),
-                confidence: Confidence::Calibrated,
+                confidence: Confidence::Estimated,
             }
         }
         OperationKind::Sort => {
@@ -70,7 +68,7 @@ pub fn estimate_operation(kind: OperationKind, n: usize) -> ResourceRange {
                 min: profile(0.00001 * nlogn, 0.0001 * nlogn, 8 * n),
                 typical: profile(0.00005 * nlogn, 0.0005 * nlogn, 16 * n),
                 max: profile(0.0005 * nlogn, 0.005 * nlogn, 32 * n),
-                confidence: Confidence::Calibrated,
+                confidence: Confidence::Estimated,
             }
         }
         OperationKind::FileIO => {
@@ -99,7 +97,7 @@ pub fn estimate_operation(kind: OperationKind, n: usize) -> ResourceRange {
                 min: profile(0.000001 * bytes / 1000.0, 0.00001, n),
                 typical: profile(0.00001 * bytes / 1000.0, 0.0001, n + 64),
                 max: profile(0.0001 * bytes / 1000.0, 0.001, n + 4096),
-                confidence: Confidence::Calibrated,
+                confidence: Confidence::Estimated,
             }
         }
         OperationKind::StringOp => {
@@ -119,7 +117,7 @@ pub fn estimate_operation(kind: OperationKind, n: usize) -> ResourceRange {
                 min: profile(0.0000005 * ops, 0.000005 * ops, 0),
                 typical: profile(0.000005 * ops, 0.00005 * ops, 0),
                 max: profile(0.00005 * ops, 0.0005 * ops, 0),
-                confidence: Confidence::Calibrated,
+                confidence: Confidence::Estimated,
             }
         }
         OperationKind::Generic => {
@@ -151,9 +149,8 @@ pub fn estimate_operation(kind: OperationKind, n: usize) -> ResourceRange {
 /// `Estimated`.
 pub fn operation_for_pattern(pattern: &str) -> Option<OperationKind> {
     match pattern {
-        // Repeated comparison-bounded work. A depth-d loop is superlinear in
-        // its bound the way n·log n is, and comparison-bound is the dominant
-        // cost of sorting, so Sort is the closest priced category.
+        // Historical heuristic only: depth-d loops are NOT n log n sorting.
+        // Retained for report comparability, never promoted to Calibrated.
         "nested-loops" => Some(OperationKind::Sort),
         // A spin loop burns CPU without yielding: repeated arithmetic with no
         // allocation and no I/O, i.e. the MathCompute row. Note the row's
@@ -192,7 +189,7 @@ mod tests {
         let range = estimate_operation(OperationKind::HashLookup, 1000);
         assert!(range.min.energy.0 < range.typical.energy.0);
         assert!(range.typical.energy.0 < range.max.energy.0);
-        assert_eq!(range.confidence, Confidence::Calibrated);
+        assert_eq!(range.confidence, Confidence::Estimated);
     }
 
     #[test]
@@ -216,8 +213,8 @@ mod tests {
             let range = estimate_operation(kind, 10);
             assert_eq!(
                 range.confidence,
-                Confidence::Calibrated,
-                "{kind:?} is calibrated data and must report Calibrated"
+                Confidence::Estimated,
+                "{kind:?} has no calibration receipt and must stay Estimated"
             );
         }
         for kind in [

@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Implemented architecture
+
+The standalone Rust CLI orchestrates `analysis` (tree-sitter patterns), `metrics`
+(result types and heuristics), `pareto` (point comparisons plus an experimental
+scoped interval contract), `sarif` (reporting), and `eclexia` (builtin policy
+adapter with explicit native-unavailable behavior).
+
+The estate pipeline is `telemetry -> capability -> dea -> report`. It collects
+through the authenticated `gh` CLI, stages JSON, and writes Parquet snapshots.
+It is not a calibration system or a mutation engine. See
+link:LAUNCH-READINESS.adoc[measurement and completeness limitations].
+
+`oikosbot-fleet` is excluded from the default workspace and requires a compatible
+sibling gitbot-fleet. Its Oikosbot identity is separate from Sustainabot. Haskell
+builds independently. The AffineScript App and VeriSimDB client are incomplete.
+Do not infer their operational readiness from the Rust build.
+
+link:../ARCHITECTURE.adoc[ARCHITECTURE] remains the detailed *target* design,
+not evidence of deployed components. Per-crate guides are indexed in
+link:README.adoc[the documentation map]. For the research contract and boundaries,
+see link:research/EVIDENCE-SCOPED-PARETO.adoc[evidence-scoped Pareto judgements].
