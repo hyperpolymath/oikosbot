@@ -181,3 +181,12 @@ Main pushes publish candidates under `development` instead of automatically
 advancing `latest`. Existing digests are unchanged. This limits accidental stable
 promotion; it does not implement GitHub environment approval or replace an owner's
 release review. Semver tags must not be created until the outstanding gates pass.
+
+== PR verification attempt — 2026-09-26
+
+https://github.com/hyperpolymath/oikosbot/pull/110[PR #110] is open, not merged.
+The first GitHub CI attempt
+https://github.com/hyperpolymath/oikosbot/actions/runs/36267202433[36267202433]
+was rejected before jobs existed: *“Actor is not allowed to trigger Actions
+workflows.”* No Rust, Haskell or container test receipt was obtained. See
+link:HANDOFF.adoc[the handoff] for the owner action and safe continuation steps.

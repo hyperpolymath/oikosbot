@@ -96,3 +96,15 @@ verification-limit = "Pinned toolchain download unavailable; older tools recover
 release-performed = false
 metadata-check = "Six core TOML-shaped descriptiles and rust-toolchain.toml parse with Python 3.11 tomllib; not a full A2ML validator. Local links in the new/replaced entry guides resolve."
 publication-channel = "Main-branch candidate publication uses development, not automatic latest promotion; existing consumer digests unchanged. Semver publication still requires owner review and explicit tagging."
+
+[pr-handoff-2026-09-26]
+pr = "https://github.com/hyperpolymath/oikosbot/pull/110"
+status = "open-not-merged; CI startup blocked by actor policy"
+initial-head = "6103004cd498a12954d4f34675157f43ac2b6ce6"
+ci-run = "https://github.com/hyperpolymath/oikosbot/actions/runs/36267202433"
+ci-evidence = "startup_failure; zero jobs; annotation: Actor is not allowed to trigger Actions workflows. Workflow file: '.github/workflows/ci.yml'."
+other-blocked-workflows = ["Governance", "Hypatia Security Scan", "Secret Scanner", "Language Policy Enforcement", "Workflow Security Linter"]
+review-limit = "Initial CodeRabbit SUCCESS was a skipped review (bot user); external checks do not substitute for workspace/container tests."
+owner-action = "Authorized human retrigger or Actions actor-policy resolution; verify jobs actually ran. No credential sharing, admin bypass, auto-merge or release."
+handoff = "docs/HANDOFF.adoc"
+new-tests = "CI and release-preflight now exercise both default and all-feature Cargo tests; the latter alone omits feature-disabled paths."

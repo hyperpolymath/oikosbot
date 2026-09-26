@@ -3,6 +3,46 @@
 = Next-agent baton and owner decisions
 :toc:
 
+== Current integration status — 2026-09-26
+
+*PR: https://github.com/hyperpolymath/oikosbot/pull/110[#110]. Not merged.*
+The owner requested creation and merge, but required verification could not run.
+Initial head `6103004cd498a12954d4f34675157f43ac2b6ce6` was pushed successfully.
+The CI run
+https://github.com/hyperpolymath/oikosbot/actions/runs/36267202433[36267202433]
+ended in `startup_failure`, with zero jobs and this annotation:
+
+[quote]
+____
+Actor is not allowed to trigger Actions workflows. Workflow file: '.github/workflows/ci.yml'.
+____
+
+Governance, Hypatia, Secret Scanner, Language Policy and Workflow Security Linter
+also failed to start. This is an actor-policy restriction on the Arena app, not a
+Rust/compiler/test failure and not grounds to remove or weaken CI. Repository
+Actions-settings and branch-protection reads returned integration-scope HTTP 403;
+ordinary git/PR access works. Do not request credentials or impersonate another actor.
+
+*Do not rely only on `gh pr checks`*: a workflow rejected before creating jobs may
+be absent from that rollup. Inspect workflow runs for the exact head SHA too.
+CodeRabbit initially reported SUCCESS while its comment said “Review skipped:
+Bot user detected.” That is no review receipt. External scan success does not
+replace Rust/Haskell/container execution or substantive review.
+
+The owner needs an authorized human-triggered CI event or an appropriate
+Actions actor-policy permission. One normal retrigger route is closing and
+reopening this PR from the owner's own GitHub account (the workflows already
+subscribe to `pull_request` reopening). Whether that actor is permitted must
+then be verified from the new run; do not promise that a retrigger fixes policy.
+If policy continues to reject it, inspect repository/account Actions restrictions.
+Do not change organization policy from an agent, force-merge or enable auto-merge
+while these checks are absent. No release or image-digest promotion occurred.
+
+The next agent should verify this live status, address real CI failures once
+checks can start, record the evidence, then merge #110 only when warranted.
+Respect the new session's assigned-branch constraints; do not assume permission
+to switch branches or push to this PR's head from a differently bound session.
+
 == Start here
 
 Continue the OikosBot launch-hardening work, not a launch. Read, in order:
