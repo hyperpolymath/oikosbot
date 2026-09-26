@@ -98,3 +98,17 @@ _Remaining audience-depth gaps: the README→`docs/` split and the end-to-end
 build walkthrough in link:https://github.com/hyperpolymath/oikosbot/issues/16[#16],
 and the production deploy runbook in
 link:https://github.com/hyperpolymath/oikosbot/issues/17[#17]._
+
+== Handoff
+
+For whoever picks this up next — the automation or a new maintainer:
+
+* link:handoff/PROMPT.md[**PROMPT**] — the per-issue plan for the open backlog,
+  with the hard facts that should not be rediscovered.
+* link:handoff/owner-actions.adoc[**Owner actions**] — everything that needs a
+  permission a checkout does not have: repository settings, other repositories,
+  and the design rulings the code is waiting on. Includes ready-to-post issue
+  comments for the tracker.
+* link:handoff/open-issues.txt[**open-issues.txt**] — verbatim issue bodies.
+* link:handoff/CI-EVIDENCE.md[**CI-EVIDENCE**] — how the CI failures were
+  diagnosed without access to logs or artifacts.
