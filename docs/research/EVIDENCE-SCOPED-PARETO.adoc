@@ -1,0 +1,240 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Evidence-scoped Pareto judgements: type contract and research question
+:toc:
+:stem: latexmath
+
+Status: *designed*, with an experimental Rust runtime refinement prototype in
+`crates/oikosbot-pareto/src/contract.rs`. No novel calculus or new theorem is
+claimed. No upstream proofs were executed in this audit, and none have been
+transported into the Rust implementation.
+
+== The apparent paradox
+
+Economics and ecology do not need to be collapsed into one ordered scalar.
+Resource allocation can take ecological limits as constraints rather than as
+prices. Pareto order is a *partial* order: incomparability is legitimate output,
+not a type error to hide. A Pareto frontier alone cannot choose among incomparable
+points, make a feasible set nonempty, or decide whose welfare matters.
+
+Three different questions must stay separate:
+
+. *Feasibility*: are non-negotiable constraints satisfied?
+. *Comparison*: does one admissible alternative improve on another under a
+  declared model, or do they trade off?
+. *Authorization*: who may accept the trade-off, with what evidence, safeguards,
+  expiry and appeal mechanism?
+
+Ordinary products, sums, refinements, dependent pairs and indexed relations can
+represent these today. A new primitive type is not needed merely to store a
+vector or prevent an unvalidated value from entering a checked API. The research
+opportunity is in *evidence-preserving transport, composition and revision* of
+these judgements, including the consequences of characterization choices.
+
+== A precise bounded claim
+
+Let a context `C` specify useful functional unit, workload distribution, system
+boundary (operational/embodied effects, upstream/downstream), horizon, population,
+objective schema/units/directions, model revision and policy revision. Let `E`
+be evidence and `W(C,E)` the nonempty set of worlds consistent with it.
+A robust no-worse judgement for head `h` versus base `b` requires, after orienting
+all axes as costs:
+
+[stem]
+++++
+\forall w \in W(C,E),\ \forall i,\ f_i(h,w) \le f_i(b,w).
+++++
+
+For the prototype's stronger fixed-driver improvement require:
+
+[stem]
+++++
+\exists j,\ \forall w \in W(C,E),\ f_j(b,w)-f_j(h,w) > \epsilon_j.
+++++
+
+This differs from `for every world there exists an improved axis`: preserve the
+quantifier order. Constraints also hold universally, not just at mean estimates.
+If `W` is empty, return inconsistent evidence, not a vacuously certified win.
+Applying the claim to reality additionally requires actual-world membership and
+adequacy of the observation/valuation model. No type checker can infer those
+from syntax or a confidence enum.
+
+A schematic dependent record (specification, not checked code) is:
+
+[source,text]
+----
+ScopedJudgement C E b h =
+  admissibleWorldsNonempty
+  × functionalEquivalenceUnder C b h
+  × hardConstraintsHold C E h
+  × (RobustImprovement C E b h
+     + RobustRegression C E b h
+     + EstablishedTradeOff C E b h
+     + Neutral C E b h
+     + Unresolved C E b h)
+  × evidenceReceipts
+  × excludedObservablesAndResidualRisk
+----
+
+`Authorized C E judgement` must be a *different* type supplied by an actual
+policy/consent authority. Never provide `Confidence -> Authorized` or
+`tradeoff_heading_present -> Authorized`. Even measured data can be irrelevant
+to the claim; calibration does not make an obligation.
+
+== Runtime prototype and current CLI
+
+The experimental module implements only finite interval-box numeric checks:
+
+* `Interval::new` rejects reversed, NaN and infinite bounds.
+* `Observation::new` requires one value/evidence record per dimension, nonempty
+  context, units and source names, distinct axes and finite per-axis tolerances.
+* Comparisons require equal contexts, including ordered units and policy/model
+  versions. No implicit currency, carbon-unit or workload conversion exists.
+* For a minimizing axis, head's upper bound must be at most base's lower bound
+  to establish robust no-worsening. Interval overlap is normally `Unresolved`,
+  not a point-estimate victory. Box independence is conservative; real joint
+  evidence can support more precise conclusions.
+* `admit()` constructs a private `Feasible` witness only when the whole interval
+  satisfies every declared ceiling/floor. A cheaper point outside a carbon cap
+  cannot buy admission. This checks declared numbers, not real-world feasibility.
+* Evidence records remain attached. Their source strings are not authenticated,
+  and their confidence fields do not confer authority. There is deliberately no
+  deserializer or public constructor for the checked witnesses and no conversion
+  from these witnesses to an auto-fix/merge capability.
+
+The existing CLI has no workload-equivalence or evidence-ingestion adapter, so
+it does *not* use this module to authorize anything. Its old point-vector scores
+remain advisory proxies. Missing evidence in an explicitly requested gate is
+exit 2, not success and not an ecological violation.
+
+== Two concrete mathematical failure modes
+
+=== Epsilon cycles
+
+Previously `a` could dominate `b` while being worse by epsilon on some axes.
+At epsilon 1, all-minimize vectors `(0,1,2)`, `(2,0,1)`, `(1,2,0)` form a cycle:
+each wins by 2 on one axis and loses by 1 on two. The frontier is empty; the old
+fallback awarded 100 anyway. The corrected relation allows *no losses* and
+requires at least one win greater than epsilon. Its intended real-number
+relation is transitive and irreflexive. Exhaustive finite-grid tests are not a
+machine-checked proof for the floating-point implementation.
+
+=== Scalarization forgets what is needed for safety
+
+Two points with equal weighted score can lie on opposite sides of a hard carbon
+cap. For equal weights, `(carbon=12,cost=0)` and `(carbon=6,cost=6)` both score 12;
+a cap of 10 separates them. A function seeing only 12 cannot decide both cases
+correctly. Retain the original vector, units, constraints and evidence rather
+than claiming a scalar is a lossless summary. Positive-weight scalarization may
+select supported frontier points; it cannot recover every nonconvex frontier or
+supply normative weights.
+
+== Relation to the estate (source inspection, not proof reuse)
+
+* *Eclexia*: dimensional resource types, hard `requires` constraints, adaptive
+  solutions and shadow prices are directly relevant. Prices are marginal values
+  relative to constraints/model; they do not cancel ecological ceilings. The
+  OikosBot native adapter remains unavailable and the builtin evaluator does not
+  execute arbitrary `.ecl`. Do not imply full Eclexia semantics are integrated.
+* *Residual Evidence Types*: `world + observation equality + E(world)` is the
+  closest formulation for claims true across all admissible candidates. Preserve
+  nonemptiness and actual-world membership rather than counting candidates as
+  probabilities. The library explicitly describes ordinary dependent constructions.
+* *Epistemic Types*: warrant versus sound warrant, receiver-relative claim meaning,
+  and evidence transport address the central trust-boundary issue. A report or
+  receipt must not silently become factive knowledge after serialization.
+* *Echo Types*: use fibers/residues to expose what a scalar projection forgets.
+  Retaining the source witness differs from asserting the scalar identifies it.
+  An aggregate score is not an ecological proof; a resource grade is not an Echo.
+* *Tropical Types*: composition laws for resource bounds are relevant, but must
+  differ by resource and execution model. Sequential energy can add; concurrent
+  latency may take a max under stated scheduling assumptions; peak memory has
+  lifetime/overlap constraints. Do not use a single semiring for all axes by fiat.
+* *Choreographic Types*: distributed measurement/decision workflows could need
+  provenance transport across causal cuts. K-CUT is presented as open upstream;
+  do not use it as an established theorem or a current launch dependency.
+* *Absolute Zero*: declare the observation model and excluded observables, and
+  separate null effect from null disclosure. Identity of program output is not
+  zero physical energy, and not evidence of no external ecological effect.
+* *JanusKey*: inversion metadata can restore modeled file state; it cannot undo
+  consumed electricity, emissions, disclosure or a decision's social impact.
+  Restoring code is containment/rollback, not full external-world reversibility.
+* *Proven-Tests*: paired silent/firing fixtures and evidence grades are adopted
+  as testing discipline. Rust examples are not reclassified as Idris2 proofs.
+
+== Falsifiable research programme (not a launch prerequisite)
+
+. Mechanize the minimal context-indexed order and feasibility record in one
+  existing estate prover. Prove irreflexivity/transitivity; exhibit incomparable
+  alternatives and an empty feasible set. State the numeric domain explicitly.
+. Prove soundness of interval comparison relative to box membership, then give
+  counterexamples showing where correlations make that abstraction incomplete.
+. Establish a no-smuggling theorem for evidence transport: changing boundary,
+  workload, units, observer or policy requires an explicit validated mapping.
+. Investigate composition under shared budgets and overlapping effects. Two
+  locally feasible changes need not be jointly feasible; duplicated evidence
+  and double-spent budgets need linear/affine accounting or a ledger.
+. Define revision/retraction: invalidated calibration must invalidate dependent
+  judgements, not leave stale green badges. Explore monotonicity under stronger
+  evidence and its failure when policy/observation boundaries change.
+. Compare against refinement/dependent types, robust multiobjective optimization,
+  multi-criteria decision analysis, resource/effect systems and decision theory.
+  Claim novelty only after a literature review and a separation result identifying
+  what this assembly does that those existing constructions do not.
+
+Do not let the research name imply that economics and ecology are now reconciled
+universally. An appropriate working description is *evidence-scoped Pareto
+judgements with non-compensatory constraints*, not a proved “sustainability type”.
+
+== Characterization and adoption
+
+Publish the model card alongside every report: whose objectives, workload and
+functional equivalence, time horizon, geography, lifecycle boundary, uncertainty,
+omitted effects, normalization/reference cohort and policy authority. Show the
+vector/frontier and limitations before any aggregate ranking. Provide contestability,
+manual review and retraction; do not rank people or infer moral worth from repo CI.
+
+Absolute ecological budgets, distributional effects and rebound (cheaper work
+causing more work) can defeat per-unit efficiency claims. “Pareto-optimal” means
+nondominated among the compared alternatives under this model, *not* sustainable,
+fair, globally optimal or fit to launch. This characterization is part of the
+safety contract, not marketing copy added after the mathematics.
+
+== Pinned inspected sources
+
+Revisions below identify the downloaded source snapshots. Read their README and
+proof-status/contract boundaries, not just their repository descriptions. They
+are references, not new runtime dependencies or certification authorities.
+
+[cols="1,2",options="header"]
+|===
+|Repository |Inspected revision
+|rsr-template-repo |https://github.com/hyperpolymath/rsr-template-repo/tree/05bf1b97dd647e02e2a66a33e511a8922ca60e61[`05bf1b97dd647e02e2a66a33e511a8922ca60e61`]
+|standards |https://github.com/hyperpolymath/standards/tree/2479cf769ed5f0481ccf64860a2ab954514c2b59[`2479cf769ed5f0481ccf64860a2ab954514c2b59`]
+|eclexia |https://github.com/hyperpolymath/eclexia/tree/7c67b30620840d628436cf209267e36ae810a1d0[`7c67b30620840d628436cf209267e36ae810a1d0`]
+|echo-types |https://github.com/hyperpolymath/echo-types/tree/e6e7ee71e783b932e3cb08ef87495b0289e48d3c[`e6e7ee71e783b932e3cb08ef87495b0289e48d3c`]
+|residual-evidence-types |https://github.com/hyperpolymath/residual-evidence-types/tree/eb01e18a384f34489fbb14907b19bc4a7b4675bd[`eb01e18a384f34489fbb14907b19bc4a7b4675bd`]
+|tropical-types |https://github.com/hyperpolymath/tropical-types/tree/9a5c34f20aba2589d44e8b1bbf32540551ffa395[`9a5c34f20aba2589d44e8b1bbf32540551ffa395`]
+|epistemic-types |https://github.com/hyperpolymath/epistemic-types/tree/dd948fbdddbdd06282cda8425e3e644e013c11ff[`dd948fbdddbdd06282cda8425e3e644e013c11ff`]
+|choreographic-types |https://github.com/hyperpolymath/choreographic-types/tree/98193bec8579a2094ee3cd7828f05ebbefdc50ba[`98193bec8579a2094ee3cd7828f05ebbefdc50ba`]
+|absolute-zero |https://github.com/hyperpolymath/absolute-zero/tree/3e959cbc5b94c4ab199ef0567b45002043f24d75[`3e959cbc5b94c4ab199ef0567b45002043f24d75`]
+|januskey |https://github.com/hyperpolymath/januskey/tree/b9aaca1ec74e0d3a1e9fe8c75a2151cacfaf8e4d[`b9aaca1ec74e0d3a1e9fe8c75a2151cacfaf8e4d`]
+|proven-tests-and-benches |https://github.com/hyperpolymath/proven-tests-and-benches/tree/6b19deb7ccbd73836dff8d6c8e65ec9351fa7767[`6b19deb7ccbd73836dff8d6c8e65ec9351fa7767`]
+|===
+
+Additional coordination reference:
+https://github.com/hyperpolymath/nextgen-typing/blob/86cb69e5cf296f6188eaf03775d9b6f3084a36ea/docs/TYPE-CONNECTIONS.adoc[nextgen-typing TYPE-CONNECTIONS at `86cb69e5cf296f6188eaf03775d9b6f3084a36ea`].
+Its shared glossary explicitly treats these families as complementary questions,
+not stronger/weaker ranks or necessarily new primitives. Any future named Pareto
+research family should be coordinated there after its proof/novelty obligations
+are stated; no new estate repository or family registration is proposed as done.
+
+Concrete Eclexia implementation inspected at the pinned revision:
+`runtime/eclexia-runtime/src/adaptive.rs`, especially
+`SolutionCandidate::meets_budget` and `AdaptiveDecisionEngine::select_best`.
+It already filters candidates by resource budget *before* weighted/shadow-price
+selection. Thus feasibility-before-preference is not a new OikosBot invention.
+That implementation also uses ordinary floating-point comparisons; those are
+not a substitute for finite-value validation or measurement evidence. OikosBot's
+experimental boundary rejects non-finite values rather than inheriting a
+comparison's fallback-to-equality behavior. No upstream patch or proof is claimed.

@@ -1,22 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2025 Jonathan D.A. Jewell
 
-//! End-to-end proof that `oikosbot compare --check` can actually block.
-//!
-//! Before the calibration wiring every finding was `Estimated`, so `--check`
-//! could only ever print the inert-enforcement warning: the gate could not
-//! fail. These tests pin the behaviour that makes the trade-off doctrine real —
-//!
-//! * a regression whose driving objectives are calibrated **blocks**;
-//! * the same regression without `--check` stays advisory;
-//! * a documented trade-off is accepted;
-//! * a heuristic (unrecognised) regression still refuses to block, and says so
-//!   loudly rather than passing silently.
-//!
-//! Fixtures are sized so both sides land on a calibrated row: base is a
-//! depth-3 loop nest, head the same nest one level deeper. Both are therefore
-//! `Calibrated`, and the deeper nest is worse on every objective, so the
-//! verdict is a genuine `Regression` with real drivers behind it.
+//! End-to-end controls for advisory output and explicit no-check status.
+//! Pattern-table estimates have no calibration receipts and must not gate.
 
 use std::fs;
 use std::path::Path;
@@ -35,9 +21,9 @@ fn tree(files: &[(&str, &str)]) -> TempDir {
 /// A Rust function whose body is `depth` nested `for` loops.
 ///
 /// Depth 3 is the smallest nest `detect_patterns` flags as `nested-loops`,
-/// which maps onto the calibrated `Sort` row. The body avoids every other
+/// which maps onto the heuristic `Sort` row. The body avoids every other
 /// pattern — no `.clone()`, no `File::open`, no `vec![]`, no string `+`, no
-/// `to_string` — so exactly one calibrated row prices the unit and nothing
+/// `to_string` — so exactly one heuristic row prices the unit and nothing
 /// drags its confidence back to `Estimated`.
 fn nested_loop_work(depth: usize) -> String {
     let mut body = String::from("fn deep_work(items: &[u32]) -> usize {\n    let mut total = 0;\n");
@@ -83,7 +69,7 @@ fn stderr(out: &Output) -> String {
 }
 
 #[test]
-fn undocumented_calibrated_regression_blocks_under_check() {
+fn recognized_regression_cannot_manufacture_a_gate() {
     let base = tree(&[("base.rs", &nested_loop_work(3))]);
     let head = tree(&[("head.rs", &nested_loop_work(4))]);
 
@@ -91,8 +77,8 @@ fn undocumented_calibrated_regression_blocks_under_check() {
 
     assert_eq!(
         out.status.code(),
-        Some(1),
-        "an undocumented calibrated regression must exit 1; stdout: {}",
+        Some(2),
+        "an unvalidated regression must return no-check (2); stdout: {}",
         stdout(&out)
     );
     let stdout = stdout(&out);
@@ -101,8 +87,8 @@ fn undocumented_calibrated_regression_blocks_under_check() {
         "expected a regression verdict; stdout: {stdout}"
     );
     assert!(
-        stdout.contains("Confidence: Calibrated"),
-        "the drivers must be calibrated, not heuristic; stdout: {stdout}"
+        stdout.contains("Confidence: Estimated"),
+        "the drivers must retain heuristic confidence; stdout: {stdout}"
     );
 }
 
@@ -123,7 +109,7 @@ fn same_regression_is_advisory_without_check() {
 }
 
 #[test]
-fn documented_regression_is_accepted_under_check() {
+fn documentation_cannot_manufacture_evidence() {
     let base = tree(&[("base.rs", &nested_loop_work(3))]);
     let head = tree(&[
         ("head.rs", &nested_loop_work(4)),
@@ -144,8 +130,8 @@ fn documented_regression_is_accepted_under_check() {
 
     assert_eq!(
         out.status.code(),
-        Some(0),
-        "a documented trade-off must be accepted; stdout: {}",
+        Some(2),
+        "documentation cannot make estimates enforceable; stdout: {}",
         stdout(&out)
     );
 }
@@ -159,8 +145,8 @@ fn heuristic_regression_refuses_to_block_and_says_so() {
 
     assert_eq!(
         out.status.code(),
-        Some(0),
-        "heuristic estimates advise, they do not block; stdout: {}",
+        Some(2),
+        "heuristic estimates return no-check rather than pass; stdout: {}",
         stdout(&out)
     );
     assert!(
@@ -168,4 +154,135 @@ fn heuristic_regression_refuses_to_block_and_says_so() {
         "a gate that cannot fire must say so unmissably; stderr: {}",
         stderr(&out)
     );
+}
+
+fn run(args: &[&str]) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_oikosbot"))
+        .args(args)
+        .output()
+        .unwrap()
+}
+
+#[test]
+fn json_stdout_is_json_and_text_output_is_written() {
+    let dir = tree(&[("clean.rs", "fn clean() -> u32 { 1 }")]);
+    let source = dir.path().join("clean.rs");
+    let out = run(&["analyze", source.to_str().unwrap(), "--format", "json"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let payload: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(payload.is_array());
+    let file = dir.path().join("output.txt");
+    let out = run(&[
+        "analyze",
+        source.to_str().unwrap(),
+        "--output",
+        file.to_str().unwrap(),
+    ]);
+    assert!(out.status.success());
+    assert!(!fs::read_to_string(file).unwrap().is_empty());
+}
+
+#[test]
+fn report_is_advisory_but_check_never_passes_on_estimates_in_any_format() {
+    let dir = tree(&[("clean.rs", "fn clean() -> u32 { 1 }")]);
+    for format in ["text", "json", "sarif"] {
+        let out = run(&[
+            "report",
+            dir.path().to_str().unwrap(),
+            "--format",
+            format,
+            "--eco-threshold",
+            "100",
+        ]);
+        assert_eq!(out.status.code(), Some(0), "{}", stderr(&out));
+        let out = run(&["check", dir.path().to_str().unwrap(), "--format", format]);
+        assert_eq!(out.status.code(), Some(2), "{}", stderr(&out));
+    }
+}
+
+#[test]
+fn empty_invalid_excluded_and_unsupported_are_not_successful_scans() {
+    for files in [
+        vec![],
+        vec![("broken.rs", "fn broken( {")],
+        vec![("unsupported.txt", "hello")],
+        vec![
+            ("clean.rs", "fn clean() {}"),
+            (".oikos.yml", "exclude: ['**/*.rs']"),
+        ],
+        vec![
+            ("clean.rs", "fn clean() {}"),
+            (".oikos.yml", "analysis:\n  languages: [typescript]"),
+        ],
+        vec![
+            ("clean.rs", "fn clean() {}"),
+            (".oikos.yml", "exclude: ['[']"),
+        ],
+        vec![("clean.rs", "fn clean() {}"), (".oikos.yml", "analysis: [")],
+    ] {
+        let dir = tree(&files);
+        let out = run(&["report", dir.path().to_str().unwrap()]);
+        assert_eq!(out.status.code(), Some(2), "{}", stderr(&out));
+    }
+}
+
+#[test]
+fn silence_firing_and_taxonomy_survive_the_cli_sarif_boundary() {
+    let clean = tree(&[("clean.rs", "fn clean() -> u32 { 1 }")]);
+    let firing = tree(&[("loops.rs", &nested_loop_work(3))]);
+    for (dir, count) in [(&clean, 0), (&firing, 1)] {
+        let out = run(&["report", dir.path().to_str().unwrap(), "--format", "sarif"]);
+        assert!(out.status.success(), "{}", stderr(&out));
+        let log: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+        let findings = log["runs"][0]["results"].as_array().unwrap();
+        assert_eq!(findings.len(), count);
+        if count == 1 {
+            assert_eq!(findings[0]["ruleId"], "oikosbot/nested-loops");
+            assert_eq!(findings[0]["properties"]["taxonomy"]["intent"], "wish");
+            assert_eq!(
+                findings[0]["properties"]["taxonomy"]["locus"],
+                "externalities"
+            );
+            assert!(findings[0].get("fixes").is_none());
+        }
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn directory_scan_does_not_follow_external_file_symlinks() {
+    let outside = tree(&[("source.rs", &nested_loop_work(3))]);
+    let root = tree(&[]);
+    std::os::unix::fs::symlink(
+        outside.path().join("source.rs"),
+        root.path().join("link.rs"),
+    )
+    .unwrap();
+    assert_eq!(
+        run(&["report", root.path().to_str().unwrap()])
+            .status
+            .code(),
+        Some(2)
+    );
+}
+
+#[test]
+fn requested_unavailable_security_is_not_silent_success() {
+    let dir = tree(&[("clean.rs", "fn clean() {}")]);
+    let out = run(&["report", dir.path().to_str().unwrap(), "--security"]);
+    assert_eq!(out.status.code(), Some(2));
+    assert!(stderr(&out).contains("unavailable"));
+}
+
+#[test]
+fn requested_missing_policy_directory_is_not_silent_success() {
+    let dir = tree(&[("clean.rs", "fn clean() {}")]);
+    let missing = dir.path().join("missing-policies");
+    let out = run(&[
+        "report",
+        dir.path().to_str().unwrap(),
+        "--policy-dir",
+        missing.to_str().unwrap(),
+    ]);
+    assert_eq!(out.status.code(), Some(2));
 }

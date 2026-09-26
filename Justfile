@@ -35,3 +35,7 @@ shell-check:
 clean:
     cargo clean
     cd {{ haskell_dir }} && cabal clean
+
+# Evidence collection only, never an automatic release authorization.
+release-preflight:
+    bash tools/ci/release-preflight.sh

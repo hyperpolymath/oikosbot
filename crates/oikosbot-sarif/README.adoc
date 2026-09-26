@@ -24,7 +24,7 @@ OikosBot's findings.
   `quality_score`, `overall_health`, `energy_joules`, `carbon_gco2e`,
   `duration_ms`, `memory_bytes`, `confidence`, optional `suggestion`, optional
   `pareto_status` / `pareto_score` / `pareto_dominated_by`, and — for
-  calibrated estimates — `resource_range` with `min`/`typical`/`max` per axis.
+  pattern-table estimates — `resource_range` with `min`/`typical`/`max` per axis.
 * Suggestions ride in the message and in `properties`. There is deliberately no
   SARIF `fix` object: OikosBot does not rewrite code.
 

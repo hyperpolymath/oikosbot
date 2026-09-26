@@ -10,24 +10,23 @@ unit or a confidence, its type is defined in this crate.
 == What it owns
 
 * **Units** — `Energy` (J), `Duration` (ms), `Carbon` (gCO2e), `Memory`
-  (bytes), each a newtype over the base unit with constructors
-  (`Energy::joules`, `Carbon::kilograms_co2e`, …). Constructors, not bare
-  floats, so a unit mix-up cannot compile.
+  (bytes), each a newtype over a base unit. They distinguish API dimensions,
+  but public numeric constructors do not validate physical measurements.
 * **`ResourceProfile`** — the four-axis profile for one code unit, plus
   `Add` and `cost(&ShadowPrices)` for the Eclexia-style shadow-price
   valuation.
-* **`ResourceRange`** — the min/typical/max envelope behind a calibrated
+* **`ResourceRange`** — the min/typical/max envelope behind a pattern-table
   estimate.
 * **Scores** — `EcoScore`, `EconScore` (both clamped 0–100) and
   `HealthIndex::compute(eco, econ, quality)`, whose `overall` is
   `0.4·eco + 0.3·econ + 0.3·quality`.
 * **`Confidence`** — the ladder `Measured > Calibrated > Estimated >
-  `Unknown`, ordered by `PartialOrd`. Only `Measured` and `Calibrated` may
-  drive a blocking decision anywhere in the system.
+  `Unknown`. Resource labels alone do not authorize action; no current per-file
+  row has earned calibration evidence.
 * **`AnalysisResult`** / **`CodeLocation`** / **`ParetoInfo`** — the finding
-  record. Every field after `resources` is `#[serde(default)]`, so a JSON
-  document written by an older version still loads; `resource_range` is
-  additionally skipped when absent, keeping the wire format stable.
+  record. New optional `taxonomy` and `resource_range` fields default to None
+  for older JSON and are skipped when absent; core resource/health fields remain
+  required. Adding fields is a Rust struct-literal source compatibility change.
 
 == What it does not do
 

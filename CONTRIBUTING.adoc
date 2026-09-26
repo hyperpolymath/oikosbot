@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Contributing to OikosBot
+:toc:
+
+Start with `0-AI-MANIFEST.a2ml`, `.claude/CLAUDE.md`, the six descriptiles and
+link:docs/LAUNCH-READINESS.adoc[launch readiness]. Keep changes scoped; do not
+import the similarly named DSL or conflate the fleet identities.
+
+== Build and verify the implemented surfaces
+
+Install the Rust toolchain declared in `rust-toolchain.toml`. Native dependencies
+include a C/C++ compiler, CMake, Make and libclang for tree-sitter/HiGHS. Then:
+
+[source,shell]
+----
+cargo build --workspace --locked
+cargo test --workspace --locked
+cargo fmt --check
+cargo clippy --workspace --locked
+bash tests/test-eclexia-adapter.sh
+----
+
+Haskell is independent: with GHC 9.4 and Cabal 3.10 run `just haskell-build` and
+`just haskell-test`. With a compatible upstream AffineScript compiler run
+`AS_BIN=/path/to/main.exe just affine-check`; shell syntax checks are *not*
+AffineScript type checks. The optional fleet crate needs a compatible sibling
+checkout; do not add it as a mandatory dependency of the standalone workspace.
+
+`just check` runs Rust and Haskell build/tests, not full release verification.
+`just rust-fmt-check` checks formatting; `just shell-check` checks the AS wrapper
+syntax. `just release-preflight` collects Rust/container evidence where tooling
+exists, but cannot authorize a release. See link:docs/ci-runbook.adoc[CI runbook].
+
+== Code, tests and documentation
+
+Use Rust for the workspace, AffineScript for the App, AsciiDoc for prose, and the
+existing repository tool/language policy. Preserve existing licence/SPDX notices;
+flag conflicts instead of sweeping them. Run rustfmt. Prefer descriptive commits
+(`fix(pareto): ...`, `test(cli): ...`, `docs: ...`) and explain compatibility changes.
+
+Each gate needs a clean fixture, a firing fixture for the intended reason, and
+an unavailable/invalid-input control. Do not substitute line coverage for
+observable assertions. Keep benchmark corpora and raw datasets out of source;
+version workloads, environment and baselines before gating on timings.
+
+Update descriptiles in place, especially STATE with exact commands, outcomes and
+unavailable tools. Distinguish designed/tested/audited/proven. Keep a loss/residual
+account for changed models; do not promote confidence to make a failing release
+check green. Link evidence and limits in the PR, request review, and do not close
+issues that still have unexecuted or external acceptance requirements.
+
+== Release and fleet coordination
+
+Do not change the Action image digest until the artifact at that digest has been
+tested. Coordinate JSON taxonomy/exit-status changes with consumers and the optional
+fleet bridge. Do not change a shared fleet API here. Release approval belongs to
+maintainers after link:docs/LAUNCH-READINESS.adoc[the launch gates], not to a score.

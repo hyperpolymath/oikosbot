@@ -31,3 +31,9 @@ projects = [
   { name = "eclexia", repo = "hyperpolymath/eclexia", relation = "policy-language + future-host", note = "Turing-complete general-purpose language implementing the Economics-as-Code paradigm; far broader in scope than this bot. Today: the .ecl policy surface (currently evaluated by a filename-matching FAKE backend — see DEBT.adoc). Intended trajectory: OikosBot's dominance/frontier maths moves into the Eclexia stdlib so its currently-inert @optimize becomes semantically real for every Eclexia program; OikosBot's DEA duals become the real solver behind shadow_price(), replacing hand-set constants; and OikosBot is eventually IMPLEMENTED IN Eclexia. OikosBot is its first serious application, not its owner." },
   { name = "standards", repo = "hyperpolymath/standards", relation = "reusable-workflows", note = "Supplies the reusable workflows this repo calls (mirror, secret-scanner, scorecard, governance). Pin bumps here are estate-coordinated." }
 ]
+
+[pareto-research-audit]
+date = "2026-09-26"
+reference = "docs/research/EVIDENCE-SCOPED-PARETO.adoc"
+related = ["eclexia", "echo-types", "residual-evidence-types", "epistemic-types", "tropical-types", "choreographic-types", "absolute-zero", "januskey", "proven-tests-and-benches"]
+relationship = "Pinned source inspection and conceptual comparison only; no imported proof or new runtime dependency."

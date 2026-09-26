@@ -21,21 +21,23 @@ report-format = "logtalk"
 # model = "hypatia-v2"
 
 [finding-taxonomy]
-# Every OikosBot finding is classified on three orthogonal axes, layered
-# intent -> action -> outcome. The intent axis is executable Eclexia
-# (policies/finding_taxonomy.ecl); see policies/README.adoc for the prose.
+# Finding vocabulary (unclassified legacy/synthetic findings may omit tags).
+# Pattern findings are classified on three orthogonal axes, layered
+# intent -> action -> outcome. The legacy numeric example is Eclexia
+# (policies/finding_taxonomy.ecl), not executed by the builtin Rust adapter.
 axes = ["intent", "maintenance", "locus"]
 
 [finding-taxonomy.intent]
-# Deontic force. DERIVED from the finding's confidence score (not hand-tagged),
-# and identical to the gitbot-fleet Safety Triangle and its thresholds.
+# Canonical vocabulary; categories do not grant mutation authority.
+# Resource Confidence is not a probability. Current Rust heuristic rules
+# emit wish; future promotion requires validated evidence AND policy authority.
 values = ["must", "intend", "wish"]
-must = { triangle = "eliminate", confidence = ">=0.95", disposition = "auto-fix" }
+must = { triangle = "eliminate", confidence = ">=0.95", disposition = "policy-review-required" }
 intend = { triangle = "substitute", confidence = ">=0.85", disposition = "review" }
 wish = { triangle = "control", confidence = "<0.85", disposition = "human" }
 
 [finding-taxonomy.maintenance]
-# Why the change is made (Swanson 1976 / ISO/IEC 14764). Hand-tagged per rule.
+# Unordered categories. Why the change is made (Swanson 1976 / ISO/IEC 14764). Hand-tagged per rule.
 values = ["corrective", "adaptive", "perfective", "preventive"]
 
 [finding-taxonomy.locus]

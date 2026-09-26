@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Policies: implementation and authority
+
+The Rust CLI consumes a small subset of `.oikos.yml`: mode, Eco-score floor,
+exclude globs and supported-language selection. Most of `config/oikos.yaml` is
+a target schema, not live runtime configuration. Unknown top-level target fields
+are still accepted; do not assume they enforce anything. See link:usage.adoc[usage].
+
+The default `oikosbot-eclexia` implementation is a builtin rule adapter, not an
+Eclexia interpreter. `eclexia-native` explicitly reports unavailable until native
+integration exists. `.ecl` files and the Datalog/other policy-engine surfaces are
+not proof that arbitrary policy source executes. Use `tests/test-eclexia-adapter.sh`
+to check the actual builtin/native rejection contract.
+
+The canonical finding vocabulary is
+`NEUROSYM.a2ml [finding-taxonomy]`; META points to it. Maintenance and locus are
+categories, not ordered rankings. Current heuristic Rust patterns emit
+`wish/perfective/externalities`. No conversion exists from the resource evidence
+ladder to the example 0.95/0.85 classifier's probability input. The taxonomy
+sample's automatic action function returns false: an obligation requires explicit
+policy authority as well as evidence, and consent/exception handling where applicable.
+
+Policy budgets must not be inferred from score weights. The experimental Pareto
+contract supports hard ceilings/floors on interval-valued dimensions, but is not
+wired into the App or a production resource gate. Money saved cannot buy an
+undeclared exception to a carbon cap. A trade-off heading is a documentation
+signal, not an approved exception.

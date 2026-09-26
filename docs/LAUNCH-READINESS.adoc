@@ -1,0 +1,183 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell
+= Launch readiness and issue disposition
+:toc:
+
+Assessment date: *2026-09-26*. Baseline: `2f47a61`.
+Decision: *HOLD general launch and regulator/auto-fix claims*.
+This branch is a proposed hardening tranche, not a release certification.
+No release, image promotion, issue closure or deployment was performed.
+
+== Evidence boundary
+
+The repository already has published Action/container surfaces; publication is
+not evidence of production readiness. The baseline main-branch CI run
+`36204445111` and Publish Image run `36204445093` reported success on GitHub.
+Those runs do *not* validate this branch.
+
+Full pinned-toolchain Rust, Haskell, AffineScript, Docker and formal-prover
+execution was not available. Rustup/static Rust and Debian downloads failed.
+An older standalone Rust 1.88.0 toolset was later recovered for formatting and
+isolated numerical checks. Cargo testing still failed on inaccessible crates.io.
+New workspace/integration tests are *authored, not locally executed*. The prototype's
+assurance label is *designed*, not proven. Passing a syntax check is not a build.
+See the verification record below for checks that actually ran.
+
+== Immediate trust-boundary corrections in this branch
+
+* Withdraw unearned `Calibrated` labels from the expert resource table and
+  estate power/price coefficients. Existing numeric table values are retained
+  for comparison; neither the values nor the direction of change is validated.
+* No-loss dominance replaces epsilon-permitted losses, which could form cycles.
+  Invalid/non-finite comparisons return `Indeterminate`, not `Neutral` or a panic.
+* `check` and `compare --check` distinguish missing evidence (exit 2) from
+  a supported negative judgement (exit 1). Reports remain advisory (exit 0).
+  Formatting no longer determines whether a threshold gate runs.
+* Reject recovered syntax errors, invalid config modes/globs/languages,
+  empty/fully excluded scans, and unreadable traversal entries. Directory scans
+  do not follow file symlinks. JSON stdout is no longer mixed with tracing logs.
+* The reserved security feature no longer references an absent dependency; it
+  compiles as an explicit unavailable seam. Policy directory/evaluation errors
+  propagate instead of becoming warnings or empty successful evaluations.
+* Typed taxonomy reaches pattern results, JSON and SARIF. Unclassified rules
+  remain unclassified. Resource confidence never becomes a numeric probability
+  or permission to auto-fix.
+* Short GitHub pages terminate collection; malformed responses, duplicate pages,
+  invalid timestamps and inventory caps fail explicitly. Release collection
+  paginates. Partial collection retains successes but returns failure. Analysis
+  refuses a staging inventory missing required per-repository files.
+* Rust version is declared in `rust-toolchain.toml`; container build and runtime
+  share Bookworm. Added candidate-image smoke fixtures to PR CI and publication.
+  These are not full release-contract or provenance tests.
+
+== Every currently open GitHub issue
+
+No issue is closed on the strength of authored-but-unexecuted tests.
+
+[cols="1,2,3",options="header"]
+|===
+|Issue |Disposition |Remaining acceptance evidence
+|https://github.com/hyperpolymath/oikosbot/issues/12[#12 taxonomy vocabulary]
+|Proposal implemented: NEUROSYM canonical; wish / preventive / externalities.
+|Owner review of the deontic interpretation. A `must` label is not authority.
+|https://github.com/hyperpolymath/oikosbot/issues/16[#16 developer docs]
+|Thin README, architecture/policy routing, contributing/build guide and launch checklist.
+|Check links/rendering and execute the multi-toolchain walkthrough. No claim that scaffolds build.
+|https://github.com/hyperpolymath/oikosbot/issues/17[#17 user docs]
+|Usage, exit semantics, score limitations, modes, policies and deployment hold documented.
+|A production App runbook requires a real listener, tested orchestration and operations evidence.
+|https://github.com/hyperpolymath/oikosbot/issues/18[#18 taxonomy transport]
+|Pattern rules carry typed tags through JSON/SARIF; old input defaults to no taxonomy.
+|Execute tests; classify synthetic policy/security/dependency rules deliberately and wire App comments.
+|https://github.com/hyperpolymath/oikosbot/issues/48[#48 calibration]
+|Wiring existed, but evidence promotion was unsound. Retain bands; downgrade unsupported claims.
+|Reproducible calibration corpus, sampling, hardware/workloads, holdouts, error analysis,
+per-axis propagation and reviewed before/after results. A range alone does not earn calibration.
+|https://github.com/hyperpolymath/oikosbot/issues/81[#81 tests/benchmarks]
+|Added numeric/cycle, CLI clean/firing/no-check, scoped-contract, pagination and image-smoke controls.
+|Full SARIF schema validation, *composite Action* and digest/provenance release tests,
+mutation, shrinking properties, real fuzz targets, compatibility and frozen benchmarks remain open.
+|https://github.com/hyperpolymath/oikosbot/issues/82[#82 future interfaces]
+|Applicability respected: no fabricated Idris2/Zig/Hexadeca proof scaffolds.
+|Reassess when an owned foreign interface is introduced. Upstream AffineScript FFI
+use is not an OikosBot ABI proof. Canonical Hexadeca authority is still unlocated here.
+|===
+
+== Release gates (must all have receipts for the proposed release)
+
+. *Build*: pinned toolchain + locked dependencies, all workspace tests, meaningful
+  clippy review, optional feature tests, paired clean/firing/no-check controls.
+. *Artifact*: build once, test and publish the same digest; anonymous pull by
+  digest, expected version, non-root execution, semver/SHA tag consistency,
+  provenance verification and deliberate nonexistent-digest rejection.
+  Current smoke checks test a candidate build, not the separately pushed digest.
+. *Action*: run `action.yml` itself with clean and firing fixtures and validate
+  SARIF 2.1.0 against a pinned schema and GitHub constraints. Do not substitute
+  a direct CLI/container test for this test.
+. *Evidence*: reviewer accepts the calibration/uncertainty model for any proposed
+  enforcement. Until then, release only explicitly experimental advisory reports.
+. *Governance*: review declared local applicability against the pinned standards
+  sources, resolve drift explicitly, and record responsible authority and review date.
+. *Operations*: App launch additionally requires AffineScript compiler evidence,
+  real listener/transport, payload/HMAC negative tests, replay/idempotency controls,
+  least-privilege tokens, rate limits, bounded resource consumption, secret rotation,
+  redacted logs, incident containment and a tested rollback procedure.
+. *Owner approval*: explicit scoped release approval after reviewing these receipts.
+  A high Pareto score or green CI does not substitute for it.
+
+Run `just release-preflight` to collect a *subset* of the evidence. Missing tools
+return 2. It does not cover Haskell/AS/provers, full SARIF schema, live registry
+permissions, attestations or the Action wrapper. Do not advance a tag/digest on
+its output alone. Existing `action.yml` remains pinned to the previously published
+image: none of these source fixes silently changes that artifact.
+
+== Known residuals that prevent a wider claim
+
+* Raw per-function comparison is not a comparison of equivalent useful work.
+  AST-node count is not executions; deletion or changed scope can look like a win.
+* The table maps nested loops to sorting and has speculative envelopes. Neither
+  extrema nor correlations have a validated measurement interpretation.
+* Quality/eco/econ scores and price weights encode choices, not social welfare.
+  Energy and carbon are correlated; a weighted sum can count the same proxy twice.
+* A workflow's `updated_at - run_started_at` is an API interval proxy, not job CPU
+  time, billable minutes or an invoice. Missing timestamps are still stored as
+  zero duration in the legacy schema. Runner mix, cancellations and concurrency
+  require a new sampling/coverage schema before cost claims.
+* Collection is capped by `max_runs`, not an entire history; resumability still
+  trusts pre-existing staging files. No signed completeness manifest, atomic
+  snapshot transaction, freshness contract or globally stable pagination exists.
+* Historical workflow failures do not establish that a quality gate is sound.
+  DEA scores are relative to selected peers and modeled outputs, not causal impact.
+* Scope/units/interval validation is not model adequacy, authenticated evidence,
+  allocation authority, consent, distributive justice or protection from rebound.
+* Bounded-input handling, meaningful fuzzing/mutation, benchmark baselines,
+  dependency vulnerability review and full policy/config compatibility need work.
+
+== Standards applicability
+
+See link:research/EVIDENCE-SCOPED-PARETO.adoc[the pinned estate-source map].
+The standards constitution inspected is explicitly *draft*. Its separation of
+policy and evidence is adopted as a local safety discipline, not claimed as
+estate certification. The template is starting material, not authority to
+invent completed ABI proofs, badges or quantum-safe provenance.
+
+Keep the six existing A2ML descriptiles in their declared location. The current
+template advertises deed/CLADE/ANCHOR surfaces while standards still references
+six A2ML files: record this as an upstream/local profile tension, do not rename
+metadata wholesale without a versioned migration. Likewise the standards README
+runtime table conflicts with its canonical `.claude/CLAUDE.md`; the latter and
+this repo use Bun/AffineScript. No new application JS/TS/Python was introduced.
+Existing licence files and SPDX notices were not swept or reclassified.
+
+== Verification record
+
+The final session summary in `STATE.a2ml [launch-hardening-audit]` records local
+checks and unavailable tools. Required Rust commands are:
+
+[source,shell]
+----
+cargo fmt --check
+cargo test --workspace --locked
+cargo test -p oikosbot-pareto --test trust_boundary --locked
+cargo test -p oikosbot-cli --test check_gate --locked
+bash tests/test-eclexia-adapter.sh
+bash tools/ci/release-preflight.sh
+----
+
+Actually executed locally: workflow-linter's three checks plus lockcheck; Bash
+syntax; Action argument acceptance/rejection with a Docker recorder; missing-tool
+preflight refusal; tree-sitter parsing of changed Rust files; formatting/checking
+with standalone rustfmt 1.8.0 (Rust 1.88.0). Eight isolated numerical tests passed:
+four from the actual experimental contract module with enum-only adapters, and
+four Pareto regression controls over extracted function bodies with serialization
+removed. These checks are *not* Cargo integration tests, pinned-1.90.0 verification,
+SARIF/CLI validation or proof of actual-world resource bounds.
+
+The issue query returned *seven open issues*, plus closed registry/release
+incident #69 in the all-state query. #69 is not reopened or claimed re-verified:
+anonymous pullability and the proposed release digest still need fresh checks.
+
+Main pushes publish candidates under `development` instead of automatically
+advancing `latest`. Existing digests are unchanged. This limits accidental stable
+promotion; it does not implement GitHub environment approval or replace an owner's
+release review. Semver tags must not be created until the outstanding gates pass.

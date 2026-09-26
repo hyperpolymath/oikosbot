@@ -4,7 +4,7 @@
 //! # OikosBot CLI
 //!
 //! Ecological and economic code analysis tool.
-//! Built with Eclexia principles - proving resource-aware design works.
+//! Built with Eclexia principles - exploring resource-aware design.
 
 #![forbid(unsafe_code)]
 mod config;
@@ -166,12 +166,23 @@ enum Commands {
     },
 }
 
-fn main() -> Result<()> {
+fn main() {
+    if let Err(error) = run() {
+        eprintln!("no check performed: {error:#}");
+        std::process::exit(2);
+    }
+}
+
+fn run() -> Result<()> {
     let cli = Cli::parse();
+    let threshold_check = matches!(&cli.command, Commands::Check { .. });
 
     // Set up logging
     let log_level = if cli.verbose { "debug" } else { "info" };
-    tracing_subscriber::fmt().with_env_filter(log_level).init();
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .with_env_filter(log_level)
+        .init();
 
     match cli.command {
         Commands::Analyze {
@@ -218,6 +229,10 @@ fn main() -> Result<()> {
                 .or(cfg.as_ref().and_then(|c| c.eco_threshold))
                 .unwrap_or(50.0);
 
+            anyhow::ensure!(
+                eco_threshold.is_finite() && (0.0..=100.0).contains(&eco_threshold),
+                "eco threshold must be finite and between 0 and 100"
+            );
             let mut all_results = collect_directory_results(&path, cfg.as_ref())?;
 
             // Intra-repo Pareto pass over the organic code units (before
@@ -227,12 +242,12 @@ fn main() -> Result<()> {
 
             // Security-sustainability correlation
             if security {
-                run_security_correlation(&path, &mut all_results);
+                run_security_correlation(&path, &mut all_results)?;
             }
 
             // Policy evaluation
             if let Some(ref pdir) = policy_dir {
-                run_policy_evaluation(pdir, &mut all_results);
+                run_policy_evaluation(pdir, &mut all_results)?;
             }
 
             // Emit formatted output
@@ -270,25 +285,26 @@ fn main() -> Result<()> {
                         println!("\nOutput written to: {}", out_path.display());
                     }
 
-                    // Without a config, keep the historical blocking behaviour.
-                    // With one, honor its enforcement: advisor/warning configs
-                    // report without failing the run; blocking/regulator fail.
-                    let blocking = cfg.as_ref().is_none_or(|c| c.enforcement_blocking);
-                    if files_below_threshold > 0 {
-                        if blocking {
-                            std::process::exit(1);
-                        } else {
-                            println!(
-                                "\nAdvisory mode ({}): not failing the run.",
-                                cfg.as_ref()
-                                    .map(|c| c.source.display().to_string())
-                                    .unwrap_or_default()
-                            );
-                        }
-                    }
+                    // Gate evaluation is below rendering, independent of format.
                 }
-                _ => {
-                    eprintln!("Unsupported format: {}", format);
+                _ => anyhow::bail!("Unsupported format: {}", format),
+            }
+            // `report` is always advisory. `check` must not green-light a gate
+            // merely because estimates have fallen below/above a score floor.
+            if threshold_check && cfg.as_ref().is_none_or(|c| c.enforcement_blocking) {
+                anyhow::ensure!(
+                    all_results.iter().all(|r| matches!(
+                        r.confidence,
+                        oikosbot_metrics::Confidence::Measured
+                            | oikosbot_metrics::Confidence::Calibrated
+                    )),
+                    "threshold check NOT enforced: resource figures are estimates; use report for advisory output"
+                );
+                if all_results
+                    .iter()
+                    .any(|r| r.health.eco_score.0 < eco_threshold)
+                {
+                    std::process::exit(1);
                 }
             }
         }
@@ -361,7 +377,14 @@ fn main() -> Result<()> {
                         None => println!("{}", text),
                     }
                 }
-                _ => print_comparison(&assessment, confidence, documented),
+                "text" => {
+                    let text = format_comparison(&assessment, confidence, documented);
+                    match output {
+                        Some(ref path) => fs::write(path, text)?,
+                        None => print!("{text}"),
+                    }
+                }
+                _ => anyhow::bail!("Unsupported comparison format: {}", format),
             }
 
             // Advisory by default; --check enforces the trade-off doctrine —
@@ -371,27 +394,16 @@ fn main() -> Result<()> {
                 oikosbot_pareto::ParetoVerdict::Regression
                     | oikosbot_pareto::ParetoVerdict::TradeOff
             );
-            if check && needs_documentation && documented != Some(true) {
-                if assessment.actionable {
+            if check {
+                anyhow::ensure!(
+                    assessment.verdict != oikosbot_pareto::ParetoVerdict::Indeterminate
+                        && matches!(confidence, oikosbot_metrics::Confidence::Measured
+                            | oikosbot_metrics::Confidence::Calibrated),
+                    "--check requested but NOT enforced: no validated resource evidence; advisory result only (use compare without --check)"
+                );
+                if needs_documentation && documented != Some(true) && assessment.actionable {
                     std::process::exit(1);
                 }
-                // Enforcement was asked for and cannot be delivered: the
-                // driving objectives rest on heuristic estimates, which by
-                // design may not block a merge. Say so unmissably. A gate
-                // that silently no-ops is indistinguishable from one that
-                // passed, which is the failure mode this tool exists to
-                // find — so it must never be silent about its own limits.
-                eprintln!(
-                    "::warning::--check requested but NOT enforced: the objectives driving \
-                     this {} verdict are {:?}, and only Measured or Calibrated inputs may \
-                     block. Reported as advisory. See docs: enforcement is inert while \
-                     resource figures remain heuristic estimates.",
-                    match assessment.verdict {
-                        oikosbot_pareto::ParetoVerdict::Regression => "pareto-regression",
-                        _ => "trade-off",
-                    },
-                    confidence,
-                );
             }
         }
 
@@ -463,10 +475,11 @@ fn collect_directory_results(
                 "target" | "node_modules" | ".git" | "dist" | "build" | ".cache"
             )
         })
-        .filter_map(|e| e.ok())
     {
+        let entry = entry?;
         let entry_path = entry.path();
-        if !entry_path.is_file() {
+        // Do not follow symlink files outside the declared analysis boundary.
+        if !entry.file_type().is_file() {
             continue;
         }
 
@@ -487,16 +500,14 @@ fn collect_directory_results(
             }
         }
 
-        match analyze_file(entry_path) {
-            Ok(results) => {
-                all_results.extend(results);
-            }
-            Err(e) => {
-                info!("Skipping {}: {}", entry_path.display(), e);
-            }
-        }
+        all_results.extend(analyze_file(entry_path)?);
     }
 
+    anyhow::ensure!(
+        !all_results.is_empty(),
+        "no analyzable code units under {} (unsupported, empty or excluded input)",
+        path.display()
+    );
     Ok(all_results)
 }
 
@@ -506,17 +517,12 @@ fn emit_output(
     format: &str,
     output: Option<&std::path::Path>,
 ) -> Result<()> {
+    anyhow::ensure!(!results.is_empty(), "no analyzable code units");
     let text = match format {
         "sarif" => oikosbot_sarif::to_sarif_json(results, VERSION)?,
         "json" => serde_json::to_string_pretty(results)?,
-        "text" => {
-            print_results_text(results);
-            return Ok(());
-        }
-        other => {
-            eprintln!("Unsupported format: {}", other);
-            return Ok(());
-        }
+        "text" => format_results_text(results),
+        other => anyhow::bail!("Unsupported format: {}", other),
     };
 
     match output {
@@ -532,64 +538,37 @@ fn emit_output(
     Ok(())
 }
 
-fn print_comparison(
+fn format_comparison(
     assessment: &oikosbot_pareto::Comparison,
     confidence: oikosbot_metrics::Confidence,
     documented: Option<bool>,
-) {
-    let verdict_label = match assessment.verdict {
+) -> String {
+    let label = match assessment.verdict {
         oikosbot_pareto::ParetoVerdict::Improvement => "PARETO IMPROVEMENT",
         oikosbot_pareto::ParetoVerdict::Regression => "PARETO REGRESSION",
         oikosbot_pareto::ParetoVerdict::TradeOff => "TRADE-OFF",
         oikosbot_pareto::ParetoVerdict::Neutral => "NEUTRAL",
+        oikosbot_pareto::ParetoVerdict::Indeterminate => "NO COMPARISON",
     };
-    println!("Pareto verdict: {}\n", verdict_label);
-
-    println!(
-        "  {:<20} {:>14} {:>14}   movement",
-        "objective", "base", "head"
-    );
+    let mut text = format!("Pareto verdict: {label}\nConfidence: {confidence:?}\n");
     for d in &assessment.deltas {
-        let movement = if d.improvement > oikosbot_pareto::DEFAULT_EPSILON {
-            "improved"
-        } else if d.improvement < -oikosbot_pareto::DEFAULT_EPSILON {
-            "worsened"
+        text.push_str(&format!(
+            "  {}: base {:.4}, head {:.4}, signed improvement {:.4}\n",
+            d.name, d.base, d.head, d.improvement
+        ));
+    }
+    text.push_str(&format!("Drivers: {}\n", assessment.drivers.join(", ")));
+    if !assessment.actionable {
+        text.push_str("Advisory: heuristic estimates cannot drive blocking decisions.\n");
+    }
+    if let Some(present) = documented {
+        text.push_str(if present {
+            "Trade-off documentation: present (not approval)\n"
         } else {
-            "unchanged"
-        };
-        println!(
-            "  {:<20} {:>14.4} {:>14.4}   {}",
-            d.name, d.base, d.head, movement
-        );
+            "Trade-off documentation: MISSING\n"
+        });
     }
-
-    if !assessment.drivers.is_empty() {
-        println!("\nDrivers: {}", assessment.drivers.join(", "));
-    }
-    println!(
-        "Confidence: {:?}{}",
-        confidence,
-        if assessment.actionable {
-            ""
-        } else {
-            " (advisory - heuristic estimates cannot drive blocking decisions)"
-        }
-    );
-
-    match (assessment.verdict, documented) {
-        (
-            oikosbot_pareto::ParetoVerdict::TradeOff | oikosbot_pareto::ParetoVerdict::Regression,
-            Some(true),
-        ) => println!("Trade-off documentation: present"),
-        (
-            oikosbot_pareto::ParetoVerdict::TradeOff | oikosbot_pareto::ParetoVerdict::Regression,
-            Some(false),
-        ) => println!(
-            "Trade-off documentation: MISSING - add a \"Pareto-Trade-off:\" trailer \
-             (competing objectives, decision, why it is Pareto-optimal here, rough metric impact)"
-        ),
-        _ => {}
-    }
+    text
 }
 
 fn print_summary(
@@ -675,7 +654,7 @@ fn print_results_text(results: &[oikosbot_metrics::AnalysisResult]) {
 fn run_policy_evaluation(
     policy_dir: &std::path::Path,
     results: &mut Vec<oikosbot_metrics::AnalysisResult>,
-) {
+) -> Result<()> {
     match oikosbot_eclexia::evaluate_policies(policy_dir, results) {
         Ok(decisions) => {
             let warns = decisions
@@ -697,58 +676,26 @@ fn run_policy_evaluation(
             results.extend(policy_results);
         }
         Err(e) => {
-            eprintln!("Policy evaluation failed: {}", e);
+            return Err(e);
         }
     }
+    Ok(())
 }
 
 /// Run security-sustainability correlation if the feature is available
 fn run_security_correlation(
     path: &std::path::Path,
-    _results: &mut Vec<oikosbot_metrics::AnalysisResult>,
-) {
-    // Check for .machine_readable/bot_directives/panic-attack.scm
-    let directive = oikosbot_analysis::directives::check_directive(path, "panic-attack");
-
-    match directive {
-        Some(ref d) if !d.allow => {
-            eprintln!(
-                "Security scan denied by .machine_readable/bot_directives/panic-attack.scm: {}",
-                d.notes.as_deref().unwrap_or("no reason given")
-            );
-            return;
-        }
-        None => {
-            eprintln!(
-                "Warning: No .machine_readable/bot_directives/panic-attack.scm found in {}. \
-                 Running security scan anyway.",
-                path.display()
-            );
-        }
-        _ => {}
+    results: &mut Vec<oikosbot_metrics::AnalysisResult>,
+) -> Result<()> {
+    if let Some(directive) = oikosbot_analysis::directives::check_directive(path, "panic-attack") {
+        anyhow::ensure!(
+            directive.allow,
+            "security scan denied by repository directive"
+        );
     }
-
-    #[cfg(feature = "security")]
-    {
-        match oikosbot_analysis::security::correlate(path, results) {
-            Ok(correlation) => {
-                eprintln!(
-                    "Security scan: {} findings, composite score: {:.1}",
-                    correlation.security_findings.len(),
-                    correlation.composite_score
-                );
-                results.extend(correlation.security_findings);
-            }
-            Err(e) => {
-                eprintln!("Security scan failed: {}", e);
-            }
-        }
-    }
-
-    #[cfg(not(feature = "security"))]
-    {
-        eprintln!("Security correlation unavailable: build with --features security");
-    }
+    let correlation = oikosbot_analysis::security::correlate(path, results)?;
+    results.extend(correlation.security_findings);
+    Ok(())
 }
 
 fn format_results_text(results: &[oikosbot_metrics::AnalysisResult]) -> String {
@@ -772,6 +719,16 @@ fn format_results_text(results: &[oikosbot_metrics::AnalysisResult]) -> String {
             "   Eco: {:.1}/100  Overall: {:.1}/100\n",
             result.health.eco_score.0, result.health.overall
         ));
+        out.push_str(&format!(
+            "   Duration: {:.4} ms  Memory: {} bytes\n   Confidence: {:?}\n   Rule: {}\n",
+            result.resources.duration.0,
+            result.resources.memory.0,
+            result.confidence,
+            result.rule_id
+        ));
+        for recommendation in &result.recommendations {
+            out.push_str(&format!("   Recommendation: {recommendation}\n"));
+        }
     }
 
     out

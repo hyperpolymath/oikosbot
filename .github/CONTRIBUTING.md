@@ -19,3 +19,9 @@ This project follows the [Rhodium Standard Repository
 
 By contributing, you agree that your contributions will be licensed
 under MPL-2.0 (with MPL-2.0 as automatic legal fallback).
+
+## Development guide
+
+See [CONTRIBUTING.adoc](../CONTRIBUTING.adoc) for the build walkthrough,
+code/test conventions, metadata workflow and release/fleet coordination.
+See [launch readiness](../docs/LAUNCH-READINESS.adoc) before proposing a release.

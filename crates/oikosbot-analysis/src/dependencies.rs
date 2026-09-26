@@ -224,6 +224,7 @@ fn dep_finding_to_result(finding: DepFinding) -> AnalysisResult {
     let severity_boost = if finding.uses_all_features { 2.0 } else { 1.0 };
 
     AnalysisResult {
+        taxonomy: None,
         location: CodeLocation {
             file: finding.manifest,
             line: 0,

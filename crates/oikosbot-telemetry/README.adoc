@@ -21,7 +21,7 @@ everything downstream consumes.
 | `derive` | `derive_per_repo(runs, assumptions)` — per-repo aggregates, and
 `confidence_of(metric)` which states the confidence of each derived figure:
 `wall_minutes` is `Measured` (it comes straight from the GitHub API), while
-energy, carbon and cost are `Calibrated`/`Estimated` from `Assumptions`.
+energy, carbon and imputed cost are `Estimated` from `Assumptions`, not calibration receipts.
 
 | `snapshot` | `write_runs`/`read_runs`, `write_repos`/`read_repos`,
 `write_releases`/`read_releases` — Parquet staging.

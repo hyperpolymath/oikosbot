@@ -32,6 +32,7 @@
 //!   candidates (mirrors `needs_refactor` in `eco_rules.dl`).
 
 #![forbid(unsafe_code)]
+pub mod contract;
 
 use oikosbot_metrics::{
     AnalysisResult, Confidence, EconScore, HealthIndex, ParetoInfo, ShadowPrices,
@@ -96,19 +97,43 @@ fn improvement(direction: Direction, a: f64, b: f64) -> f64 {
     }
 }
 
+fn valid_objectives(objectives: &[Objective], eps: f64) -> bool {
+    !objectives.is_empty()
+        && eps.is_finite()
+        && eps >= 0.0
+        && objectives.iter().enumerate().all(|(i, o)| {
+            !o.name.trim().is_empty()
+                && o.weight.is_finite()
+                && o.weight >= 0.0
+                && !objectives[..i].iter().any(|p| p.name == o.name)
+        })
+}
+
+fn valid_point(objectives: &[Objective], point: &[f64]) -> bool {
+    point.len() == objectives.len() && point.iter().all(|v| v.is_finite())
+}
+
+fn valid_pair(objectives: &[Objective], a: &[f64], b: &[f64], eps: f64) -> bool {
+    valid_objectives(objectives, eps)
+        && valid_point(objectives, a)
+        && valid_point(objectives, b)
+        && a.iter().zip(b).all(|(a, b)| (a - b).is_finite())
+}
+
 /// Does point `a` Pareto-dominate point `b`?
 ///
-/// True iff `a` is at least as good as `b` on every objective (within `eps`)
-/// and strictly better (by more than `eps`) on at least one. Mismatched
-/// vector lengths never dominate (total, no panic).
+/// True iff `a` is no worse on EVERY objective and better by more than `eps`
+/// on at least one. Tolerance suppresses tiny wins; it never permits losses.
+/// Allowing losses up to epsilon creates cycles in three or more dimensions.
+/// Invalid, non-finite or mismatched vectors never dominate.
 pub fn dominates(objectives: &[Objective], a: &[f64], b: &[f64], eps: f64) -> bool {
-    if a.len() != objectives.len() || b.len() != objectives.len() {
+    if !valid_pair(objectives, a, b, eps) {
         return false;
     }
     let mut any_strict = false;
     for (i, obj) in objectives.iter().enumerate() {
         let imp = improvement(obj.direction, a[i], b[i]);
-        if imp < -eps {
+        if imp < 0.0 {
             return false; // a is worse on this objective
         }
         if imp > eps {
@@ -124,10 +149,12 @@ pub fn dominates(objectives: &[Objective], a: &[f64], b: &[f64], eps: f64) -> bo
 pub fn frontier_indices(objectives: &[Objective], points: &[Vec<f64>], eps: f64) -> Vec<usize> {
     (0..points.len())
         .filter(|&i| {
-            !points
-                .iter()
-                .enumerate()
-                .any(|(j, p)| j != i && dominates(objectives, p, &points[i], eps))
+            valid_objectives(objectives, eps)
+                && valid_point(objectives, &points[i])
+                && !points
+                    .iter()
+                    .enumerate()
+                    .any(|(j, p)| j != i && dominates(objectives, p, &points[i], eps))
         })
         .collect()
 }
@@ -155,6 +182,9 @@ pub fn normalize(objectives: &[Objective], points: &[Vec<f64>]) -> Vec<Vec<f64>>
         return Vec::new();
     }
     let n_obj = objectives.len();
+    if !valid_objectives(objectives, 0.0) || points.iter().any(|p| !valid_point(objectives, p)) {
+        return vec![vec![0.0; n_obj]; points.len()];
+    }
     let mut mins = vec![f64::INFINITY; n_obj];
     let mut maxs = vec![f64::NEG_INFINITY; n_obj];
     for p in points {
@@ -173,9 +203,14 @@ pub fn normalize(objectives: &[Objective], points: &[Vec<f64>]) -> Vec<Vec<f64>>
                     if range <= f64::EPSILON {
                         0.5
                     } else {
+                        // Half-scale only when subtraction overflowed.
+                        let scale = if range.is_finite() { 1.0 } else { 0.5 };
+                        let lo = mins[i] * scale;
+                        let hi = maxs[i] * scale;
+                        let value = v * scale;
                         match objectives[i].direction {
-                            Direction::Minimize => (maxs[i] - v) / range,
-                            Direction::Maximize => (v - mins[i]) / range,
+                            Direction::Minimize => (hi - value) / (hi - lo),
+                            Direction::Maximize => (value - lo) / (hi - lo),
                         }
                     }
                 })
@@ -186,12 +221,16 @@ pub fn normalize(objectives: &[Objective], points: &[Vec<f64>]) -> Vec<Vec<f64>>
 
 /// Weights normalized to sum 1 (uniform if all weights are zero/invalid).
 fn normalized_weights(objectives: &[Objective]) -> Vec<f64> {
-    let sum: f64 = objectives.iter().map(|o| o.weight.max(0.0)).sum();
-    if sum <= f64::EPSILON {
+    let largest = objectives.iter().map(|o| o.weight).fold(0.0, f64::max);
+    if largest <= 0.0 || !largest.is_finite() {
         let n = objectives.len().max(1);
         return vec![1.0 / n as f64; objectives.len()];
     }
-    objectives.iter().map(|o| o.weight.max(0.0) / sum).collect()
+    let sum: f64 = objectives.iter().map(|o| o.weight / largest).sum();
+    objectives
+        .iter()
+        .map(|o| (o.weight / largest) / sum)
+        .collect()
 }
 
 /// Weighted Euclidean distance in normalized space. With weights summing to 1
@@ -216,6 +255,9 @@ pub fn pareto_scores(objectives: &[Objective], points: &[Vec<f64>], eps: f64) ->
     if points.is_empty() {
         return Vec::new();
     }
+    if !valid_objectives(objectives, eps) || points.iter().any(|p| !valid_point(objectives, p)) {
+        return vec![0.0; points.len()];
+    }
     let frontier = frontier_indices(objectives, points, eps);
     let normalized = normalize(objectives, points);
     let weights = normalized_weights(objectives);
@@ -231,9 +273,8 @@ pub fn pareto_scores(objectives: &[Objective], points: &[Vec<f64>], eps: f64) ->
             if d.is_finite() {
                 (100.0 * (1.0 - d)).clamp(0.0, 100.0)
             } else {
-                // No frontier can only happen on empty input, handled above;
-                // stay total anyway.
-                100.0
+                // Never promote an unusable distance to a perfect score.
+                0.0
             }
         })
         .collect()
@@ -305,6 +346,8 @@ pub enum ParetoVerdict {
     TradeOff,
     /// No objective moved by more than ε.
     Neutral,
+    /// Invalid or incomplete inputs; no comparison was performed.
+    Indeterminate,
 }
 
 /// Per-objective delta between base and head.
@@ -325,7 +368,7 @@ pub struct Comparison {
     /// Objectives that actually moved (|improvement| > ε) — the verdict's
     /// drivers.
     pub drivers: Vec<String>,
-    /// Whether the verdict may drive a blocking decision: every driving
+    /// Whether the verdict may drive a blocking decision: every
     /// objective must be backed by `Measured` or `Calibrated` inputs.
     /// Heuristic estimates advise; they do not block.
     pub actionable: bool,
@@ -333,6 +376,9 @@ pub struct Comparison {
 
 /// Classify head vs base (see [`ParetoVerdict`]).
 pub fn compare(objectives: &[Objective], base: &[f64], head: &[f64], eps: f64) -> ParetoVerdict {
+    if !valid_pair(objectives, base, head, eps) {
+        return ParetoVerdict::Indeterminate;
+    }
     if dominates(objectives, head, base, eps) {
         ParetoVerdict::Improvement
     } else if dominates(objectives, base, head, eps) {
@@ -372,6 +418,14 @@ pub fn assess(
     eps: f64,
 ) -> Comparison {
     let verdict = compare(objectives, base, head, eps);
+    if verdict == ParetoVerdict::Indeterminate {
+        return Comparison {
+            verdict,
+            deltas: Vec::new(),
+            drivers: Vec::new(),
+            actionable: false,
+        };
+    }
     let deltas: Vec<ObjectiveDelta> = objectives
         .iter()
         .enumerate()
@@ -392,14 +446,10 @@ pub fn assess(
         .map(|d| d.name.clone())
         .collect();
     let actionable = !drivers.is_empty()
-        && deltas.iter().enumerate().all(|(i, d)| {
-            if d.improvement.abs() > eps {
-                let c = confidences.get(i).copied().unwrap_or(Confidence::Unknown);
-                confidence_rank(c) >= confidence_rank(Confidence::Calibrated)
-            } else {
-                true
-            }
-        });
+        && confidences.len() == objectives.len()
+        && confidences
+            .iter()
+            .all(|&c| confidence_rank(c) >= confidence_rank(Confidence::Calibrated));
     Comparison {
         verdict,
         deltas,
@@ -673,6 +723,7 @@ mod tests {
                 ParetoVerdict::Regression => assert_eq!(ba, ParetoVerdict::Improvement),
                 ParetoVerdict::TradeOff => assert_eq!(ba, ParetoVerdict::TradeOff),
                 ParetoVerdict::Neutral => assert_eq!(ba, ParetoVerdict::Neutral),
+                ParetoVerdict::Indeterminate => panic!("finite fixtures must compare"),
             }
         }
     }
@@ -712,7 +763,7 @@ mod tests {
         );
         assert!(!guessed.actionable, "heuristic estimates must not block");
 
-        // Confidence on a non-driving objective is irrelevant.
+        // Unknown evidence on a non-driving objective cannot establish no worsening.
         let mixed = assess(
             &o,
             &base,
@@ -720,7 +771,7 @@ mod tests {
             &[Confidence::Measured, Confidence::Unknown],
             DEFAULT_EPSILON,
         );
-        assert!(mixed.actionable);
+        assert!(!mixed.actionable, "no-worse claims also require evidence");
     }
 
     #[test]

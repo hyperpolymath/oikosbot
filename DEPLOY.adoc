@@ -1,29 +1,43 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-= Oikos Bot Deployment Guide
+= OikosBot deployment boundaries and containment
 
-[NOTE]
-====
-*Status: in flight.*
+*No general-launch or production App approval.* The Action/CLI container is a
+batch analyzer, not an HTTP webhook receiver. Existing published artifacts may
+still have older exit/confidence behavior. Source changes do not upgrade them.
 
-The previous OikosBot deployment runbook (Podman Quadlet + Caddy +
-ReScript/Deno containers under `containers/production/`) was retired on
-2026-05-28 alongside the ReScript codebase. See `git log -- containers/`
-and `git log -- bot-integration/` for the prior material — it remains a
-valid reference for the runtime topology (Caddy reverse-proxy + bot
-network + healthchecks) and can be re-used once the AffineScript port
-reaches operational parity.
+== Experimental advisory Action/CLI rollout
 
-The replacement codebase is the AffineScript port at
-link:bot-integration-affine/[`bot-integration-affine/`]. It is currently a
-scaffold: cross-module type-checking, JSON payload extraction, and the
-HTTP server accept loop are gated on upstream AffineScript stdlib work
-(`Json` v0.3 RSR rewire + `http-capability-gateway` extern surfacing).
-Production deployment will resume once those gates lift and the AS
-port has a stable build target.
+. Review link:docs/LAUNCH-READINESS.adoc[launch gates] and select a limited opt-in
+  pilot with a maintainer responsible for interpreting model limits.
+. Build/test a candidate; test the *published digest* independently for version,
+  anonymous access, non-root execution, SARIF clean/firing fixtures and provenance.
+. Pin both Action revision and image digest. Begin with `mode: report`; do not
+  enable regulator or claim that an estimate-based check passed.
+. Record release commit, digest, toolchain, configuration and model assumptions.
+  Keep logs free of credentials and private source; retain artifacts only under
+  an agreed access/retention policy.
+. If the run fails or returns no-check, stop promotion and inspect stderr. Do
+  not upload absent SARIF, suppress errors, or fall back to mutable `latest`.
 
-For now, OikosBot is *not* running in production. The previous
-`.github/app.yml` manifest still describes the intended permissions
-and webhook events and remains valid for re-registering the GitHub
-App when the AS port is ready.
-====
+Containment: disable the workflow/Action in affected consumers, retain the failed
+artifact/logs safely, and restore the previous reviewed revision/digest only if
+it remains safe. Revoke/rotate credentials if exposed. Restoring code does not
+undo disclosed data, consumed energy or external actions. Follow
+link:SECURITY.md[private incident reporting].
+
+== App production hold
+
+`bot-integration-affine/` has signature-verification and orchestration source;
+that is not demonstrated end-to-end deployment. Before writing executable
+production startup instructions, obtain compiler/typecheck evidence, real HTTP
+listener/transport integration, malformed/signature/replay tests, bounded payloads,
+least-privilege installation-token handling, idempotent delivery processing,
+rate-limit/backoff behavior, and validated comment publication.
+
+Also require health/readiness probes, secret rotation, redacted logging,
+retention policy, resource limits, graceful shutdown and a rehearsed incident
+procedure. VeriSimDB remains a design integration, not a tested persistence path.
+Until these exist, no service-start command is advertised as production-ready.
+Historical ReScript/Quadlet/Caddy materials are in Git history and are not a
+supported deployment recipe for the current AffineScript scaffold.

@@ -138,7 +138,7 @@ pub struct ResourceProfile {
 /// [`AnalysisResult::resources`] collapses an estimate to a single point (the
 /// `typical` bound). The envelope is kept alongside it so consumers can see the
 /// uncertainty band instead of treating the point estimate as exact. It is
-/// present only when the estimate came from a calibrated operation profile (see
+/// present only when the estimate came from a heuristic operation profile (see
 /// `oikosbot_analysis::calibration::estimate_operation`); the naive
 /// `complexity`-derived path produces a point estimate with no band and leaves
 /// this `None`.
@@ -280,9 +280,68 @@ pub struct ParetoInfo {
     pub dominated_by: usize,
 }
 
+/// Descriptive taxonomy, not permission to modify code. Resource confidence
+/// is an evidence category, NOT a calibrated probability of correctness.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FindingTaxonomy {
+    pub intent: Intent,
+    pub maintenance: Maintenance,
+    pub locus: Locus,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Intent {
+    Must,
+    Intend,
+    Wish,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Maintenance {
+    Corrective,
+    Adaptive,
+    Perfective,
+    Preventive,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Locus {
+    Systems,
+    Compliance,
+    Externalities,
+}
+
+impl FindingTaxonomy {
+    /// Authored rule classification. No auto-fix authority is implied, even
+    /// if a future resource estimate is Measured. Unclassified rules retain
+    /// None rather than fabricated tags.
+    pub fn for_rule(rule: &str) -> Option<Self> {
+        match rule {
+            "oikosbot/nested-loops"
+            | "oikosbot/busy-wait"
+            | "oikosbot/string-concat-in-loop"
+            | "oikosbot/clone-in-loop"
+            | "oikosbot/unbuffered-io"
+            | "oikosbot/large-allocation"
+            | "oikosbot/redundant-allocation" => Some(Self {
+                intent: Intent::Wish,
+                maintenance: Maintenance::Perfective,
+                locus: Locus::Externalities,
+            }),
+            _ => None,
+        }
+    }
+}
+
 /// Analysis result for a single code unit (function, file, module)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AnalysisResult {
+    /// None for telemetry, legacy input or a rule not yet classified.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub taxonomy: Option<FindingTaxonomy>,
     pub location: CodeLocation,
     pub resources: ResourceProfile,
     pub health: HealthIndex,
@@ -303,7 +362,7 @@ pub struct AnalysisResult {
     /// Pareto pass; None when analyzed in isolation).
     #[serde(default)]
     pub pareto: Option<ParetoInfo>,
-    /// Uncertainty band behind `resources`, when the estimate is calibrated
+    /// Uncertainty band behind `resources`, when the estimate uses the pattern table
     /// (see [`ResourceRange`]). `None` on the naive `complexity`-derived path,
     /// where `resources` is a point estimate with no band.
     #[serde(default, skip_serializing_if = "Option::is_none")]

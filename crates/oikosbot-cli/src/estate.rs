@@ -254,9 +254,18 @@ fn stage_json<T: serde::Serialize>(path: &Path, items: &[T]) -> Result<()> {
 /// (see `stage_json`'s doc comment): that one is fatal, since nothing
 /// downstream can proceed for the owner without it.
 fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) -> Result<()> {
+    anyhow::ensure!(max_runs > 0, "max-runs must be positive");
     fs::create_dir_all(out).with_context(|| format!("create staging dir {}", out.display()))?;
+    let mut failures = 0;
 
     for owner in owners {
+        anyhow::ensure!(
+            !owner.is_empty()
+                && owner
+                    .bytes()
+                    .all(|c| c.is_ascii_alphanumeric() || c == b'-'),
+            "invalid GitHub owner (must not be a path): {owner}"
+        );
         let owner_dir = out.join(owner);
         fs::create_dir_all(&owner_dir)
             .with_context(|| format!("create owner staging dir {}", owner_dir.display()))?;
@@ -287,6 +296,7 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
                 }
                 Err(e) => {
                     eprintln!("error: list_repos({owner}): {e:#}");
+                    failures += 1;
                     continue;
                 }
             }
@@ -298,6 +308,17 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
                 continue;
             }
             let name = repo_name(&repo.repo);
+            anyhow::ensure!(
+                repo.repo == format!("{owner}/{name}")
+                    && !name.is_empty()
+                    && name != "."
+                    && name != ".."
+                    && name
+                        .bytes()
+                        .all(|c| c.is_ascii_alphanumeric() || b"._-".contains(&c)),
+                "invalid repository identity in staging: {}",
+                repo.repo
+            );
 
             let runs_path = owner_dir.join(format!("runs-{name}.json"));
             if runs_path.exists() {
@@ -311,9 +332,15 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
                             repo.repo,
                             runs_path.display()
                         ),
-                        Err(e) => eprintln!("error: stage runs for {}: {e:#}", repo.repo),
+                        Err(e) => {
+                            failures += 1;
+                            eprintln!("error: stage runs for {}: {e:#}", repo.repo);
+                        }
                     },
-                    Err(e) => eprintln!("error: collect_runs({}): {e:#}", repo.repo),
+                    Err(e) => {
+                        failures += 1;
+                        eprintln!("error: collect_runs({}): {e:#}", repo.repo);
+                    }
                 }
             }
 
@@ -329,14 +356,24 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
                             repo.repo,
                             releases_path.display()
                         ),
-                        Err(e) => eprintln!("error: stage releases for {}: {e:#}", repo.repo),
+                        Err(e) => {
+                            failures += 1;
+                            eprintln!("error: stage releases for {}: {e:#}", repo.repo);
+                        }
                     },
-                    Err(e) => eprintln!("error: collect_releases({}): {e:#}", repo.repo),
+                    Err(e) => {
+                        failures += 1;
+                        eprintln!("error: collect_releases({}): {e:#}", repo.repo);
+                    }
                 }
             }
         }
     }
 
+    anyhow::ensure!(
+        failures == 0,
+        "incomplete collection: {failures} operations failed; staged successes retained for retry"
+    );
     Ok(())
 }
 
@@ -348,7 +385,8 @@ fn collect(gh: &dyn GhRunner, owners: &[String], out: &Path, max_runs: usize) ->
 fn load_json_prefixed<T: serde::de::DeserializeOwned>(dir: &Path, prefix: &str) -> Result<Vec<T>> {
     let mut paths: Vec<PathBuf> = WalkDir::new(dir)
         .into_iter()
-        .filter_map(|e| e.ok())
+        .collect::<std::result::Result<Vec<_>, _>>()?
+        .into_iter()
         .filter(|e| e.file_type().is_file())
         .map(|e| e.into_path())
         .filter(|p| {
@@ -375,6 +413,36 @@ fn analyse(staging: &Path, snapshot_dir: &Path) -> Result<()> {
     let runs: Vec<RunRow> = load_json_prefixed(staging, "runs-")?;
     let repos: Vec<RepoRow> = load_json_prefixed(staging, "repos-")?;
     let releases: Vec<ReleaseRow> = load_json_prefixed(staging, "releases-")?;
+    anyhow::ensure!(!repos.is_empty(), "no repository inventory in staging");
+    for repo in repos.iter().filter(|repo| !repo.archived) {
+        let (owner, name) = repo
+            .repo
+            .split_once('/')
+            .context("invalid staged repository identity")?;
+        anyhow::ensure!(
+            !owner.is_empty()
+                && !name.is_empty()
+                && owner
+                    .bytes()
+                    .all(|c| c.is_ascii_alphanumeric() || c == b'-')
+                && name != "."
+                && name != ".."
+                && name
+                    .bytes()
+                    .all(|c| c.is_ascii_alphanumeric() || b"._-".contains(&c)),
+            "unsafe staged repository identity"
+        );
+        for prefix in ["runs", "releases"] {
+            anyhow::ensure!(
+                staging
+                    .join(owner)
+                    .join(format!("{prefix}-{name}.json"))
+                    .is_file(),
+                "incomplete staging: missing {prefix} for {}",
+                repo.repo
+            );
+        }
+    }
 
     fs::create_dir_all(snapshot_dir)
         .with_context(|| format!("create snapshot dir {}", snapshot_dir.display()))?;
@@ -697,5 +765,26 @@ mod tests {
             5,
         )
         .unwrap();
+    }
+}
+
+#[cfg(test)]
+mod collection_boundary_tests {
+    use super::*;
+    struct Failed;
+    impl GhRunner for Failed {
+        fn api(&self, _path: &str) -> Result<serde_json::Value> {
+            anyhow::bail!("HTTP 429")
+        }
+    }
+    #[test]
+    fn partial_collection_is_not_success() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(collect(&Failed, &["o".into()], dir.path(), 200).is_err());
+    }
+    #[test]
+    fn owner_is_not_a_filesystem_path() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(collect(&Failed, &["../escape".into()], dir.path(), 200).is_err());
     }
 }

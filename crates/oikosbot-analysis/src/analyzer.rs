@@ -49,6 +49,9 @@ impl Analyzer {
             .parse(source, None)
             .context("Failed to parse source")?;
 
+        if tree.root_node().has_error() {
+            anyhow::bail!("no check performed: source contains syntax errors");
+        }
         self.analyze_tree(source, &tree)
     }
 
@@ -135,6 +138,7 @@ impl Analyzer {
         let end = node.end_position();
 
         Some(AnalysisResult {
+            taxonomy: FindingTaxonomy::for_rule(&rule_id),
             location,
             resources,
             health,
@@ -206,11 +210,10 @@ impl Analyzer {
     ///
     /// Two paths, chosen by evidence rather than by preference:
     ///
-    /// * **Calibrated path** — the unit carries a detected pattern that maps to
+    /// * **Pattern-table path** — the unit carries a detected pattern that maps to
     ///   a known operation category (`calibration::operation_for_pattern`). The
     ///   estimate comes from `calibration::estimate_operation` and the
-    ///   confidence is whatever that row earns (Calibrated for measured rows,
-    ///   Estimated for host-dependent ones). The min/typical/max band is
+    ///   confidence remains Estimated until calibration receipts exist. The band is
     ///   propagated so consumers can see the spread instead of treating the
     ///   point estimate as exact.
     /// * **Naive path** — no recognised pattern, so there is nothing to price.
@@ -255,7 +258,7 @@ impl Analyzer {
     /// alone. Kept for units with no recognised pattern — but note that all
     /// four axes are the same linear function of `complexity`, so a Pareto
     /// frontier computed over them is a one-dimensional sort. That is why the
-    /// calibrated path exists.
+    /// pattern-table path exists.
     fn naive_resources(&self, complexity: usize) -> ResourceProfile {
         let energy = Energy::joules(complexity as f64 * 0.1);
         let duration = Duration::milliseconds(complexity as f64 * 0.5);
@@ -341,7 +344,7 @@ mod tests {
     /// `depth` nested `for` loops — the smallest nest flagged as
     /// `nested-loops` is depth 3. The body avoids every other pattern (no
     /// `.clone()`, no `File::open`, no `vec![]`, no string `+`, no
-    /// `to_string`) so exactly one calibrated row prices the unit.
+    /// `to_string`) so exactly one heuristic row prices the unit.
     fn nested_loop_work(depth: usize) -> String {
         let mut body =
             String::from("fn deep_work(items: &[u32]) -> usize {\n    let mut total = 0;\n");
@@ -366,16 +369,14 @@ mod tests {
         body
     }
 
-    /// Falsifier for the old behaviour: a recognised pattern used to be
-    /// labelled `Estimated` like everything else, so no finding could ever be
-    /// `Calibrated` and `--check` could never block.
+    /// Recognising a pattern must not manufacture calibration evidence.
     #[test]
-    fn recognized_pattern_earns_calibrated_confidence_and_a_band() {
+    fn recognized_pattern_retains_estimated_confidence_and_a_band() {
         let results = analyze(&nested_loop_work(3));
         assert_eq!(results.len(), 1, "one function, one finding");
 
         let result = &results[0];
-        assert_eq!(result.confidence, Confidence::Calibrated);
+        assert_eq!(result.confidence, Confidence::Estimated);
         assert_eq!(result.rule_id, "oikosbot/nested-loops");
 
         // The band is propagated, not collapsed: min <= typical <= max, and the
@@ -383,7 +384,7 @@ mod tests {
         let range = result
             .resource_range
             .as_ref()
-            .expect("a calibrated estimate must carry its band");
+            .expect("a table estimate must carry its band");
         assert!(range.min.energy.0 <= range.typical.energy.0);
         assert!(range.typical.energy.0 <= range.max.energy.0);
         assert!((range.typical.energy.0 - result.resources.energy.0).abs() < 1e-12);
@@ -407,20 +408,20 @@ mod tests {
         assert!(result.resources.energy.0 > 0.0);
     }
 
-    /// The calibrated path must actually change the numbers, or the wiring
+    /// The pattern-table path must actually change the numbers, or the wiring
     /// would be decoration. Same unit, same size, different evidence.
     #[test]
     fn calibration_changes_the_estimate() {
         let plain = analyze(&plain_work(40));
         let nested = analyze(&nested_loop_work(3));
 
-        // The naive path charges 0.1 J per node; the calibrated Sort row
+        // The naive path charges 0.1 J per node; the heuristic Sort row
         // charges microjoules per comparison-bounded operation. A nested-loop
         // unit is no longer free just because it is small, and plain code is
         // no longer expensive just because it is long.
         assert!(
             plain[0].resources.energy.0 > nested[0].resources.energy.0,
-            "naive energy {:.4} J should dwarf calibrated {:.6} J",
+            "naive energy {:.4} J should dwarf table estimate {:.6} J",
             plain[0].resources.energy.0,
             nested[0].resources.energy.0
         );

@@ -59,15 +59,17 @@ jobs:
             ~/.cargo/git
             target
           key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-      # Uses the runner's preinstalled stable toolchain (no third-party action).
+      # rustup honors rust-toolchain.toml; no third-party toolchain action.
       # NB: the default workspace deliberately EXCLUDES crates/oikosbot-fleet so
       # OikosBot builds with no dependency on hyperpolymath/gitbot-fleet.
       - name: Format check
         run: cargo fmt --check
       - name: Build (standalone workspace)
         run: cargo build --workspace --locked
-      - name: Test (standalone workspace)
+      - name: Test default standalone workspace
         run: cargo test --workspace --locked
+      - name: Test all retained features
+        run: cargo test --workspace --all-features --locked
       - name: Eclexia adapter feature and rejection checks
         run: bash tests/test-eclexia-adapter.sh
       - name: Clippy (informational)
@@ -82,6 +84,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
+      - name: Composite Action argument contract
+        run: bash tests/test-action-arguments.sh
       - name: Check shell wrapper syntax
         run: bash -n bot-integration-affine/check.sh
   security:
@@ -108,3 +112,17 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
         continue-on-error: true
+  container-contract:
+    name: Container smoke contract
+    needs: rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+      - name: Build candidate
+        run: docker build -f Containerfile -t oikosbot:verify .
+      - name: Paired clean and firing fixtures, version and non-root execution
+        run: bash tests/test-container-contract.sh oikosbot:verify

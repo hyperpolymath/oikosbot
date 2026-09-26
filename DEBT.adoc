@@ -490,3 +490,17 @@ repository tree and is therefore recorded as *claimed* rather than verified.
 Two entries were corrected rather than closed: the licence-identifier counts
 were re-measured, and the #16/#17 docs entry now names what the 2026-09-26
 documentation pass actually delivered.
+
+== Superseding launch audit — 2026-09-26
+
+link:docs/LAUNCH-READINESS.adoc[The current launch audit] supersedes earlier
+resolved/working-regulator claims in this historical register. Wiring the table
+was implemented; calibration was *not* demonstrated. All known per-file rows
+now stay Estimated. The old epsilon relation could cycle; no-loss dominance
+and authored regression controls replace it. Explicit missing-evidence checks
+return 2, not false success. None of these source changes has been released.
+
+The audit maps all seven currently open issues, remaining test/benchmark/proof
+obligations, runtime/container boundaries and standards-profile tensions. It also
+records unavailable toolchains. Do not count authored tests as executed evidence
+or a filename/score as proof. No general launch or regulator approval is given.
