@@ -22,7 +22,9 @@ Status legend: `done` | `in-progress` | `blocked` | `planned`
 * [x] Haskell analyzer scaffold at `analyzers/code-haskell/`
 * [x] AffineScript webhook receiver scaffold at `bot-integration-affine/`
 * [x] GitHub App manifest at `.github/app.yml`
-* [x] Policy rules in Datalog and DeepProbLog
+* [x] Policy rules in Datalog (`policy-engine/datalog/eco_rules.dl`) — a
+  specification the Rust dominance code conforms to; the DeepProbLog asset that
+  once sat beside it was retired by the 2026-07-28 ruling and deleted 2026-09-26
 * [x] Bot configuration, prompt templates, and database schema assets
 * [x] Repository split from the Oikos DSL
 
@@ -75,6 +77,18 @@ substrate — stock-flow-consistency identity checks, static capability signals,
 longer backfill. The decision criterion is reported by the pipeline itself:
 the independence matrix, dual stability across at least two snapshots, and
 telemetry coverage. **Requires snapshot #2.**
+
+* *(B) landed 2026-09-26* — `calibration.rs` is wired into
+  `Analyzer::estimate_resources()`, so findings on a recognised pattern carry
+  `Calibrated`/`Estimated` confidence and `--check` exits 1 on an undocumented
+  calibrated regression (issue #48). Proven by
+  `crates/oikosbot-cli/tests/check_gate.rs` against the real binary. Two
+  consequences are recorded rather than hidden: the naive path (unrecognised
+  code) is still collinear and still `Estimated`, and calibrated energies are
+  so small that `calculate_eco_score` saturates near 100, which makes the
+  `check` eco-threshold gate near-vacuous — an owner ruling on the EnergyScore
+  scale is required. Awaiting CI verification (no Rust toolchain in the
+  authoring sandbox).
 
 * [ ] *Consumer lockfile sweep (P1)* — 15 estate repositories carry
   `oikosbot.yml` merged and pinned, but each needs its own Actions lockfile

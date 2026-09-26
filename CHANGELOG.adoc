@@ -17,6 +17,18 @@ https://semver.org/spec/v2.0.0.html[Semantic Versioning].
 
 ==== Added
 
+* docs: `+DEBT.adoc+` re-verified against the tree. Six entries whose fixes had
+  already landed were still listed as open — the orphaned `+LICENSES/AGPL-3.0-or-later.txt+`,
+  the unheaded `+GOVERNANCE.md+`, the boilerplate `+ARCHITECTURE.md+`/
+  `+GOVERNANCE.md+` pair, the unannotated `+ARCHITECTURE.adoc+`, the one-line
+  wiki stub, and the dormant `+push-email-notify.yml+`. Each is now marked
+  resolved with its date and evidence; the wiki is recorded as *claimed*
+  rather than verified because wiki pages are not part of the repository tree.
+  The licence-identifier counts were re-measured (159 MPL-2.0 / 65 CC-BY-SA-4.0
+  occurrences), and the #16/#17 entry now names what the 2026-09-26
+  documentation pass delivered. `+ROADMAP.adoc+` follows: candidate (B) is
+  marked landed, and "policy rules in Datalog and DeepProbLog" no longer claims
+  the retired DeepProbLog asset.
 * feat(analysis): wire the calibration framework into the analyser (issue #48).
   `Analyzer::estimate_resources()` maps a detected pattern onto an
   `+OperationKind+` via the new `+calibration::operation_for_pattern+` and
