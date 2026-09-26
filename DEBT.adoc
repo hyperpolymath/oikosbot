@@ -27,8 +27,8 @@ Severity is about *consequence*, not effort:
 |===
 | Area | Worst | One-line
 
-| <<licence>> | HYGIENE | One orphaned licence text; one doc missing its SPDX header.
-| <<docs>> | STRUCTURAL | Two boilerplate files describe a directory layout this repo does not have; `ARCHITECTURE.adoc` specifies components that were never built.
+| <<licence>> | HYGIENE | Nothing open. The orphaned AGPL text, the unheaded `GOVERNANCE.md` and the duplicated header in `docs/README.adoc` are all gone (verified against the tree, 2026-09-26).
+| <<docs>> | HYGIENE | The boilerplate `.md` pair and the unannotated `ARCHITECTURE.adoc` are gone. What remains is `config/oikos.yaml`'s ASPIRATIONAL blocks, the #12 taxonomy collision, and #16/#17 still only partly addressed.
 | <<code>> | BLOCKING | Unrecognised code still derives every resource axis from one integer, so its Pareto frontier is a one-dimensional sort. Recognised patterns are now calibrated (2026-09-26).
 | <<proof>> | BLOCKING | The Datalog policy engine has never executed; the Eclexia policy backend matches on filenames and never reads the files.
 | <<cicd>> | BLOCKING | Four phantom required contexts block every pull request, so every merge needs `--admin`. The two long-standing red checks are fixed; the consumer fleet cannot run until each repo ships a lockfile.
@@ -38,22 +38,18 @@ Severity is about *consequence*, not effort:
 == Licence debt
 
 The scheme itself is sound and consistently applied: **MPL-2.0 for code,
-CC-BY-SA-4.0 for documentation**, 78 and 29 declarations respectively
-(`grep -rhoP "SPDX-License-Identifier: \K[A-Za-z0-9.+-]+"`).
+CC-BY-SA-4.0 for documentation**, 159 and 65 identifier occurrences respectively
+(`grep -rhoP "SPDX-License-Identifier: \K[A-Za-z0-9.+-]+"`, re-counted
+2026-09-26 against the current tree; the raw total includes two headers quoted
+inside `docs/superpowers/plans/2026-08-03-estate-economics-round-one.adoc`,
+which teaches the convention by example). No third licence is declared anywhere
+in the tree.
 
 [cols="1,4"]
 |===
-| `HYGIENE` | *`LICENSES/AGPL-3.0-or-later.txt` is orphaned.* No file in the
-repository declares `SPDX-License-Identifier: AGPL-3.0-or-later`; the only
-textual occurrence of "AGPL" outside `LICENSES/` is a *quotation of another
-repo's* header inside `docs/superpowers/specs/`. A REUSE-conformant tree
-carries licence texts only for licences actually in use, so this reads as an
-unused licence. *Fix:* delete the file. *Risk if wrong:* if a future file
-genuinely needs AGPL, re-add it then.
+| — | *Resolved 2026-08-07 (re-verified against the tree 2026-09-26):* *`LICENSES/AGPL-3.0-or-later.txt` was orphaned.* No file declared the AGPL identifier, so a REUSE-conformant tree should not carry its text. The file is absent from both the working tree and the base commit (`git ls-tree -r 7781489 -- LICENSES/` → only `CC-BY-SA-4.0.txt`, `MPL-2.0.txt`). The only remaining "AGPL" strings are a prohibition in `.machine_readable/descriptiles/AGENTIC.a2ml` ("Never use AGPL license (use MPL-2.0)"), this register, and a quotation of another repo's header in `docs/superpowers/specs/`. Note the identifier itself is deliberately *not* restated verbatim in this entry: a quoted `SPDX-License-Identifier:` line inside a document is indistinguishable from a real declaration to `grep`, and this register has already recorded that class of defect once (see the duplicated-header entry above).
 
-| `HYGIENE` | *`GOVERNANCE.md` carries no SPDX header at all* — see
-<<docs>>, where it is slated for deletion as boilerplate. Every other document
-in the tree has one.
+| — | *Resolved 2026-08-07 (re-verified 2026-09-26):* *`GOVERNANCE.md` carried no SPDX header at all.* The file was deleted as boilerplate (see <<docs>>); the surviving `GOVERNANCE.adoc` carries `SPDX-License-Identifier: CC-BY-SA-4.0` on line 1, as every other document does.
 
 | `HYGIENE` | *`docs/README.adoc` was mis-licensed by a duplicated header.* It
 carried **two** conflicting identifiers — `MPL-2.0` on line 1 and
@@ -75,33 +71,11 @@ invisible: a correct header in the wrong position silently fails the gate.
 
 [cols="1,4"]
 |===
-| `STRUCTURAL` | *`ARCHITECTURE.md` is generic boilerplate that contradicts the
-repository.* It documents a `src/ tests/ scripts/ config/` layout; this repo is
-a Cargo workspace whose code lives in `crates/`. It has no SPDX header, and it
-shadows the real 33 KB `ARCHITECTURE.adoc` — a reader who opens the `.md`
-learns nothing true. *Fix:* delete. Template rot, not authored content.
+| — | *Resolved 2026-08-07 (re-verified against the tree 2026-09-26):* *`ARCHITECTURE.md` was generic boilerplate contradicting the repository.* It documented a `src/ tests/ scripts/ config/` layout while this repo is a Cargo workspace whose code lives in `crates/`, it had no SPDX header, and it shadowed the real `ARCHITECTURE.adoc`. Deleted; `ARCHITECTURE.adoc` is now the only architecture document and is banner-flagged as target design.
 
-| `STRUCTURAL` | *`GOVERNANCE.md` is the same defect* — generic prose
-("governed by the following principles and structures") duplicating the real,
-SPDX-headed `GOVERNANCE.adoc`. *Fix:* delete.
+| — | *Resolved 2026-08-07 (re-verified 2026-09-26):* *`GOVERNANCE.md` was the same defect* — generic prose duplicating the real, SPDX-headed `GOVERNANCE.adoc`. Deleted.
 
-| `STRUCTURAL` | *`ARCHITECTURE.adoc` specifies components that do not exist.*
-Measured against the tree:
-+
-* §196 specifies an *OCaml documentation analyzer* at `/analyzers/docs-ocaml/`.
-  `analyzers/` contains only `code-haskell`.
-* §424 lists the policy engine as *"Python + Datalog"*. Python is banned by the
-  language policy, and the 2026-07-28 ruling retargeted the engine to Scallop
-  (Rust). The document was never updated.
-* §29 describes four bot roles — *consultant, advisor, regulator, and policy
-  developer*. `crates/oikosbot-cli/src/config.rs` implements three; there is no
-  `policy developer` mode.
-* §121–§358 describe a *Praxis Loop* and DeepProbLog inference that are not
-  implemented.
-+
-*Fix:* mark it explicitly as *target design, not current state*, and annotate
-each unbuilt component inline — the cheapest honest option, given it is a real
-design document rather than rot.
+| — | *Resolved 2026-08-07 (re-verified 2026-09-26):* *`ARCHITECTURE.adoc` specified components that do not exist.* The document now opens with a `[WARNING]` block — "*This is the TARGET design, not the current state*" — that names each unbuilt component inline: the OCaml documentation analyzer (absent; `analyzers/` holds only `code-haskell`), the superseded "Python + Datalog" policy-engine line (Python is banned; the 2026-07-28 ruling retargets to Scallop), the fourth `policy developer` bot role (only three modes exist in `crates/oikosbot-cli/src/config.rs`), and the Praxis Loop / DeepProbLog inference. Readers are pointed at `docs/STATUS.adoc`, `EXPLAINME.adoc` and this register for what is actually built.
 
 | `BLOCKING` | *The README carried an unearned OpenSSF Best Practices badge.*
 A hardcoded green `shields.io` image asserting "OpenSSF Best Practices", linked
@@ -114,8 +88,12 @@ the project cannot support. *Removed in this audit.* This matches a documented
 estate-wide template-drift pattern; other repos should be grepped for the same
 badge block.
 
-| `STRUCTURAL` | *The wiki is a one-line stub* ("Welcome to the oikosbot
-wiki!"). It is enabled and indexed, so it is a discoverable dead end.
+| — | *Claimed resolved 2026-08-07; not re-verified here.* *The wiki was a
+one-line stub* ("Welcome to the oikosbot wiki!") while enabled and indexed, so
+it was a discoverable dead end. `.machine_readable/descriptiles/STATE.a2ml`
+records that the wiki was "built out from a one-line stub" in that session.
+Wiki pages are not part of the repository tree, so this entry could not be
+confirmed from the checkout and is recorded as claimed rather than verified.
 
 | `HYGIENE` | *Taxonomy vocabulary collision* (issue
 https://github.com/hyperpolymath/oikosbot/issues/12[#12]):
@@ -131,8 +109,13 @@ https://github.com/hyperpolymath/oikosbot/pull/59[#59] by marking each block
 | `HYGIENE` | *Open docs issues*
 https://github.com/hyperpolymath/oikosbot/issues/16[#16] (split README into a
 docs tree) and https://github.com/hyperpolymath/oikosbot/issues/17[#17]
-(end-user guide: interpreting findings, SARIF, policy customisation) remain
-open and are only partly addressed by `docs/README.adoc`.
+(end-user guide: interpreting findings, SARIF, policy customisation) are
+substantially addressed but not closed. `docs/README.adoc` is now a
+documentation map, and 2026-09-26 added `docs/usage.adoc` (interpreting
+findings, SARIF fields, confidence levels, policy customisation),
+`docs/ci-runbook.adoc`, a per-crate `README.adoc` set and
+`analyzers/code-haskell/README.adoc`. What is still missing is an issue-level
+walkthrough for a maintainer triaging a specific finding.
 |===
 
 [#code]
@@ -423,9 +406,7 @@ https://github.com/hyperpolymath/oikosbot/pull/64[#64].
 settings-level disabled state (which is invisible from the repository contents),
 why it is kept, and what re-enabling requires.
 
-| `HYGIENE` | *`push-email-notify.yml` is dormant by design* but remains in the
-tree; the estate's dual-use ruling calls for removing push-email workflows
-except where explicitly exempted.
+| — | *Resolved 2026-07-28 (re-verified against the tree 2026-09-26):* *`push-email-notify.yml` was dormant by design* while remaining in the tree, against the estate's dual-use ruling. The workflow is gone from `.github/workflows/` (15 workflows listed, none named `push-email-notify.yml`), and `STATE.a2ml` records its removal under that ruling.
 |===
 
 == What is *not* debt
@@ -457,3 +438,15 @@ repository for CI and issue state, and `jq` over
 https://github.com/hyperpolymath/oikosbot-estate[`hyperpolymath/oikosbot-estate`].
 Claims sourced from earlier sessions were re-verified before being repeated
 here; anything that could not be re-verified was dropped rather than restated.
+
+Re-verified 2026-09-26 against the tree at `7781489` (origin/main) plus the
+working changes on `arena/01a0dad6-oikosbot`. That pass found six entries whose
+fixes had already landed but had never been marked resolved — the orphaned AGPL
+licence text, the unheaded `GOVERNANCE.md`, the boilerplate `.md` pair, the
+unannotated `ARCHITECTURE.adoc`, the wiki stub, and the dormant
+`push-email-notify.yml`. Each is now marked resolved with the evidence and the
+date it was fixed, except the wiki, whose contents are not part of the
+repository tree and is therefore recorded as *claimed* rather than verified.
+Two entries were corrected rather than closed: the licence-identifier counts
+were re-measured, and the #16/#17 docs entry now names what the 2026-09-26
+documentation pass actually delivered.
