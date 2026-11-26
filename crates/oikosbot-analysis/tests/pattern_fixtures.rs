@@ -280,22 +280,22 @@ fn source_without_functions_yields_no_findings() {
     );
 }
 
-/// Unparseable source. Tree-sitter is error-tolerant and will happily hand back
-/// a partial tree, so this asserts the analyzer does not dress a parse failure
-/// up as a finding on code it never understood.
+/// Unparseable source. Tree-sitter is error-tolerant and hands back a partial
+/// tree, so the analyzer must refuse it explicitly: "no check performed" is an
+/// error, never an empty (clean-looking) result.
 #[test]
-fn malformed_source_yields_no_findings() {
-    let malformed = "fn broken( {\n    let x = ;\n";
-    assert!(
-        rules(malformed).is_empty(),
-        "unparsed input must not be reported as analysed code"
-    );
-
-    let truncated = "fn half(a: u32) -> u32 {\n    let b = a +\n";
-    assert!(
-        rules(truncated).is_empty(),
-        "truncated input must not be reported as analysed code"
-    );
+fn malformed_source_is_an_error_not_a_pass() {
+    for (name, source) in [
+        ("malformed", "fn broken( {\n    let x = ;\n"),
+        ("truncated", "fn half(a: u32) -> u32 {\n    let b = a +\n"),
+    ] {
+        let err = analyze_source(source, Language::Rust)
+            .expect_err(&format!("{name} input must not be silently accepted"));
+        assert!(
+            err.to_string().contains("no check performed"),
+            "{name}: the error should say no check was performed, got: {err}"
+        );
+    }
 }
 
 /// An extension the analyzer does not support. This is the clearest case of
